@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Login | Paperless System{% endblock %}
+
+{% block extra_css %}
+<style>
+   
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center w-100">
+    <div class="col-md-4">
+        <div class="card login-card shadow-lg border-0">
+            <div class="login-header">
+                <img src="{% static 'img/capitol_logo.png' %}" alt="Capitol Logo">
+                <h4 class="mb-0">PAPERLESS SYSTEM</h4>
+                <small>Provincial Government Portal</small>
+            </div>
+            <div class="card-body p-4">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-danger small">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+                <form method="POST">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-secondary">USERNAME</label>
+                        <input type="text" name="username" class="form-control" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold text-secondary">PASSWORD</label>
+                        <input type="password" name="password" class="form-control" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 fw-bold rounded-pill">SIGN IN</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

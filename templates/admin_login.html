@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Admin Portal | Paperless System{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'assets/css/admin_style.css' %}">
+{% endblock %}
+
+
+{% block content %}
+<script>document.body.classList.add('admin-body');</script>
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-12 d-flex justify-content-center">
+            <div class="card admin-card shadow-lg">
+                <div class="admin-header">
+                    <img src="{% static 'img/capitol.png' %}" alt="Capitol Logo">
+                    <h3 class="mt-3 fw-bold text-white">ADMIN PORTAL</h3>
+                    <span class="badge bg-danger">AUTHORIZED ACCESS ONLY</span>
+                </div>
+                
+                <div class="card-body p-4 pt-0">
+                    <form method="POST">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label text-light small">ADMIN USERNAME</label>
+                            <input type="text" name="username" class="form-control" placeholder="Enter username" required>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label text-light small">PASSWORD</label>
+                            <input type="password" name="password" class="form-control" placeholder="Enter Password" required>
+                        </div>
+                        <button type="submit" class="btn btn-admin w-100 text-white p-2">
+                            <i class="fas fa-lock me-2"></i> Login
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
