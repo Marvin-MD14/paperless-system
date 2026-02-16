@@ -5,7 +5,6 @@
 
 {% block extra_css %}
 <style>
-    /* Specific styling para sa Head Portal lang */
     body.head-body { 
         background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); 
         height: 100vh;
@@ -17,7 +16,7 @@
     .head-card { 
         border-radius: 15px; 
         background-color: #ffffff;
-        border-top: 8px solid #0056b3; /* Corporate Blue Accent */
+        border-top: 8px solid #0056b3;
         min-width: 380px;
         box-shadow: 0 10px 30px rgba(0,0,0,0.3);
     }
@@ -91,16 +90,16 @@
                 </div>
 
                 <button type="submit" class="btn btn-head w-100 shadow-sm">
-                    <i class="fas fa-sign-in-alt me-2"></i> ENTER DASHBOARD
+                    <i class="fas fa-sign-in-alt me-2"></i> Login
                 </button>
             </form>
         </div>
         
-        <div class="card-footer bg-transparent border-0 text-center pb-4">
+        <!-- <div class="card-footer bg-transparent border-0 text-center pb-4">
             <a href="{% url 'login' %}" class="text-decoration-none small text-muted">
                 <i class="fas fa-arrow-left me-1"></i> Staff Portal
             </a>
-        </div>
+        </div> -->
     </div>
 </div>
 {% endblock %}

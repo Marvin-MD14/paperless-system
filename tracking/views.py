@@ -5,7 +5,7 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
 from django.contrib.auth.decorators import login_required
 
-# 1. PARA SA REGULAR STAFF (localhost:8000/)
+
 def login(request):
     if request.method == "POST":
         u = request.POST.get('username')
@@ -35,7 +35,6 @@ def login(request):
             
     return render(request, 'login.html')
 
-# 2. PARA SA ADMIN LOGIN (localhost:8000/adminlogin/)
 def admin_login(request):
     if request.method == "POST":
         u = request.POST.get('username')
@@ -43,7 +42,6 @@ def admin_login(request):
         user = authenticate(username=u, password=p)
         
         if user is not None:
-            # Check kung SUPERUSER siya
             if user.is_superuser:
                 auth_login(request, user)
                 return redirect('admin_dashboard')
@@ -54,7 +52,6 @@ def admin_login(request):
             
     return render(request, 'admin_login.html') 
 
-# 3. REGULAR STAFF DASHBOARD
 def user_dashboard(request):
     return render(request, 'dashboard.html')
 
@@ -93,18 +90,15 @@ def admin_dashboard(request):
     }
     return render(request, 'admin_dashboard.html', context)
 
-# 5. REGISTER (Optional page kung gusto mo ng hiwalay sa dashboard)
 def register(request):
     depts = Department.objects.all()
     return render(request, 'register.html', {'departments': depts})
 
-# 6. LOGOUT
 def logout(request):
     auth_logout(request)
     messages.info(request, "You have been logged out.")
     return redirect('login')
 
-# PARA SA DEPARTMENT HEAD LOGIN (localhost:8000/headlogin/)
 def head_login(request):
     if request.method == "POST":
         u = request.POST.get('username')
@@ -112,7 +106,6 @@ def head_login(request):
         user = authenticate(username=u, password=p)
         
         if user is not None:
-            # Kunin ang profile para i-check ang role
             try:
                 profile = user.userprofile
                 if profile.role == 'HEAD':

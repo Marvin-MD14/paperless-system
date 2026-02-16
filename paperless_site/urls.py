@@ -12,12 +12,10 @@ from tracking.views import (
 )
 
 urlpatterns = [
-    path('admin/', admin.site.urls), # Django built-in admin
+    path('admin/', admin.site.urls), 
     
-    # 1. Pintuan para sa Regular Staff
     path('', login, name='login'), 
     
-    # 2. Pintuan para sa Admin (Safe/Hidden URL)
     path('adminlogin/', admin_login, name='admin_login'), 
     
     
@@ -27,7 +25,6 @@ urlpatterns = [
     path('headlogin/', head_login, name='head_login'),
     path('headdashboard/', head_dashboard, name='head_dashboard'),
 
-    # 4. Others
     path('register/', register, name='register'),
     path('logout/', logout, name='logout'),
 ]

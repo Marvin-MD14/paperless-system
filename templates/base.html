@@ -8,21 +8,26 @@
     
     <link rel="icon" type="image/png" href="{% static 'assets/img/capitol_logo.png' %}">
 
-    <!-- Angle Theme CSS -->
     <link href="{% static 'assets/css/bootstrap.css' %}" rel="stylesheet">
     <link href="{% static 'assets/css/app.css' %}" rel="stylesheet">
     <link href="{% static 'assets/css/themes/theme-a.css' %}" rel="stylesheet">
+<<<<<<< Updated upstream
     <link rel="stylesheet" href="{% static 'assets/vendor/simple-line-icons/css/simple-line-icons.css' %}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+=======
     
-    <!-- Google Fonts -->
+>>>>>>> Stashed changes
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <!-- SIMPLE LINE ICONS-->
     
+<<<<<<< Updated upstream
 
+=======
+>>>>>>> Stashed changes
     <style>
-        body { font-family: 'Poppins', sans-serif; }
+        body { font-family: 'Poppins', sans-serif; background-color: #f8f9fa; min-height: 100vh; margin: 0; }
         .navbar-brand img { width: 40px; margin-right: 10px; }
+<<<<<<< Updated upstream
         /* Fix for Bootstrap 4 compatibility */
         .navbar-nav .nav-link {
             padding-right: 0.5rem;
@@ -34,6 +39,9 @@
         .mr-auto {
             margin-right: auto !important;
         }
+=======
+        .full-width-container { width: 100%; padding: 0; margin: 0; }
+>>>>>>> Stashed changes
     </style>
     {% block extra_css %}{% endblock %}
 </head>
@@ -126,23 +134,32 @@
             </div>
             
         {% else %}
+<<<<<<< Updated upstream
             <div class="container d-flex align-items-center justify-content-center" style="min-height: 80vh;">
                 {% block auth_content %}
                     <div class="w-100">
                         {% block content_placeholder %}{% endblock %}
                     </div>
                 {% endblock %}
+=======
+            <div style="min-height: 100vh; width: 100vw; overflow-x: hidden;">
+                {% block auth_content %}{% endblock %}
+>>>>>>> Stashed changes
             </div>
         {% endif %}
     {% endblock main_container %}
 
+<<<<<<< Updated upstream
     <!-- JavaScript -->
+=======
+>>>>>>> Stashed changes
     <script src="{% static 'assets/vendor/jquery/dist/jquery.js' %}"></script>
     <script src="{% static 'assets/vendor/popper.js/dist/umd/popper.js' %}"></script>
     <script src="{% static 'assets/vendor/bootstrap/dist/js/bootstrap.js' %}"></script>
     <script src="{% static 'assets/vendor/jquery-slimscroll/jquery.slimscroll.js' %}"></script>
     <script src="{% static 'assets/vendor/js-storage/js.storage.js' %}"></script>
     
+<<<<<<< Updated upstream
     <!-- Load these but they might not be needed -->
     <script src="{% static 'assets/js/modules/common/slimscroll.js' %}"></script>
     <script src="{% static 'assets/js/modules/common/bootstrap-start.js' %}"></script>
@@ -177,6 +194,17 @@
         });
     </script>
     
+=======
+    <script src="{% static 'assets/js/modules/common/sidebar.js' %}"></script>
+    <script src="{% static 'assets/js/modules/common/toggle-state.js' %}"></script>
+    <script src="{% static 'assets/js/modules/common/slimscroll.js' %}"></script>
+    <script src="{% static 'assets/js/modules/common/bootstrap-start.js' %}"></script>
+    
+    <script src="{% static 'assets/js/app.init.js' %}"></script>
+    <script src="{% static 'assets/js/app.js' %}"></script>
+    
+    <script src="{% static 'assets/js/custom/custom.js' %}"></script>
+>>>>>>> Stashed changes
     {% block extra_js %}{% endblock %}
 </body>
 </html>

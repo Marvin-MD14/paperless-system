@@ -1,16 +1,101 @@
 
 /* LOGIN FORM */
 
-body { 
-    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); 
-    height: 100vh;
-    display: flex;
-    align-items: center;
-}
-.login-card { border-radius: 15px; overflow: hidden; }
-.login-header { background-color: #0d6efd; color: white; padding: 30px; text-align: center; }
-.login-header img { width: 80px; margin-bottom: 10px; }
-.widget-stats { border-radius: 12px; transition: 0.3s; }
-    .widget-stats:hover { transform: translateY(-5px); }
-    .card { border-radius: 15px; }
-    .table thead { background-color: #f8f9fa; }
+/* Tatanggalin natin ang padding ng default container para saktong split screen */
+    body, html {
+        height: 100%;
+        margin: 0;
+    }
+
+    .login-container {
+        display: flex;
+        min-height: 100vh;
+        width: 100%;
+    }
+
+    /* Left Side: Branding & Info */
+    .left-section {
+        flex: 1.5; /* Mas malawak ang left side */
+        background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), 
+                    url('{% static "assets/img/background_office.jpg" %}') no-repeat center center;
+        background-size: cover;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end; /* I-pwesto ang text sa baba katulad ng example */
+        padding: 60px;
+        color: white;
+    }
+
+    .left-section h1 {
+        font-size: 3.5rem;
+        font-weight: 700;
+        line-height: 1.1;
+        margin-bottom: 20px;
+    }
+
+    .left-section p {
+        font-size: 1.1rem;
+        opacity: 0.8;
+    }
+
+    /* Right Side: Login Form */
+    .right-section {
+        flex: 1;
+        background-color: #1a1a1a; /* Dark theme katulad ng example mo */
+        color: white;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding: 80px;
+    }
+
+    .login-box {
+        max-width: 400px;
+        width: 100%;
+        margin: 0 auto;
+    }
+
+    .system-logo-title {
+        display: flex;
+        align-items: center;
+        margin-bottom: 30px;
+    }
+
+    .system-logo-title img {
+        width: 40px;
+        margin-right: 15px;
+    }
+
+    .form-control {
+        background-color: #2b2b2b !important;
+        border: none !important;
+        color: white !important;
+        padding: 12px 15px;
+        margin-bottom: 15px;
+    }
+
+    .btn-signin {
+        background-color: #2b7fff;
+        border: none;
+        padding: 12px;
+        font-weight: 600;
+        width: 100%;
+        margin-top: 10px;
+    }
+
+    .form-footer {
+        margin-top: 25px;
+        font-size: 0.9rem;
+        color: #aaa;
+    }
+
+    .form-footer a {
+        color: #2b7fff;
+        text-decoration: none;
+    }
+
+    /* Responsive */
+    @media (max-width: 992px) {
+        .left-section { display: none; } /* Itago ang left side sa mobile */
+        .right-section { flex: 1; padding: 40px; }
+    }
