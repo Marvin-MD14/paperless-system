@@ -12,41 +12,92 @@
     <link href="{% static 'assets/css/bootstrap.css' %}" rel="stylesheet">
     <link href="{% static 'assets/css/app.css' %}" rel="stylesheet">
     <link href="{% static 'assets/css/themes/theme-a.css' %}" rel="stylesheet">
-    
-    <!-- Font Awesome (keep CDN for latest icons) -->
+    <link rel="stylesheet" href="{% static 'assets/vendor/simple-line-icons/css/simple-line-icons.css' %}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <!-- SIMPLE LINE ICONS-->
     
-    <!-- Your custom CSS -->
-    <!-- <link href="{% static 'assets/css/style.css' %}" rel="stylesheet">
-    <link href="{% static 'assets/css/admin_style.css' %}" rel="stylesheet"> -->
-    
+
     <style>
         body { font-family: 'Poppins', sans-serif; }
         .navbar-brand img { width: 40px; margin-right: 10px; }
-        /* Remove the sidebar styles here - they're in app.css */
+        /* Fix for Bootstrap 4 compatibility */
+        .navbar-nav .nav-link {
+            padding-right: 0.5rem;
+            padding-left: 0.5rem;
+        }
+        .ml-auto {
+            margin-left: auto !important;
+        }
+        .mr-auto {
+            margin-right: auto !important;
+        }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
 <body>
     {% block main_container %}
         {% if user.is_authenticated %}
-            <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
-                <div class="container-fluid">
-                    <a class="navbar-brand fw-bold" href="#">
-                        <img src="{% static 'assets/img/capitol_logo.png' %}" alt="Logo" style="width: 40px;">
-                        EDMS
-                    </a>
-                    <div class="ms-auto">
-                        <span class="text-white me-3 small">Welcome, {{ user.username }}</span>
-                        <a href="{% url 'logout' %}" class="btn btn-outline-light btn-sm">Logout</a>
-                    </div>
-                </div>
-            </nav>
-
             <div class="wrapper">
+                <header class="topnavbar-wrapper">
+                    <!-- START Top Navbar-->
+                    <nav class="navbar topnavbar">
+                        <!-- START navbar header-->
+                        <div class="navbar-header">
+                            <a class="navbar-brand" href="#">
+                                <div class="brand-logo">
+                                    <img class="img-fluid" src="{% static 'assets/img/capitol_logo.png' %}" alt="App Logo">
+                                    <span class="ml-2">EDMS</span>
+                                </div>
+                                <div class="brand-logo-collapsed">
+                                    <img class="img-fluid" src="{% static 'assets/img/capitol_logo.png' %}" alt="App Logo">
+                                </div>
+                            </a>
+                        </div>
+                        <!-- END navbar header-->
+                        
+                        <!-- START Left navbar-->
+                        <ul class="navbar-nav mr-auto flex-row">
+                            <!-- <li class="nav-item">
+                                <a class="nav-link d-none d-md-block d-lg-block d-xl-block" href="#" data-trigger-resize="" data-toggle-state="aside-collapsed">
+                                    <em class="fas fa-bars"></em>
+                                </a>
+                                <a class="nav-link sidebar-toggle d-md-none" href="#" data-toggle-state="aside-toggled" data-no-persist="true">
+                                    <em class="fas fa-bars"></em>
+                                </a>
+                            </li> -->
+                            <!-- User avatar toggle-->
+                            <li class="nav-item d-none d-md-block">
+                                <a class="nav-link" id="user-block-toggle" href="#user-block" data-toggle="collapse">
+                                    <em class="icon-user"></em>
+                                </a>
+                            </li>
+                        </ul>
+                        <!-- END Left navbar-->
+                        
+                        <!-- START Right Navbar-->
+                        <ul class="navbar-nav flex-row">
+                            <!-- Welcome message -->
+                            <li class="nav-item d-none d-md-block">
+                                <span class="nav-link">
+                                    Welcome, {{ user.username|title }}
+                                </span>
+                            </li>
+                            <!-- Logout -->
+                            <li class="nav-item">
+                                <a href="{% url 'logout' %}" class="nav-link">
+                                    <em class="icon-logout"></em>
+                                </a>
+                            </li>
+                        </ul>
+                        <!-- END Right Navbar-->
+                    </nav>
+                    <!-- END Top Navbar-->
+                </header>
+
+                <!-- Sidebar -->
                 <aside class="aside-container">
                     <div class="aside-inner">
                         {% block sidebar %}
@@ -61,59 +112,70 @@
                     </div>
                 </aside>
                 
+                <!-- Main content -->
                 <section class="section-container">
                     <div class="content-wrapper">
                         {% block content %}{% endblock %}
                     </div>
                 </section>
+
+                <!-- Footer -->
+                <footer class="footer-container">
+                    <span>&copy; 2025 - Paperless EDMS</span>
+                </footer>
             </div>
             
         {% else %}
             <div class="container d-flex align-items-center justify-content-center" style="min-height: 80vh;">
                 {% block auth_content %}
                     <div class="w-100">
-                        {% block content_placeholder %}
-                            {% endblock %}
-                     </div>
+                        {% block content_placeholder %}{% endblock %}
+                    </div>
                 {% endblock %}
+            </div>
         {% endif %}
     {% endblock main_container %}
 
-    <!-- Essential JavaScript - Order is important! -->
+    <!-- JavaScript -->
     <script src="{% static 'assets/vendor/jquery/dist/jquery.js' %}"></script>
+    <script src="{% static 'assets/vendor/popper.js/dist/umd/popper.js' %}"></script>
     <script src="{% static 'assets/vendor/bootstrap/dist/js/bootstrap.js' %}"></script>
     <script src="{% static 'assets/vendor/jquery-slimscroll/jquery.slimscroll.js' %}"></script>
     <script src="{% static 'assets/vendor/js-storage/js.storage.js' %}"></script>
     
-    <!-- Angle Theme Modules -->
-    <script src="{% static 'assets/js/modules/common/sidebar.js' %}"></script>
-    <script src="{% static 'assets/js/modules/common/toggle-state.js' %}"></script>
+    <!-- Load these but they might not be needed -->
     <script src="{% static 'assets/js/modules/common/slimscroll.js' %}"></script>
     <script src="{% static 'assets/js/modules/common/bootstrap-start.js' %}"></script>
     
-    <!-- Angle Theme Main -->
-    <script src="{% static 'assets/js/app.init.js' %}"></script>
-    <script src="{% static 'assets/js/app.js' %}"></script>
-    
-    <!-- Custom JS -->
-    <script src="{% static 'assets/js/custom/custom.js' %}"></script>
-    
-    <!-- <script>
-        // Initialize sidebar
+   <script>
         $(function() {
-            // Restore body classes
-            var $body = $('body');
-            if (typeof StateToggler !== 'undefined') {
-                new StateToggler().restoreState($body);
-            }
-            
-            // Enable sidebar toggle
-            $('[data-toggle="collapse"]').on('click', function() {
-                var target = $(this).data('target');
-                $(target).collapse('toggle');
+            // Handle user block toggle (uses Bootstrap's collapse)
+            $('#user-block-toggle').on('click', function(e) {
+                e.preventDefault();
+                $('#user-block').collapse('toggle');
             });
+            
+            // Handle window resize
+            $(window).on('resize', function() {
+                if ($(window).width() > 992) {
+                    $('body').removeClass('aside-toggled');
+                }
+            });
+            
+            // Initialize slimscroll on sidebar
+            if ($.fn.slimscroll && $('.sidebar').length) {
+                $('.sidebar').slimscroll({
+                    height: '100%',
+                    size: '3px',
+                    color: '#a1a2a3',
+                    alwaysVisible: false,
+                    distance: '3px',
+                    railVisible: true,
+                    railColor: '#f5f5f5'
+                });
+            }
         });
-    </script> -->
+    </script>
     
     {% block extra_js %}{% endblock %}
 </body>

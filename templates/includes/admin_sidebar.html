@@ -15,14 +15,13 @@
                         {% if request.user.userprofile.profilepicture %}
                         <img class="img-thumbnail rounded-circle" src="{{ request.user.userprofile.profilepicture.url }}" alt="Avatar" width="60" height="60">
                         {% else %}
-                        <img class="img-thumbnail rounded-circle" src="{% static 'img/user/02.jpg' %}" alt="Avatar" width="60" height="60">
+                        <img class="img-thumbnail rounded-circle" src="{% static 'assets/img/user/02.jpg' %}" alt="Avatar" width="60" height="60">
                         {% endif %}
                         <div class="circle bg-success circle-lg"></div>
                      </div>
                   </div>
-                  <!-- Name and Job-->
                   <div class="user-block-info">
-                     <span class="user-block-name">Hello, {{ request.user.first_name|default:request.user.username }}</span>
+                     <span class="user-block-name">Hello, {{ request.user.first_name|title|default:request.user.username|title }}</span>
                      <span class="user-block-role">Administrator</span>
                   </div>
                </div>
