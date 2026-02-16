@@ -7,8 +7,11 @@
     <link rel="stylesheet" href="{% static 'assets/css/admin_style.css' %}">
 {% endblock %}
 
-
-{% block content %}
+{% comment %} 
+  We changed this from 'content' to 'auth_content' to match the 
+  non-authenticated block in our new base.html logic.
+{% endcomment %}
+{% block auth_content %}
 <script>document.body.classList.add('admin-body');</script>
 
 <div class="container">

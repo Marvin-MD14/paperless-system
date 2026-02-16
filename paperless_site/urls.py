@@ -20,6 +20,7 @@ urlpatterns = [
     # 2. Pintuan para sa Admin (Safe/Hidden URL)
     path('adminlogin/', admin_login, name='admin_login'), 
     
+    
     # 3. Dashboards (Dito ang bagsak pagkatapos ng login)
     path('dashboard/', user_dashboard, name='user_dashboard'),
     path('admin_dashboard/', admin_dashboard, name='admin_dashboard'),

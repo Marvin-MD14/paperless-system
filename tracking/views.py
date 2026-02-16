@@ -1,8 +1,9 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.models import User
-from .models import Department, UserProfile
+from .models import Office, UserProfile, Document
 from django.contrib import messages
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
+from django.contrib.auth.decorators import login_required
 
 # 1. PARA SA REGULAR STAFF (localhost:8000/)
 def login(request):
@@ -12,12 +13,23 @@ def login(request):
         user = authenticate(username=u, password=p)
         
         if user is not None:
-            # Check kung HINDI siya superuser
-            if not user.is_superuser:
-                auth_login(request, user)
-                return redirect('user_dashboard')
-            else:
-                messages.error(request, "Admin accounts must use the Admin Portal.")
+            auth_login(request, user)
+            # Check for Admin (Superuser)
+            if user.is_superuser:
+                return redirect('admin_dashboard')
+            
+            # Check Role via UserProfile
+            try:
+                role = user.userprofile.role
+                if role == 'HEAD':
+                    return redirect('head_dashboard')
+                elif role in ['GOVERNOR', 'EXECUTIVE']:
+                    return redirect('executive_dashboard')
+                else:
+                    return redirect('user_dashboard')
+            except UserProfile.DoesNotExist:
+                messages.error(request, "User profile not found. Contact Admin.")
+                return redirect('login')
         else:
             messages.error(request, "Invalid username or password.")
             
@@ -40,48 +52,44 @@ def admin_login(request):
         else:
             messages.error(request, "Invalid admin credentials.")
             
-    return render(request, 'admin_login.html') # Gawa tayo ng separate na template nito mamaya
+    return render(request, 'admin_login.html') 
 
 # 3. REGULAR STAFF DASHBOARD
 def user_dashboard(request):
     return render(request, 'dashboard.html')
 
-# 4. ADMIN DASHBOARD (May registration logic na ito)
+@login_required
 def admin_dashboard(request):
-    # Security: Double check kung admin ang nakatingin
     if not request.user.is_superuser:
-        return redirect('admin_login')
+        return redirect('login')
 
-    departments = Department.objects.all()
-    profiles = UserProfile.objects.all()
-    heads_count = UserProfile.objects.filter(role='HEAD').count()
-    governor_count = UserProfile.objects.filter(role='GOVERNOR').count()
-    executive_count = UserProfile.objects.filter(role='EXECUTIVE').count()
-    staff_count = UserProfile.objects.filter(role='STAFF').count()
+    offices = Office.objects.all()
+    profiles = UserProfile.objects.select_related('user', 'office').all()
 
     if request.method == "POST":
         u_name = request.POST.get('username')
         p_word = request.POST.get('password')
         role = request.POST.get('role')
-        dept_id = request.POST.get('department')
+        office_id = request.POST.get('office') # Changed from department to office
 
         try:
             new_user = User.objects.create_user(username=u_name, password=p_word)
-            dept_obj = Department.objects.get(id=dept_id) if dept_id else None
-            UserProfile.objects.create(user=new_user, department=dept_obj, role=role)
+            office_obj = Office.objects.get(id=office_id) if office_id else None
+            UserProfile.objects.create(user=new_user, office=office_obj, role=role)
             
-            messages.success(request, f"Account created for {u_name}!")
+            messages.success(request, f"Successfully created {role} account for {u_name}!")
             return redirect('admin_dashboard')
         except Exception as e:
             messages.error(request, f"Error: {e}")
 
     context = {
-        'departments': departments,
+        'offices': offices,
         'profiles': profiles,
-        'heads_count': heads_count,
-        'governor_count': governor_count,
-        'executive_count': executive_count,
-        'staff_count': staff_count,
+        'counts': {
+            'HEAD': UserProfile.objects.filter(role='HEAD').count(),
+            'STAFF': UserProfile.objects.filter(role='STAFF').count(),
+            'EXEC': UserProfile.objects.filter(role__in=['GOVERNOR', 'EXECUTIVE']).count(),
+        }
     }
     return render(request, 'admin_dashboard.html', context)
 
@@ -119,18 +127,25 @@ def head_login(request):
             
     return render(request, 'head_login.html')
 
-# DEPARTMENT HEAD DASHBOARD
+# 2. HEAD DASHBOARD (Filtering by Office)
+@login_required
 def head_dashboard(request):
-    # Security: Dapat HEAD lang ang nakaka-access
-    if not request.user.is_authenticated or request.user.userprofile.role != 'HEAD':
-        return redirect('head_login')
+    # Security: Ensure only HEADs can enter
+    if request.user.userprofile.role != 'HEAD':
+        messages.error(request, "Unauthorized access.")
+        return redirect('login')
         
-    user_profile = request.user.userprofile
-    # Dito, kukunin lang natin ang staff na kapareho ng department niya
-    my_staff = UserProfile.objects.filter(department=user_profile.department).exclude(user=request.user)
+    profile = request.user.userprofile
+    # Filter staff belonging only to the Head's Office
+    my_staff = UserProfile.objects.filter(office=profile.office).exclude(user=request.user)
+    
+    # Injected Logic: Get documents currently in this office
+    # (Based on the Document Routing table in your ERD)
+    office_docs = Document.objects.filter(routings__to_office=profile.office).distinct()
 
     context = {
-        'profile': user_profile,
+        'profile': profile,
         'my_staff': my_staff,
+        'office_docs': office_docs,
     }
     return render(request, 'head_dashboard.html', context)
