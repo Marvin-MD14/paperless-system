@@ -7,10 +7,6 @@
     <link rel="stylesheet" href="{% static 'assets/css/admin_style.css' %}">
 {% endblock %}
 
-{% comment %} 
-  We changed this from 'content' to 'auth_content' to match the 
-  non-authenticated block in our new base.html logic.
-{% endcomment %}
 {% block auth_content %}
 <script>document.body.classList.add('admin-body');</script>
 
@@ -19,7 +15,7 @@
         <div class="col-md-12 d-flex justify-content-center">
             <div class="card admin-card shadow-lg">
                 <div class="admin-header">
-                    <img src="{% static 'img/capitol.png' %}" alt="Capitol Logo">
+                    <img src="{% static 'assets/img/capitol_logo.png' %}" alt="Capitol Logo">
                     <h3 class="mt-3 fw-bold text-white">ADMIN PORTAL</h3>
                     <span class="badge bg-danger">AUTHORIZED ACCESS ONLY</span>
                 </div>
