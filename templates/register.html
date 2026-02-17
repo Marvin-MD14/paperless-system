@@ -1,0 +1,314 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Register | EDMS{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+    :root {
+        --primary-blue: #348fe2;
+        --dark-blue: #1a4a7c;
+        --light-blue: #6dd5ed;
+        --text-gray: #344054;
+        --border-color: #d0d5dd;
+    }
+
+    body, html {
+        height: 100%;
+        margin: 0;
+        font-family: 'Inter', sans-serif;
+        overflow-x: hidden;
+    }
+
+    .login-with-news-feed {
+        display: flex;
+        min-height: 100vh;
+        width: 100%;
+    }
+
+    .news-feed {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 40px;
+        background: linear-gradient(-45deg, #2193b0, #6dd5ed, #348fe2);
+        background-size: 400% 400%;
+        animation: gradientBG 10s ease infinite;
+        position: relative;
+        color: white;
+        text-align: center;
+    }
+
+    @keyframes gradientBG {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+
+    .login-section {
+        flex: 0 0 500px;
+        background: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 30px;
+        box-shadow: -10px 0 30px rgba(0,0,0,0.05);
+    }
+
+    .login-box {
+        width: 100%;
+        max-width: 400px;
+        position: relative; 
+    }
+
+    .form-label {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--text-gray);
+        /* text-align: left; */
+    }
+
+    .form-control, .form-select {
+        display: block;
+        width: 100%;
+        height: 48px;
+        border-radius: 8px;
+        padding: 10px 15px;
+        border: 1px solid #d0d5dd;
+        font-size: 1rem;
+        transition: all 0.2s;
+        background-color: #fff;
+    }
+
+    
+    .select2-container {
+        width: 100% !important;
+        display: block;
+    }
+
+    .select2-container--default .select2-selection--single {
+        height: 48px !important;
+        border: 1px solid #d0d5dd !important;
+        border-radius: 8px !important;
+        display: flex !important;
+        align-items: center !important;
+        padding: 0 10px !important;
+        background-color: #fff !important;
+    }
+
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        color: #444 !important;
+        line-height: 48px !important;
+        padding-left: 5px !important;
+    }
+
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 46px !important;
+        right: 10px !important;
+        display: flex !important;
+        align-items: center !important;
+    }
+
+    .select2-dropdown {
+        border: 1px solid var(--border-color) !important;
+        border-radius: 8px !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+        z-index: 1060;
+        overflow: hidden;
+    }
+
+    .select2-search--dropdown {
+        padding: 10px !important;
+    }
+
+    .select2-search--dropdown .select2-search__field {
+        border-radius: 6px !important;
+        border: 1px solid var(--border-color) !important;
+        padding: 8px !important;
+    }
+
+    .select2-results__options {
+        max-height: 250px !important;
+    }
+
+    .select2-results__option {
+        padding: 10px 15px !important;
+        font-size: 0.9rem !important;
+    }
+
+    .select2-container--default .select2-results__option--highlighted[aria-selected] {
+        background-color: var(--primary-blue) !important;
+    }
+
+    .btn-signin {
+        background: var(--primary-blue);
+        border: none;
+        height: 48px;
+        font-weight: 600;
+        border-radius: 8px;
+        transition: 0.3s;
+        text-transform: uppercase;
+        color: white;
+        letter-spacing: 0.5px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        margin-top: 10px;
+    }
+
+    .btn-signin:hover {
+        background: var(--dark-blue);
+        transform: translateY(-1px);
+    }
+
+    .login-footer {
+        margin-top: 2.5rem;
+        font-size: 0.8rem;
+        color: #adb5bd;
+    }
+
+    @media (max-width: 992px) {
+        .news-feed { display: none; }
+        .login-section { flex: 1; }
+    }
+</style>
+{% endblock %}
+{% block auth_content %}
+<div class="login-with-news-feed">
+    <div class="news-feed">
+        <div class="news-caption">
+            <i class="fas fa-file-shield mb-4" style="font-size: 5rem;"></i>
+            <h1>Electronic Record Document Management System</h1>
+            <p class="lead opacity-75">Secure, Paperless, and Efficient Governance.</p>
+        </div>
+    </div>
+
+    <div class="login-section">
+        <div class="login-box">
+            <div class="text-center mb-4">
+                <img src="{% static 'assets/image/capitol.png' %}" alt="Logo" style="width: 80px;">
+                <h3 class="fw-bold mt-4" style="color: var(--dark-blue);">Employee Registration</h3>
+                <p class="text-muted small">Enter your details to create an account</p>
+            </div>
+
+           {% if messages %}
+    {% for message in messages %}
+        <script>
+            window.onload = function() {
+                {% if message.tags == "success" %}
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Registration Successful!',
+                        text: '{{ message }}',
+                        confirmButtonColor: '#348fe2', 
+                        iconColor: '#348fe2',          
+                        confirmButtonText: 'PROCEED TO LOGIN',
+                        allowOutsideClick: false,
+                        showClass: {
+                            popup: 'animate__animated animate__fadeInDown'
+                        }
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            window.location.href = "{% url 'login' %}";
+                        }
+                    });
+                {% else %}
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Registration Rejected',
+                        text: '{{ message }}',
+                        confirmButtonColor: '#1a4a7c', 
+                        background: '#fff'
+                    });
+                {% endif %}
+            }
+        </script>
+    {% endfor %}
+{% endif %}
+
+            <form method="POST" id="registerForm" name="signup">
+                {% csrf_token %}
+                
+                <div class="mb-3">
+                    <label class="form-label">Username</label>
+                    <input type="text" name="username" id="username" class="form-control" placeholder="Choose a username" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Password</label>
+                    <input type="password" name="pwd" id="pwd" class="form-control" placeholder="Create a password" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Confirm Password</label>
+                    <input type="password" name="cpwd" id="cpwd" class="form-control" placeholder="Confirm your password" required>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label">Office</label>
+                    <select name="office" class="form-select select2" id="office-select" required>
+                        <option value="" disabled selected>Search your office...</option>
+                        {% for office in offices %}
+                            <option value="{{ office.id }}">{{ office.office_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <button type="submit" class="btn btn-signin" id="signupBtn">
+                    SUBMIT REGISTRATION <i class="fas fa-user-check ms-2"></i>
+                </button>
+
+                <div class="text-center mt-3">
+                    <span class="text-muted small">Already have an account?</span> 
+                    <a href="{% url 'login' %}" class="fw-bold text-decoration-none" style="color: var(--primary-blue); font-size: 0.9rem;">Sign In</a>
+                </div>
+            </form>
+
+            <div class="login-footer text-center">
+                &copy; Provincial Government of Catanduanes | GO - IT Department 2026
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    $(document).ready(function() {
+        $('#office-select').select2({
+            width: '100%',
+            placeholder: "Search your office...",
+            allowClear: true,
+            dropdownParent: $('.login-box')
+        });
+
+        $('#registerForm').on('submit', function(e) {
+            const pwd = $('#pwd').val();
+            const cpwd = $('#cpwd').val();
+
+            if (pwd !== cpwd) {
+                e.preventDefault(); 
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Mismatch!',
+                    text: 'Passwords do not match. Please try again.',
+                    confirmButtonColor: '#348fe2'
+                });
+                return false;
+            }
+            const btn = $('#signupBtn');
+            btn.html('<span class="spinner-border spinner-border-sm me-2"></span> CREATING ACCOUNT...');
+            btn.prop('disabled', true);
+        });
+    });
+</script>
+{% endblock %}

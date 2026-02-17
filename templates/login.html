@@ -4,163 +4,305 @@
 {% block title %}Login | EDMS{% endblock %}
 
 {% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet" />
 <style>
-    /* 1. Siguraduhin na ang HTML at Body ay walang space */
-    html, body {
+    :root {
+        --primary-blue: #348fe2;
+        --dark-blue: #1a4a7c;
+        --light-blue: #6dd5ed;
+        --text-gray: #344054;
+        --border-color: #d0d5dd;
+    }
+
+    body, html {
         height: 100%;
         margin: 0;
-        padding: 0;
+        font-family: 'Inter', sans-serif;
         overflow-x: hidden;
     }
 
-    /* 2. Full Background Container */
-    .login-container {
-        position: fixed; /* Para naka-lock sa buong screen */
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
+    .login-with-news-feed {
         display: flex;
-        align-items: center;
-        justify-content: center;
-        /* Dito ang iyong background image */
-        background: linear-gradient(rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.45)), 
-                    url('{% static "assets/images/loginback.avif" %}') no-repeat center center;
-        background-size: cover;
-        z-index: 1;
+        min-height: 100vh;
+        width: 100%;
     }
 
-    /* 3. Floating Auth Box - Maximize space */
-    .main-auth-box {
-        display: flex;
-        width: 1000px; /* Mas malapad para sa space maximization */
-        max-width: 95%;
-        height: 600px; /* Tamang height para hindi siksik */
-        background: rgba(255, 255, 255, 0.98); /* Solid na puti pero may konting transparency */
-        border-radius: 25px; /* Rounded corners gaya ng Lunarspace */
-        overflow: hidden;
-        box-shadow: 0 20px 50px rgba(0,0,0,0.6);
-        z-index: 2;
-        animation: fadeIn 0.8s ease-out;
-    }
-
-    /* Left Panel with Lunarspace-style Wave/Curve */
-    .left-section {
-        flex: 1.2;
-        background: #3b82f6; /* Solid Blue base */
-        /* Heto ang "Wave" effect sa gilid */
-        border-radius: 0 100px 100px 0; 
+    /* Left Side: Dynamic Background */
+    .news-feed {
+        flex: 1;
         display: flex;
         flex-direction: column;
+        align-items: center;
         justify-content: center;
-        padding: 60px;
+        padding: 40px;
+        background: linear-gradient(-45deg, #2193b0, #6dd5ed, #348fe2);
+        background-size: 400% 400%;
+        animation: gradientBG 10s ease infinite;
+        position: relative;
         color: white;
+        text-align: center;
+    }
+
+    @keyframes gradientBG {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+
+    .left-side-icon {
+        font-size: 6rem;
+        margin-bottom: 20px;
+        filter: drop-shadow(0 10px 15px rgba(0,0,0,0.1));
+        z-index: 10;
+    }
+
+    .news-caption h1 {
+        font-weight: 800;
+        font-size: clamp(1.5rem, 4vw, 3rem);
+        margin-bottom: 1rem;
+        z-index: 10;
         position: relative;
     }
 
-    .left-section h1 {
-        font-size: 3rem;
-        font-weight: 800;
-        line-height: 1.1;
-        margin-bottom: 15px;
-    }
-
-    .left-section p {
-        font-size: 1.1rem;
-        opacity: 0.9;
-    }
-
-    /* Right Panel (Form) */
-    .right-section {
-        flex: 1;
+    /* Right Side: Form Section */
+    .login-section {
+        flex: 0 0 500px;
         background: white;
         display: flex;
-        flex-direction: column;
+        align-items: center;
         justify-content: center;
-        padding: 50px;
+        padding: 30px;
+        box-shadow: -10px 0 30px rgba(0,0,0,0.05);
+    }
+
+    .login-box {
+        width: 100%;
+        max-width: 400px;
+    }
+
+    .form-label {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 0.95rem; 
+        font-weight: 600;
+        color: var(--text-gray);
     }
 
     .form-control {
-        background-color: #f1f5f9 !important;
-        border: none !important;
-        padding: 15px !important;
-        border-radius: 12px !important;
-        margin-bottom: 15px;
+        display: block;
+        width: 100%;
+        height: 48px;
+        border-radius: 8px;
+        padding: 10px 15px;
+        border: 1px solid #d0d5dd;
         font-size: 1rem;
+        transition: all 0.2s;
+    }
+
+    .form-control:focus {
+        border-color: var(--primary-blue);
+        box-shadow: 0 0 0 4px rgba(52, 143, 226, 0.1);
+        outline: 0;
+    }
+
+    .input-group {
+        position: relative;
+        display: flex;
+        align-items: stretch;
+        width: 100%;
+    }
+
+    .input-group .form-control {
+        flex: 1 1 auto;
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
+        border-right: none;
+    }
+
+    .password-toggle {
+        background: white;
+        border: 1px solid #d0d5dd;
+        border-left: none;
+        border-top-right-radius: 8px;
+        border-bottom-right-radius: 8px;
+        display: flex;
+        align-items: center;
+        padding: 0 15px;
+        cursor: pointer;
+        color: #667085;
+        transition: 0.2s;
+    }
+
+    .password-toggle:hover {
+        color: var(--primary-blue);
+    }
+
+    .input-group:focus-within .form-control,
+    .input-group:focus-within .password-toggle {
+        border-color: var(--primary-blue);
     }
 
     .btn-signin {
-        background: #3b82f6;
+        background: var(--primary-blue);
         border: none;
-        padding: 15px;
-        border-radius: 12px;
-        font-weight: 700;
-        letter-spacing: 1px;
+        height: 48px;
+        font-weight: 600;
+        border-radius: 8px;
         transition: 0.3s;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        color: white;
     }
 
     .btn-signin:hover {
-        background: #2563eb;
-        transform: translateY(-2px);
+        background: var(--dark-blue);
+        transform: translateY(-1px);
     }
 
-    @keyframes fadeIn {
-        from { opacity: 0; transform: scale(0.95); }
-        to { opacity: 1; transform: scale(1); }
+    .login-footer {
+        margin-top: 3rem;
+        font-size: 0.8rem;
+        color: #adb5bd;
     }
 
-    /* Mobile Responsive */
-    @media (max-width: 900px) {
-        .left-section { display: none; }
-        .main-auth-box { width: 450px; height: auto; padding: 40px 0; }
+    @media (max-width: 992px) {
+        .news-feed { display: none; }
+        .login-section { flex: 1; padding: 20px; }
+    }
+
+    /* SweetAlert Professional Customization */
+    .swal2-professional-popup {
+        font-family: 'Inter', sans-serif !important;
+        border-radius: 12px !important;
+        padding: 2.5rem !important;
+    }
+    .swal2-title {
+        font-weight: 700 !important;
+        color: #1a4a7c !important;
     }
 </style>
 {% endblock %}
 
 {% block auth_content %}
-<div class="login-container">
-    <div class="main-auth-box">
-        
-        <div class="left-section">
-            <div class="mb-4">
-                <i class="fas fa-rocket fa-4xl"></i>
-            </div>
-            <h1>WELCOME TO <br> ERDMS</h1>
-            <p>Electronic Record Document Management System. Secure and efficient digital archiving for the Provincial Government.</p>
+<div class="login-with-news-feed">
+    <div class="news-feed">
+        <div class="left-side-icon">
+            <i class="fas fa-file-shield"></i>
         </div>
+        <div class="news-caption">
+            <h1>Electronic Record Document Management System</h1>
+            <p class="lead opacity-75">Secure, Paperless, and Efficient Governance.</p>
+        </div>
+        <div style="position: absolute; bottom: 0; width: 100%; opacity: 0.2;">
+            <svg viewBox="0 0 1440 320"><path fill="#ffffff" d="M0,160L48,176C96,192,192,224,288,213.3C384,203,480,149,576,149.3C672,149,768,203,864,197.3C960,192,1056,128,1152,117.3C1248,107,1344,149,1392,170.7L1440,192L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>
+        </div>
+    </div>
 
-        <div class="right-section">
+    <div class="login-section">
+        <div class="login-box">
             <div class="text-center mb-5">
-                <img src="{% static 'assets/images/capitol.png' %}" style="width: 80px;" alt="Logo" class="mb-3">
-                <h2 class="fw-bold text-dark mb-1">Provincial Government</h2>
-                <h4 class="text-primary fw-bold">of Catanduanes</h4>
-                <p class="text-muted small">Please enter your credentials</p>
+                <img src="{% static 'assets/image/capitol.png' %}" alt="Logo" style="width: 85px;">
+                <h3 class="fw-bold mt-4" style="color: var(--dark-blue);">Employee Login</h3>
+                <p class="text-muted small">Enter your credentials to access the portal</p>
             </div>
 
-            <form method="POST">
+            {% if messages %}
+                {% for message in messages %}
+                    {% if message.tags == 'error' %}
+                        <script>
+                            window.onload = function() {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Access Denied',
+                                    text: '{{ message }}',
+                                    confirmButtonColor: '#348fe2',
+                                    confirmButtonText: 'Try Again',
+                                    customClass: {
+                                        popup: 'swal2-professional-popup'
+                                    }
+                                });
+                            }
+                        </script>
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+
+            <form method="POST" id="loginForm">
                 {% csrf_token %}
-                <div class="mb-3">
-                    <input type="text" name="username" class="form-control" placeholder="Username" required>
-                </div>
-                <div class="mb-3">
-                    <input type="password" name="password" class="form-control" placeholder="Password" required>
+                
+                <div class="mb-3 text-start">
+                    <label class="form-label">Username</label>
+                    <input type="text" name="username" class="form-control" placeholder="Enter username" required>
                 </div>
                 
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <div class="form-check">
-                        <input type="checkbox" class="form-check-input" id="rememberMe">
-                        <label class="form-check-label small text-muted" for="rememberMe">Remember me</label>
+                <div class="mb-3 text-start">
+                    <label class="form-label">Password</label>
+                    <div class="input-group">
+                        <input type="password" name="password" id="passwordField" class="form-control" placeholder="Enter password" required>
+                        <span class="password-toggle" id="togglePassword">
+                            <i class="fas fa-eye"></i>
+                        </span>
                     </div>
-                    <a href="#" class="small text-decoration-none">Forgot Password?</a>
                 </div>
 
-                <button type="submit" class="btn btn-primary btn-signin w-100 text-white">Sign In</button>
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="rememberMe" name="remember_me">
+                        <label class="form-check-label small text-muted" for="rememberMe">Remember me</label>
+                    </div>
+                    <a href="#" class="small text-decoration-none fw-bold" style="color: var(--primary-blue);">Forgot password?</a>
+                </div>
+
+                <button type="submit" class="btn btn-signin" id="loginBtn">
+                    LOG IN ACCOUNT <i class="fas fa-sign-in-alt ms-2"></i>
+                </button>
+
+                <div class="text-center mt-4">
+                    <span class="text-muted small">Don't have an account?</span> 
+                    <a href="{% url 'register' %}" class="fw-bold text-decoration-none small" style="color: var(--primary-blue);">Register here</a>
+                </div>
             </form>
 
-            <div class="mt-5 text-center small text-muted">
-                Not a member? <a href="{% url 'register' %}" class="text-primary text-decoration-none fw-bold">Register here</a>
+            <div class="login-footer text-center">
+                &copy; Provincial Government of Catanduanes | GO - IT Department 2026
             </div>
         </div>
     </div>
 </div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    $(document).ready(function() {
+        if (window.history.replaceState) {
+            window.history.replaceState(null, null, window.location.href);
+        }
+
+        // 2. Password Visibility Toggle
+        $('#togglePassword').on('click', function() {
+            const passwordField = $('#passwordField');
+            const icon = $(this).find('i');
+            
+            if (passwordField.attr('type') === 'password') {
+                passwordField.attr('type', 'text');
+                icon.removeClass('fa-eye').addClass('fa-eye-slash');
+            } else {
+                passwordField.attr('type', 'password');
+                icon.removeClass('fa-eye-slash').addClass('fa-eye');
+            }
+        });
+
+        // 3. Loading State on Submit
+        $('#loginForm').on('submit', function() {
+            const btn = $('#loginBtn');
+            btn.html('<span class="spinner-border spinner-border-sm me-2"></span> AUTHENTICATING...');
+            btn.prop('disabled', true);
+        });
+    });
+</script>
 {% endblock %}

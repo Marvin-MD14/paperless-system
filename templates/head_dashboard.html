@@ -1,87 +1,72 @@
-{% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Head Dashboard | {{ profile.department.name }}{% endblock %}
+<!-- START Desktop Sidebar -->
+<nav class="sidebar d-none d-lg-block shadow">
+    <div class="p-4 text-center">
+        <img src="{% static 'img/capitol.png' %}" alt="Logo" style="width: 60px;">
+        <h6 class="mt-2 fw-bold text-uppercase">Head Portal</h6>
+    </div>
 
-{% block extra_css %}
-<style>
-    :root {
-        --sidebar-bg: #1e3c72;
-        --sidebar-hover: #2a5298;
-    }
-    body { background-color: #f8f9fa; }
-    
-    .sidebar {
-        min-width: 250px;
-        max-width: 250px;
-        background: var(--sidebar-bg);
-        color: #fff;
-        min-height: 100vh;
-        transition: all 0.3s;
-    }
-    .sidebar .nav-link {
-        color: rgba(255,255,255,0.8);
-        padding: 12px 20px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-    }
-    .sidebar .nav-link:hover {
-        background: var(--sidebar-hover);
-        color: #fff;
-    }
-    .sidebar .dropdown-menu {
-        background: #16305a;
-        border: none;
-        padding: 0;
-        margin: 0;
-    }
-    .sidebar .dropdown-item {
-        color: rgba(255,255,255,0.7);
-        padding: 10px 40px;
-    }
-    .sidebar .dropdown-item:hover {
-        background: #0d2142;
-        color: #fff;
-    }
-    .main-content { width: 100%; }
-    
-    .toggle-btn {
-        display: none;
-        background: var(--sidebar-bg);
-        color: white;
-        border: none;
-        padding: 10px 15px;
-        border-radius: 5px;
-    }
+    <ul class="nav flex-column mt-3">
+        <li class="nav-item">
+            <a href="{% url 'head_dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'head_dashboard' %}active{% endif %}">
+                <span><i class="fas fa-tachometer-alt me-2"></i> Dashboard</span>
+            </a>
+        </li>
 
-    @media (max-width: 992px) {
-        .sidebar { display: none; }
-        .toggle-btn { display: block; }
-    }
-</style>
-{% endblock %}
+        <li class="nav-item">
+            <a class="nav-link dropdown-toggle" href="#" id="mainPageDropdown" role="button" data-bs-toggle="collapse" data-bs-target="#mainPageMenu">
+                <span><i class="fas fa-folder me-2"></i> Main Page</span>
+            </a>
+            <div class="collapse" id="mainPageMenu">
+                <ul class="nav flex-column ms-3">
+                    <li><a class="dropdown-item" href="#">Page 1</a></li>
+                    <li><a class="dropdown-item" href="#">Page 2</a></li>
+                </ul>
+            </div>
+        </li>
 
-{% block content %}
-<div class="d-flex">
-    <nav class="sidebar d-none d-lg-block shadow">
-        <div class="p-4 text-center">
-            <img src="{% static 'img/capitol.png' %}" alt="Logo" style="width: 60px;">
-            <h6 class="mt-2 fw-bold text-uppercase">Head Portal</h6>
-        </div>
-        
-        <ul class="nav flex-column mt-3">
+        <li class="nav-item">
+            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#docsMenu">
+                <span><i class="fas fa-file-invoice me-2"></i> Documents</span>
+            </a>
+            <div class="collapse" id="docsMenu">
+                <ul class="nav flex-column ms-3">
+                    <li><a class="dropdown-item" href="#">Incoming</a></li>
+                    <li><a class="dropdown-item" href="#">Outgoing</a></li>
+                    <li><a class="dropdown-item" href="#">Archived</a></li>
+                </ul>
+            </div>
+        </li>
+
+        <!-- Logout -->
+        <li class="nav-item mt-4">
+            <a href="{% url 'logout' %}" class="nav-link text-danger">
+                <span><i class="fas fa-sign-out-alt me-2"></i> Logout</span>
+            </a>
+        </li>
+    </ul>
+</nav>
+<!-- END Desktop Sidebar -->
+
+<!-- START Mobile Offcanvas Sidebar -->
+<div class="offcanvas offcanvas-start sidebar" tabindex="-1" id="offcanvasSidebar" style="width: 250px;">
+    <div class="offcanvas-header justify-content-end">
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body p-0">
+        <ul class="nav flex-column">
             <li class="nav-item">
-                <a href="#" class="nav-link">
+                <a href="{% url 'head_dashboard' %}" class="nav-link">
                     <span><i class="fas fa-tachometer-alt me-2"></i> Dashboard</span>
                 </a>
             </li>
 
             <li class="nav-item">
-                <a class="nav-link dropdown-toggle" href="#" id="mainPageDropdown" role="button" data-bs-toggle="collapse" data-bs-target="#mainPageMenu">
+                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#mobileMainPage">
                     <span><i class="fas fa-folder me-2"></i> Main Page</span>
                 </a>
-                <div class="collapse" id="mainPageMenu">
+                <div class="collapse" id="mobileMainPage">
                     <ul class="nav flex-column ms-3">
                         <li><a class="dropdown-item" href="#">Page 1</a></li>
                         <li><a class="dropdown-item" href="#">Page 2</a></li>
@@ -90,10 +75,10 @@
             </li>
 
             <li class="nav-item">
-                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#docsMenu">
+                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#mobileDocsMenu">
                     <span><i class="fas fa-file-invoice me-2"></i> Documents</span>
                 </a>
-                <div class="collapse" id="docsMenu">
+                <div class="collapse" id="mobileDocsMenu">
                     <ul class="nav flex-column ms-3">
                         <li><a class="dropdown-item" href="#">Incoming</a></li>
                         <li><a class="dropdown-item" href="#">Outgoing</a></li>
@@ -108,111 +93,6 @@
                 </a>
             </li>
         </ul>
-    </nav>
-
-    <div class="main-content">
-        <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm px-4">
-            <button class="toggle-btn me-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasSidebar">
-                <i class="fas fa-bars"></i>
-            </button>
-            <span class="navbar-brand fw-bold text-primary">PAPERLESS SYSTEM</span>
-            
-            <div class="ms-auto d-flex align-items-center">
-                <span class="text-muted small d-none d-md-block me-3">Welcome, {{ request.user.username }}</span>
-                <a href="{% url 'logout' %}" class="btn btn-sm btn-outline-danger">Logout</a>
-            </div>
-        </nav>
-
-        <div class="container-fluid py-4">
-            <div class="row mb-4">
-                <div class="col-md-8">
-                    <h2 class="fw-bold text-primary">Department Portal</h2>
-                    <p class="text-muted">Head of {{ profile.department.name|default:"Unassigned Office" }}</p>
-                </div>
-                <div class="col-md-4 text-end">
-                    <div class="p-2 bg-white shadow-sm rounded d-inline-block">
-                        <span class="text-muted small">Date:</span>
-                        <span class="fw-bold ms-2">{% now "F j, Y" %}</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row g-3 mb-4">
-                <div class="col-md-4">
-                    <div class="card border-0 shadow-sm p-4">
-                        <div class="d-flex align-items-center">
-                            <div class="icon-box bg-primary text-white rounded-circle p-3 me-3" style="width:60px; height:60px; display:flex; align-items:center; justify-content:center;">
-                                <i class="fas fa-users fa-2x"></i>
-                            </div>
-                            <div>
-                                <h6 class="text-muted mb-0">My Staff Members</h6>
-                                <h2 class="fw-bold mb-0">{{ my_staff.count }}</h2>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card border-0 shadow-sm p-4 text-white" style="background: linear-gradient(45deg, #1e3c72, #2a5298);">
-                        <h6 class="mb-1 opacity-75">Department Focus</h6>
-                        <h4 class="fw-bold">{{ profile.department.name|upper }}</h4>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white py-3">
-                    <h5 class="mb-0 fw-bold">Staff Directory</h5>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Employee Name</th>
-                                    <th>Role</th>
-                                    <th>Date Joined</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for staff in my_staff %}
-                                <tr>
-                                    <td class="fw-bold">{{ staff.user.username }}</td>
-                                    <td><span class="badge bg-info text-dark">{{ staff.role }}</span></td>
-                                    <td>{{ staff.user.date_joined|date:"M d, Y" }}</td>
-                                    <td><span class="badge bg-success">Active</span></td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 </div>
-
-<div class="offcanvas offcanvas-start sidebar" tabindex="-1" id="offcanvasSidebar" style="width: 250px;">
-    <div class="offcanvas-header justify-content-end">
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
-    </div>
-    <div class="offcanvas-body p-0">
-        <ul class="nav flex-column">
-            <li class="nav-item">
-                <a href="#" class="nav-link"><span><i class="fas fa-tachometer-alt me-2"></i> Dashboard</span></a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#mobileMainPage">
-                    <span><i class="fas fa-folder me-2"></i> Main Page</span>
-                </a>
-                <div class="collapse" id="mobileMainPage">
-                    <ul class="nav flex-column ms-3">
-                        <li><a class="dropdown-item" href="#">Page 1</a></li>
-                        <li><a class="dropdown-item" href="#">Page 2</a></li>
-                    </ul>
-                </div>
-            </li>
-        </ul>
-    </div>
-</div>
-{% endblock %}
+<!-- END Mobile Offcanvas Sidebar -->
