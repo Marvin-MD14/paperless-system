@@ -1,20 +1,20 @@
 /* static/assets/css/admin_style.css */
 
-/* Pinaka-importante para ma-center ang card sa gitna ng screen */
+
 body.admin-body { 
     background: radial-gradient(circle, #1a1a2e 0%, #16213e 100%); 
     height: 100vh;
     margin: 0;
     display: flex;
-    align-items: center; /* Vertical center */
-    justify-content: center; /* Horizontal center */
+    align-items: center;
+    justify-content: center; 
 }
 
 .admin-card { 
     border-radius: 20px; 
     background-color: #0f3460;
     border: 2px solid #e94560;
-    min-width: 400px; /* Para hindi masyadong payat ang card */
+    min-width: 400px; 
 }
 
 .admin-header { 
@@ -27,15 +27,14 @@ body.admin-body {
     width: 90px; 
 }
 
-/* Ginawang white ang text color at placeholder */
 .admin-card .form-control {
     background-color: #1a1a2e;
     border: 1px solid #4e4e6a;
-    color: #ffffff !important; /* Puting text habang nagta-type */
+    color: #ffffff !important; 
 }
 
 .admin-card .form-control::placeholder {
-    color: #a0a0c0; /* Light gray para sa placeholder */
+    color: #a0a0c0; 
 }
 
 .admin-card .form-control:focus {

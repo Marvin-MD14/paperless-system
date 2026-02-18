@@ -1,7 +1,4 @@
 
-/* LOGIN FORM */
-
-/* Tatanggalin natin ang padding ng default container para saktong split screen */
     body, html {
         height: 100%;
         margin: 0;
@@ -13,15 +10,14 @@
         width: 100%;
     }
 
-    /* Left Side: Branding & Info */
     .left-section {
-        flex: 1.5; /* Mas malawak ang left side */
+        flex: 1.5; 
         background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), 
                     url('{% static "assets/img/background_office.jpg" %}') no-repeat center center;
         background-size: cover;
         display: flex;
         flex-direction: column;
-        justify-content: flex-end; /* I-pwesto ang text sa baba katulad ng example */
+        justify-content: flex-end; 
         padding: 60px;
         color: white;
     }
@@ -38,10 +34,9 @@
         opacity: 0.8;
     }
 
-    /* Right Side: Login Form */
     .right-section {
         flex: 1;
-        background-color: #1a1a1a; /* Dark theme katulad ng example mo */
+        background-color: #1a1a1a; 
         color: white;
         display: flex;
         flex-direction: column;
@@ -94,8 +89,7 @@
         text-decoration: none;
     }
 
-    /* Responsive */
     @media (max-width: 992px) {
-        .left-section { display: none; } /* Itago ang left side sa mobile */
+        .left-section { display: none; } 
         .right-section { flex: 1; padding: 40px; }
     }

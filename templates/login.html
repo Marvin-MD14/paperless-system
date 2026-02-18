@@ -212,22 +212,7 @@
 
             {% if messages %}
                 {% for message in messages %}
-                    {% if message.tags == 'error' %}
-                        <script>
-                            window.onload = function() {
-                                Swal.fire({
-                                    icon: 'error',
-                                    title: 'Access Denied',
-                                    text: '{{ message }}',
-                                    confirmButtonColor: '#348fe2',
-                                    confirmButtonText: 'Try Again',
-                                    customClass: {
-                                        popup: 'swal2-professional-popup'
-                                    }
-                                });
-                            }
-                        </script>
-                    {% endif %}
+                    <div class="alert alert-danger py-2 small text-center">{{ message }}</div>
                 {% endfor %}
             {% endif %}
 

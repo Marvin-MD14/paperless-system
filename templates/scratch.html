@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Employee Dashboard | EDMS{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold text-dark">Welcome back, {{ request.user.username }}!</h2>
+            <p class="text-muted">
+                <i class="fas fa-building me-1"></i> Office: <strong>{{ profile.office.office_name }}</strong> | 
+                <span class="badge bg-primary">{{ profile.role }}</span>
+            </p>
+        </div>
+        <div>
+            <button class="btn btn-primary shadow-sm px-4" style="background-color: #348fe2; border: none;">
+                <i class="fas fa-plus me-2"></i> New Document
+            </button>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm p-3">
+                <div class="d-flex align-items-center">
+                    <div class="icon-box bg-light-blue p-3 rounded-3 me-3">
+                        <i class="fas fa-file-alt fa-2x text-primary"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-muted mb-0">My Uploads</h6>
+                        <h3 class="fw-bold mb-0">{{ my_uploads_count }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm p-3">
+                <div class="d-flex align-items-center">
+                    <div class="icon-box bg-light-success p-3 rounded-3 me-3">
+                        <i class="fas fa-inbox fa-2x text-success"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-muted mb-0">Incoming Docs (Office)</h6>
+                        <h3 class="fw-bold mb-0">{{ office_docs_count }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3 border-0">
+                    <h5 class="mb-0 fw-bold text-dark">My Recent Uploads</h5>
+                </div>
+                <div class="card-body pt-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Ref No.</th>
+                                    <th>Document Title</th>
+                                    <th>Date</th>
+                                    <th>Status</th>
+                                    <th class="text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for doc in my_uploads %}
+                                <tr>
+                                    <td><span class="text-muted small">#{{ doc.id }}</span></td>
+                                    <td><span class="fw-bold text-dark">{{ doc.title }}</span></td>
+                                    <td>{{ doc.created_at|date:"M d, Y" }}</td>
+                                    <td>
+                                        {% if doc.status == 'PENDING' %}
+                                            <span class="badge rounded-pill bg-warning text-dark">Pending</span>
+                                        {% elif doc.status == 'COMPLETED' %}
+                                            <span class="badge rounded-pill bg-success">Completed</span>
+                                        {% else %}
+                                            <span class="badge rounded-pill bg-info text-dark">{{ doc.status }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        <a href="#" class="btn btn-sm btn-outline-primary rounded-circle">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted py-5">
+                                        <i class="fas fa-folder-open d-block mb-2 fa-3x opacity-25"></i>
+                                        No documents uploaded yet.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="fw-bold mb-3 text-dark">System Notification</h5>
+                    <div class="alert alert-primary border-0 small mb-0" style="background-color: #f0f7ff; color: #004a99;">
+                        <i class="fas fa-info-circle me-2"></i> 
+                        <strong>Pro Tip:</strong> Ensure all scanned documents are in <strong>PDF format</strong> before uploading to maintain quality.
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h6 class="fw-bold mb-3">Quick Links</h6>
+                    <div class="list-group list-group-flush small">
+                        <a href="#" class="list-group-item list-group-item-action border-0 px-0">
+                            <i class="fas fa-search me-2 text-muted"></i> Track a Document
+                        </a>
+                        <a href="#" class="list-group-item list-group-item-action border-0 px-0">
+                            <i class="fas fa-history me-2 text-muted"></i> Activity Logs
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .bg-light-blue { background-color: #e3f2fd; }
+    .bg-light-success { background-color: #e8f5e9; }
+    .card { border-radius: 12px; transition: transform 0.2s; }
+    .table thead th { border-top: none; font-size: 0.75rem; text-transform: uppercase; color: #888; letter-spacing: 1px; }
+    .badge { font-weight: 500; padding: 0.5em 0.8em; }
+    .icon-box { min-width: 60px; text-align: center; }
+</style>
+{% endblock %}
