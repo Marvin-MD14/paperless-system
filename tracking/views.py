@@ -110,14 +110,19 @@ def admin_dashboard(request):
         except Exception as e:
             messages.error(request, f"Error: {e}")
 
+    # Calculate individual counts
+    governor_count = UserProfile.objects.filter(role='GOVERNOR').count()
+    heads_count = UserProfile.objects.filter(role='HEAD').count()
+    executive_count = UserProfile.objects.filter(role='EXECUTIVE').count()
+    staff_count = UserProfile.objects.filter(role='STAFF').count()
+
     context = {
         'offices': offices,
         'profiles': profiles,
-        'counts': {
-            'HEAD': UserProfile.objects.filter(role='HEAD').count(),
-            'STAFF': UserProfile.objects.filter(role='STAFF').count(),
-            'EXEC': UserProfile.objects.filter(role__in=['GOVERNOR', 'EXECUTIVE']).count(),
-        }
+        'governor_count': governor_count,
+        'heads_count': heads_count,
+        'executive_count': executive_count,
+        'staff_count': staff_count,
     }
     return render(request, 'admin_dashboard.html', context)
 
