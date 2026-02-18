@@ -10,9 +10,12 @@ body, .wrapper .section-container {
 /* ========================================================================
    Component: top-navbar
  ========================================================================== */
+.topnavbar-wrapper {
+  background-color: #0066cc !important;
+}
 .topnavbar {
-  background-color: #23b7e5;
-  background-image: linear-gradient(to right, #23b7e5 0%, #51c6ea 100%);
+  background-color: #0066cc !important;
+  /* background-image: linear-gradient(to right, #23b7e5 0%, #51c6ea 100%); */
   background-repeat: repeat-x; }
   @media (min-width: 992px) {
     .topnavbar .navbar-nav > .nav-item.show > .nav-link, .topnavbar .navbar-nav > .nav-item.show > .nav-link:hover, .topnavbar .navbar-nav > .nav-item.show > .nav-link:focus {
@@ -46,13 +49,13 @@ body, .wrapper .section-container {
 
 .sidebar-nav > li.active, .sidebar-nav > li.active > a, .sidebar-nav > li.active > .nav-item, .sidebar-nav > li.active .sidebar-nav, .sidebar-nav > li.open, .sidebar-nav > li.open > a, .sidebar-nav > li.open > .nav-item, .sidebar-nav > li.open .sidebar-nav {
   background-color: #fcfcfc;
-  color: #23b7e5; }
+  color: #0066cc; }
 
 .sidebar-nav > li.active > .nav-item > em, .sidebar-nav > li.active > a > em, .sidebar-nav > li.open > .nav-item > em, .sidebar-nav > li.open > a > em {
-  color: #23b7e5; }
+  color: #0066cc; }
 
 .sidebar-nav > li.active {
-  border-left-color: #23b7e5; }
+  border-left-color: #0066cc; }
 
 .sidebar-subnav {
   background-color: #fff; }
