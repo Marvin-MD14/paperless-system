@@ -21,7 +21,7 @@
         </div>
         <div class="col-md-3">
             <div class="card border-0 shadow-sm p-3 border-start border-success border-5">
-                <small class="text-muted fw-bold">DEPARTMENT HEADS</small>
+                <small class="text-muted fw-bold">OFFICE HEADS</small>
                 <h3 class="fw-bold">{{ heads_count }}</h3>
             </div>
         </div>
@@ -49,7 +49,7 @@
                     <thead class="table-light">
                         <tr>
                             <th>Username</th>
-                            <th>Department</th>
+                            <th>Office</th>
                             <th>Role</th>
                             <th>Status</th>
                             <th>Action</th>
@@ -59,7 +59,7 @@
                         {% for profile in profiles %}
                         <tr>
                             <td class="fw-bold">{{ profile.user.username }}</td>
-                            <td>{{ profile.department.name|default:"General" }}</td>
+                            <td>{{ profile.office.office_name|default:"General" }}</td>
                             <td><span class="badge bg-secondary">{{ profile.role }}</span></td>
                             <td><span class="badge bg-success">Active</span></td>
                             <td>
@@ -78,39 +78,39 @@
     </div>
 </div>
 
-<!-- Add User Modal - UPDATED FOR BOOTSTRAP 4 -->
+<!-- Add User Modal -->
 <div class="modal fade" id="addUserModal" tabindex="-1" role="dialog" aria-labelledby="addUserModalLabel" aria-hidden="true">
-    <div class="modal-dialog" role="document">
+    <div class="modal-dialog modal-dialog-centered" role="document">  
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title fw-bold" id="addUserModalLabel">Register New User</h5>
+                <h5 class="modal-title" id="addUserModalLabel">Register New User</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-            <form method="POST">
+            <form method="POST" id="addUserForm">
                 {% csrf_token %}
                 <div class="modal-body">
-                    <div class="form-group mb-3">
-                        <label class="form-label">Username</label>
-                        <input type="text" name="username" class="form-control" required>
+                    <div class="form-group">
+                        <label for="username">Username</label>
+                        <input type="text" class="form-control" id="username" name="username" required>
                     </div>
-                    <div class="form-group mb-3">
-                        <label class="form-label">Password</label>
-                        <input type="password" name="password" class="form-control" required>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
                     </div>
-                    <div class="form-group mb-3">
-                        <label class="form-label">Department</label>
-                        <select name="department" class="form-control">
-                            <option value="">Select Department</option>
-                            {% for dept in departments %}
-                            <option value="{{ dept.id }}">{{ dept.name }}</option>
+                    <div class="form-group">
+                        <label for="office">Office</label>
+                        <select class="form-control" id="office" name="office" required>
+                            <option value="">Select Office</option>
+                            {% for office in offices %}
+                            <option value="{{ office.id }}">{{ office.office_name }}</option>
                             {% endfor %}
                         </select>
                     </div>
-                    <div class="form-group mb-3">
-                        <label class="form-label">Role</label>
-                        <select name="role" class="form-control">
+                    <div class="form-group">
+                        <label for="role">Role</label>
+                        <select class="form-control" id="role" name="role">
                             <option value="STAFF">STAFF</option>
                             <option value="HEAD">HEAD</option>
                             <option value="EXECUTIVE">EXECUTIVE</option>
@@ -127,21 +127,22 @@
     </div>
 </div>
 
-<!-- Display messages -->
-{% if messages %}
+<!-- {% if messages %}
 <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
     {% for message in messages %}
-    <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
+    <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true" data-autohide="true" data-delay="3000">
         <div class="toast-header 
             {% if message.tags == 'success' %}bg-success text-white
             {% elif message.tags == 'error' %}bg-danger text-white
             {% else %}bg-secondary text-white{% endif %}">
-            <strong class="me-auto">
+            <strong class="mr-auto">
                 {% if message.tags == 'success' %}Success
                 {% elif message.tags == 'error' %}Error
                 {% else %}Notification{% endif %}
             </strong>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+            <button type="button" class="ml-2 mb-1 close text-white" data-dismiss="toast" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
         </div>
         <div class="toast-body">
             {{ message }}
@@ -149,17 +150,27 @@
     </div>
     {% endfor %}
 </div>
-{% endif %}
+{% endif %} -->
 
+{% endblock %}
+
+{% block extra_js %}
 <script>
-    // Auto-hide toasts after 3 seconds
-    document.addEventListener('DOMContentLoaded', function() {
-        var toasts = document.querySelectorAll('.toast');
-        toasts.forEach(function(toast) {
-            setTimeout(function() {
-                toast.classList.remove('show');
-            }, 3000);
-        });
+$(document).ready(function() {
+    // Move modal to root container to avoid z-index conflicts
+    $('#addUserModal').appendTo('.modal-root-container');
+    
+    // Fix for theme's custom positioning
+    $('#addUserModal').on('show.bs.modal', function() {
+        $('body').addClass('modal-open');
+        // Remove any theme-specific classes that might interfere
+        $('.wrapper').css('z-index', 'auto');
     });
+    
+    $('#addUserModal').on('hidden.bs.modal', function() {
+        $('body').removeClass('modal-open');
+        $('.modal-backdrop').remove();
+    });
+});
 </script>
 {% endblock %}

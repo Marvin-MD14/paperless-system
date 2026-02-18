@@ -1,56 +1,57 @@
+# tracking/models.py
 from django.db import models
 from django.contrib.auth.models import User
+from .choices import OFFICE_CHOICES, OFFICE_DICT, STATUS_CHOICES
 
-# Maps to 'Office' in your ERD
 class Office(models.Model):
-    office_name = models.CharField(max_length=150, unique=True)
-    # Self-reference for parent offices/departments
-    parent_office = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='sub_offices')
-
+    office_code = models.CharField(max_length=50, choices=OFFICE_CHOICES, unique=True)
+    office_name = models.CharField(max_length=255)
+    
     def __str__(self):
         return self.office_name
+    
+    class Meta:
+        ordering = ['office_name']
 
 class UserProfile(models.Model):
-    ROLE_CHOICES = [
+    ROLE_CHOICES = (
+        ('HEAD', 'Department Head'),
+        ('STAFF', 'Staff'),
         ('GOVERNOR', 'Governor'),
         ('EXECUTIVE', 'Executive'),
-        ('HEAD', 'Department Head'),
-        ('STAFF', 'Department Staff'),
-    ]
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    office = models.ForeignKey(Office, on_delete=models.CASCADE, null=True, blank=True)
-    role = models.CharField(max_length=15, choices=ROLE_CHOICES)
-
+    )
+    
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='userprofile')
+    office = models.ForeignKey(Office, on_delete=models.SET_NULL, null=True, blank=True)
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='STAFF')
+    
     def __str__(self):
-        return f"{self.user.username} ({self.role})"
+        return f"{self.user.username} - {self.role}"
 
 class Document(models.Model):
+    STATUS_CHOICES = (
+        ('PENDING', 'Pending'),
+        ('APPROVED', 'Approved'),
+        ('REJECTED', 'Rejected'),
+        ('FOR_REVIEW', 'For Review'),
+        ('COMPLETED', 'Completed'),
+    )
+    
     title = models.CharField(max_length=255)
-    content_ocr = models.TextField(null=True, blank=True)
-    file_hash = models.CharField(max_length=64, unique=True)
-    
-    # Tracking ownership
-    origin_office = models.ForeignKey(Office, on_delete=models.PROTECT, related_name='originated_documents')
-    creator = models.ForeignKey(User, on_delete=models.PROTECT, related_name='created_documents')
-    
+    description = models.TextField(blank=True)
+    file = models.FileField(upload_to='documents/')
+    creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_documents')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
     
-    status = models.CharField(max_length=50, default='PENDING')
-
     def __str__(self):
         return self.title
 
-class DocumentRouting(models.Model):
+class Routing(models.Model):
     document = models.ForeignKey(Document, on_delete=models.CASCADE, related_name='routings')
-    from_office = models.ForeignKey(Office, on_delete=models.PROTECT, related_name='sent_routings')
-    to_office = models.ForeignKey(Office, on_delete=models.PROTECT, related_name='received_routings')
-    
-    routed_by = models.ForeignKey(User, on_delete=models.PROTECT)
+    from_office = models.ForeignKey(Office, on_delete=models.SET_NULL, null=True, related_name='routings_from')
+    to_office = models.ForeignKey(Office, on_delete=models.SET_NULL, null=True, related_name='routings_to')
     routed_at = models.DateTimeField(auto_now_add=True)
-    
-    remarks = models.TextField(blank=True)
-    is_final = models.BooleanField(default=False)
-
-    class Meta:
-        ordering = ['-routed_at']
+    notes = models.TextField(blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
