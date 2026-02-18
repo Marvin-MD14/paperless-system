@@ -1,7 +1,9 @@
+{% extends 'base.html' %}
+
 {% load static %}
 
 <!-- START Desktop Sidebar -->
-<nav class="sidebar d-none d-lg-block shadow">
+<!-- <nav class="sidebar d-none d-lg-block shadow">
     <div class="p-4 text-center">
         <img src="{% static 'img/capitol.png' %}" alt="Logo" style="width: 60px;">
         <h6 class="mt-2 fw-bold text-uppercase">Head Portal</h6>
@@ -39,21 +41,18 @@
             </div>
         </li>
 
-        <!-- Logout -->
         <li class="nav-item mt-4">
             <a href="{% url 'logout' %}" class="nav-link text-danger">
                 <span><i class="fas fa-sign-out-alt me-2"></i> Logout</span>
             </a>
         </li>
     </ul>
-</nav>
+</nav> -->
 <!-- END Desktop Sidebar -->
 
+{% block content %}
 <!-- START Mobile Offcanvas Sidebar -->
 <div class="offcanvas offcanvas-start sidebar" tabindex="-1" id="offcanvasSidebar" style="width: 250px;">
-    <div class="offcanvas-header justify-content-end">
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
-    </div>
     <div class="offcanvas-body p-0">
         <ul class="nav flex-column">
             <li class="nav-item">
@@ -86,13 +85,8 @@
                     </ul>
                 </div>
             </li>
-
-            <li class="nav-item mt-4">
-                <a href="{% url 'logout' %}" class="nav-link text-danger">
-                    <span><i class="fas fa-sign-out-alt me-2"></i> Logout</span>
-                </a>
-            </li>
         </ul>
     </div>
 </div>
 <!-- END Mobile Offcanvas Sidebar -->
+{% endblock %}
