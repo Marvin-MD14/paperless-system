@@ -10,6 +10,7 @@
     <link href="{% static 'assets/css/bootstrap.css' %}" rel="stylesheet">
     <link href="{% static 'assets/css/app.css' %}" rel="stylesheet">
     <link href="{% static 'assets/css/themes/theme-a.css' %}" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'assets/vendor/simple-line-icons/css/simple-line-icons.css' %}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     
@@ -31,8 +32,8 @@
                                 <img src="{% static 'assets/img/capitol_logo.png' %}" alt="Logo"> EDMS
                             </a>
                             <div class="ms-auto d-flex align-items-center">
-                                <span class="text-white me-3 small d-none d-md-block">Welcome, {{ user.username|title }}</span>
-                                <a href="{% url 'logout' %}" class="btn btn-outline-light btn-sm">
+                                <span class="text-white me-4 small d-none d-md-block">Welcome, {{ user.username|title }}</span>
+                                <a href="{% url 'logout' %}" class="btn btn-outline-light btn-sm ps-2">
                                     <em class="icon-logout"></em> Logout
                                 </a>
                             </div>
