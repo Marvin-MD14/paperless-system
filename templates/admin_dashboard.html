@@ -48,7 +48,7 @@
                 <table class="table table-hover align-middle">
                     <thead class="table-light">
                         <tr>
-                            <th>Username</th>
+                            <th>Full Name / Email</th>
                             <th>Office</th>
                             <th>Role</th>
                             <th>Status</th>
@@ -58,7 +58,10 @@
                     <tbody>
                         {% for profile in profiles %}
                         <tr>
-                            <td class="fw-bold">{{ profile.user.username }}</td>
+                            <td class="fw-bold">
+                                {{ profile.user.get_full_name|default:profile.user.username }} <br>
+                                <small class="text-muted">{{ profile.user.email }}</small>
+                            </td>
                             <td>{{ profile.office.office_name|default:"General" }}</td>
                             <td><span class="badge bg-secondary">{{ profile.role }}</span></td>
                             <td><span class="badge bg-success">Active</span></td>
@@ -92,8 +95,12 @@
                 {% csrf_token %}
                 <div class="modal-body">
                     <div class="form-group">
-                        <label for="username">Username</label>
-                        <input type="text" class="form-control" id="username" name="username" required>
+                        <label for="full_name">Full Name</label>
+                        <input type="text" class="form-control" id="full_name" name="full_name" placeholder="Enter full name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email Address</label>
+                        <input type="email" class="form-control" id="email" name="email" required>
                     </div>
                     <div class="form-group">
                         <label for="password">Password</label>
@@ -127,7 +134,7 @@
     </div>
 </div>
 
-<!-- {% if messages %}
+<!-- {% if messages %} -->
 <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
     {% for message in messages %}
     <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true" data-autohide="true" data-delay="3000">
@@ -150,7 +157,7 @@
     </div>
     {% endfor %}
 </div>
-{% endif %} -->
+<!-- {% endif %} -->
 
 {% endblock %}
 

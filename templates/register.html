@@ -15,7 +15,8 @@
         --border-color: #d0d5dd;
     }
 
-    body, html {
+    body,
+    html {
         height: 100%;
         margin: 0;
         font-family: 'Inter', sans-serif;
@@ -44,9 +45,17 @@
     }
 
     @keyframes gradientBG {
-        0% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
-        100% { background-position: 0% 50%; }
+        0% {
+            background-position: 0% 50%;
+        }
+
+        50% {
+            background-position: 100% 50%;
+        }
+
+        100% {
+            background-position: 0% 50%;
+        }
     }
 
     .login-section {
@@ -56,13 +65,13 @@
         align-items: center;
         justify-content: center;
         padding: 30px;
-        box-shadow: -10px 0 30px rgba(0,0,0,0.05);
+        box-shadow: -10px 0 30px rgba(0, 0, 0, 0.05);
     }
 
     .login-box {
         width: 100%;
         max-width: 400px;
-        position: relative; 
+        position: relative;
     }
 
     .form-label {
@@ -74,7 +83,8 @@
         /* text-align: left; */
     }
 
-    .form-control, .form-select {
+    .form-control,
+    .form-select {
         display: block;
         width: 100%;
         height: 48px;
@@ -86,7 +96,7 @@
         background-color: #fff;
     }
 
-    
+
     .select2-container {
         width: 100% !important;
         display: block;
@@ -118,7 +128,7 @@
     .select2-dropdown {
         border: 1px solid var(--border-color) !important;
         border-radius: 8px !important;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
         z-index: 1060;
         overflow: hidden;
     }
@@ -175,8 +185,13 @@
     }
 
     @media (max-width: 992px) {
-        .news-feed { display: none; }
-        .login-section { flex: 1; }
+        .news-feed {
+            display: none;
+        }
+
+        .login-section {
+            flex: 1;
+        }
     }
 </style>
 {% endblock %}
@@ -187,11 +202,15 @@
             <i class="fas fa-file-shield mb-4" style="font-size: 5rem;"></i>
             <h1>Electronic Record Document Management System</h1>
             <p class="lead opacity-75">Secure, Paperless, and Efficient Governance.</p>
-            </div>
-            <div style="position: absolute; bottom: 0; width: 100%; opacity: 0.2;">
-            <svg viewBox="0 0 1440 320"><path fill="#ffffff" d="M0,160L48,176C96,192,192,224,288,213.3C384,203,480,149,576,149.3C672,149,768,203,864,197.3C960,192,1056,128,1152,117.3C1248,107,1344,149,1392,170.7L1440,192L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>
         </div>
-        
+        <div style="position: absolute; bottom: 0; width: 100%; opacity: 0.2;">
+            <svg viewBox="0 0 1440 320">
+                <path fill="#ffffff"
+                    d="M0,160L48,176C96,192,192,224,288,213.3C384,203,480,149,576,149.3C672,149,768,203,864,197.3C960,192,1056,128,1152,117.3C1248,107,1344,149,1392,170.7L1440,192L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z">
+                </path>
+            </svg>
+        </div>
+
     </div>
 
     <div class="login-section">
@@ -202,17 +221,17 @@
                 <p class="text-muted small">Enter your details to create an account</p>
             </div>
 
-           {% if messages %}
-    {% for message in messages %}
-        <script>
-            window.onload = function() {
-                {% if message.tags == "success" %}
+            {% if messages %}
+            {% for message in messages %}
+            <script>
+                window.onload = function () {
+                    {% if message.tags == "success" %}
                     Swal.fire({
                         icon: 'success',
                         title: 'Registration Successful!',
                         text: '{{ message }}',
-                        confirmButtonColor: '#348fe2', 
-                        iconColor: '#348fe2',          
+                        confirmButtonColor: '#348fe2',
+                        iconColor: '#348fe2',
                         confirmButtonText: 'PROCEED TO LOGIN',
                         allowOutsideClick: false,
                         showClass: {
@@ -223,36 +242,47 @@
                             window.location.href = "{% url 'login' %}";
                         }
                     });
-                {% else %}
+                    {% else %}
                     Swal.fire({
                         icon: 'error',
                         title: 'Registration Rejected',
                         text: '{{ message }}',
-                        confirmButtonColor: '#1a4a7c', 
+                        confirmButtonColor: '#1a4a7c',
                         background: '#fff'
                     });
-                {% endif %}
-            }
-        </script>
-    {% endfor %}
-{% endif %}
+                    {% endif %}
+                }
+            </script>
+            {% endfor %}
+            {% endif %}
 
             <form method="POST" id="registerForm" name="signup">
                 {% csrf_token %}
-                
+
                 <div class="mb-3">
-                    <label class="form-label">Username</label>
-                    <input type="text" name="username" id="username" class="form-control" placeholder="Choose a username" required>
+                    <label class="form-label">Full Name</label>
+                    <input type="text" name="full_name" class="form-control" placeholder="Enter your full name"
+                        required>
                 </div>
+
+
+                <div class="mb-3">
+                    <label class="form-label">Email Address</label>
+                    <input type="email" name="username" class="form-control" placeholder="Enter your email address"
+                        required>
+                </div>
+
 
                 <div class="mb-3">
                     <label class="form-label">Password</label>
-                    <input type="password" name="pwd" id="pwd" class="form-control" placeholder="Create a password" required>
+                    <input type="password" name="pwd" id="pwd" class="form-control" placeholder="Create a password"
+                        required>
                 </div>
 
                 <div class="mb-3">
                     <label class="form-label">Confirm Password</label>
-                    <input type="password" name="cpwd" id="cpwd" class="form-control" placeholder="Confirm your password" required>
+                    <input type="password" name="cpwd" id="cpwd" class="form-control"
+                        placeholder="Confirm your password" required>
                 </div>
 
                 <div class="mb-4">
@@ -260,7 +290,7 @@
                     <select name="office" class="form-select select2" id="office-select" required>
                         <option value="" disabled selected>Search your office...</option>
                         {% for office in offices %}
-                            <option value="{{ office.id }}">{{ office.office_name }}</option>
+                        <option value="{{ office.id }}">{{ office.office_name }}</option>
                         {% endfor %}
                     </select>
                 </div>
@@ -270,8 +300,9 @@
                 </button>
 
                 <div class="text-center mt-3">
-                    <span class="text-muted small">Already have an account?</span> 
-                    <a href="{% url 'login' %}" class="fw-bold text-decoration-none" style="color: var(--primary-blue); font-size: 0.9rem;">Click Here</a>
+                    <span class="text-muted small">Already have an account?</span>
+                    <a href="{% url 'login' %}" class="fw-bold text-decoration-none"
+                        style="color: var(--primary-blue); font-size: 0.9rem;">Click Here</a>
                 </div>
             </form>
 
@@ -287,7 +318,7 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
-    $(document).ready(function() {
+    $(document).ready(function () {
         $('#office-select').select2({
             width: '100%',
             placeholder: "Search your office...",
@@ -295,12 +326,12 @@
             dropdownParent: $('.login-box')
         });
 
-        $('#registerForm').on('submit', function(e) {
+        $('#registerForm').on('submit', function (e) {
             const pwd = $('#pwd').val();
             const cpwd = $('#cpwd').val();
 
             if (pwd !== cpwd) {
-                e.preventDefault(); 
+                e.preventDefault();
                 Swal.fire({
                     icon: 'error',
                     title: 'Mismatch!',
