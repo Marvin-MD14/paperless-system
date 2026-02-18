@@ -43,7 +43,7 @@ body, .wrapper .section-container {
 .sidebar-nav > li > a, .sidebar-nav > li > .nav-item {
   color: #515253; }
   .sidebar-nav > li > a:focus, .sidebar-nav > li > a:hover, .sidebar-nav > li > .nav-item:focus, .sidebar-nav > li > .nav-item:hover {
-    color: #23b7e5; }
+    color: #0066cc; }
   .sidebar-nav > li > a > em, .sidebar-nav > li > .nav-item > em {
     color: inherits; }
 
