@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Paperless System{% endblock %}</title>
+    <title>{% block title %}ERDMS{% endblock title %}</title>
     
     <link rel="icon" type="image/png" href="{% static 'assets/img/capitol_logo.png' %}">
     <link href="{% static 'assets/css/bootstrap.css' %}" rel="stylesheet">
@@ -18,97 +18,100 @@
     <link rel="stylesheet" href="{% static 'assets/vendor/simple-line-icons/css/simple-line-icons.css' %}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="vendor/@fortawesome/fontawesome-free/css/brands.css">
+   <link rel="stylesheet" href="vendor/@fortawesome/fontawesome-free/css/regular.css">
+   <link rel="stylesheet" href="vendor/@fortawesome/fontawesome-free/css/solid.css">
+   <link rel="stylesheet" href="vendor/@fortawesome/fontawesome-free/css/fontawesome.css"><!-- SIMPLE LINE ICONS-->
+   <link rel="stylesheet" href="vendor/simple-line-icons/css/simple-line-icons.css"><!-- ANIMATE.CSS-->
+   <link rel="stylesheet" href="vendor/animate.css/animate.css"><!-- WHIRL (spinners)-->
+   <link rel="stylesheet" href="vendor/whirl/dist/whirl.css"><!-- =============== PAGE VENDOR STYLES ===============-->
+   <!-- =============== BOOTSTRAP STYLES ===============-->
+   <link rel="stylesheet" href="css/bootstrap.css" id="bscss"><!-- =============== APP STYLES ===============-->
+   <link rel="stylesheet" href="css/app.css" id="maincss">
     
     <style>
         body { font-family: 'Poppins', sans-serif; background-color: #f8f9fa; min-height: 100vh; margin: 0; }
         .navbar-brand img { width: 40px; margin-right: 10px; }
-        .full-width-container { width: 100%; padding: 0; margin: 0; }
     </style>
-    {% block extra_css %}{% endblock %}
+    {% block extra_css %}{% endblock extra_css %}
 </head>
-<body>
+
+<body class="layout-fixed">
     {% block main_container %}
-        {% if user.is_authenticated %}
-            <div class="wrapper">
-                <header class="topnavbar-wrapper">
-                    <nav class="navbar topnavbar navbar-expand-lg shadow-sm">
-                        <div class="container-fluid">
-                            <a class="navbar-brand fw-bold" href="#">
-                                <img src="{% static 'assets/img/capitol_logo.png' %}" alt="Logo"> ERDMS
-                            </a>
-                            <div class="ms-auto d-flex align-items-center">
-                                <span class="text-white me-4 small d-none d-md-block">Welcome, {{ user.username|title }}</span>
-                                <a href="{% url 'logout' %}" class="btn btn-outline-light btn-sm ps-2">
-                                    <em class="icon-logout"></em> Logout
-                                </a>
-                            </div>
+    {% if user.is_authenticated %}
+    <div class="wrapper">
+        <header class="topnavbar-wrapper">
+            <nav class="navbar topnavbar">
+                <div class="navbar-header">
+                    <a class="navbar-brand" href="#/">
+                        <div class="brand-logo">
+                            <img src="{% static 'assets/img/capitol_logo.png' %}" alt="Logo" style="width: 30px;"> ERDMS
                         </div>
-                    </nav>
-                </header>
-
-                <aside class="aside-container">
-                    <div class="aside-inner">
-                        {% block sidebar %}
-                            {% if user.is_superuser %}
-                                {% include 'includes/admin_sidebar.html' %}
-                            {% elif user.userprofile.role == 'HEAD' %}
-                                {% include 'includes/head_sidebar.html' %}
-                            {% else %}
-                                {% include 'includes/employee_sidebar.html' %}
-                            {% endif %}
-                        {% endblock sidebar %}
-                    </div>
-                </aside>
-                
-                <section class="section-container">
-                    <div class="content-wrapper">
-                        {% block content %}{% endblock content %}
-                    </div>
-                </section>
-
-                <footer class="footer-container text-center p-3">
-                    <span>&copy; 2026 - Paperless EDMS</span>
-                </footer>
+                        <div class="brand-logo-collapsed">
+                            <img src="{% static 'assets/img/capitol_logo.png' %}" alt="Logo" style="width: 30px;">
+                        </div>
+                    </a>
+                </div>
+                <ul class="navbar-nav mr-auto flex-row">
+                    <li class="nav-item">
+                        <a class="nav-link d-none d-md-block" href="#" data-trigger-resize="" data-toggle-state="aside-collapsed">
+                            <em class="fas fa-bars"></em>
+                        </a>
+                        <a class="nav-link sidebar-toggle d-md-none" href="#" data-toggle-state="aside-toggled" data-no-persist="true">
+                            <em class="fas fa-bars"></em>
+                        </a>
+                    </li>
+                    <li class="nav-item d-none d-md-block">
+                        <a class="nav-link" id="user-block-toggle" href="#user-block" data-toggle="collapse">
+                            <em class="icon-user"></em>
+                        </a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav flex-row ms-auto">
+                    <li class="nav-item d-flex align-items-center">
+                        <span class="text-white me-4 small d-none d-md-block">Welcome, {{ user.username|title }}</span>
+                        <a href="{% url 'logout' %}" class="btn btn-outline-light btn-sm">
+                            <em class="icon-logout"></em> Logout
+                        </a>
+                    </li>
+                </ul>
+                </nav>
+        </header>
+        <aside class="aside-container">
+            {% block sidebar %}
+                {% if user.is_superuser %}
+                    {% include 'includes/admin_sidebar.html' %}
+                {% elif user.userprofile.role == 'HEAD' %}
+                    {% include 'includes/head_sidebar.html' %}
+                {% else %}
+                    {% include 'includes/employee_sidebar.html' %}
+                {% endif %}
+            {% endblock sidebar %}
+        </aside>
+        <section class="section-container">
+            <div class="content-wrapper">
+                {% block content %}{% endblock content %}
             </div>
-            
-        {% else %}
-            <div style="min-height: 100vh; width: 100vw; overflow-x: hidden;">
-                {% block auth_content %}{% endblock auth_content %}
-            </div>
-        {% endif %}
+        </section>
+        <footer class="footer-container text-center">
+            <span>&copy; 2026 - Provincial Government of Catanduanes | GO-IT Dept.</span>
+        </footer>
+        </div>
+    {% else %}
+    <div style="min-height: 100vh; width: 100vw; overflow-x: hidden;">
+        {% block auth_content %}{% endblock auth_content %}
+    </div>
+    {% endif %}
     {% endblock main_container %}
-
-    <div class="modal-root-container"></div>
-
-    <!-- <script src="{% static 'assets/vendor/jquery/dist/jquery.js' %}"></script>
-    <script src="{% static 'assets/vendor/popper.js/dist/umd/popper.js' %}"></script>
-    <script src="{% static 'assets/vendor/bootstrap/dist/js/bootstrap.js' %}"></script>
-    <script src="{% static 'assets/vendor/jquery-slimscroll/jquery.slimscroll.js' %}"></script>
-    <script src="{% static 'assets/vendor/js-storage/js.storage.js' %}"></script>
-    
-    <script src="{% static 'assets/js/modules/common/sidebar.js' %}"></script>
-    <script src="{% static 'assets/js/modules/common/toggle-state.js' %}"></script>
-    <script src="{% static 'assets/js/modules/common/slimscroll.js' %}"></script>
-    <script src="{% static 'assets/js/modules/common/bootstrap-start.js' %}"></script>
-    
-    <script src="{% static 'assets/js/app.init.js' %}"></script>
-    <script src="{% static 'assets/js/app.js' %}"></script>
-    <script src="{% static 'assets/js/custom/custom.js' %}"></script> -->
 
     <script src="{% static 'assets/vendor/jquery/dist/jquery.js' %}"></script>
     <script src="{% static 'assets/vendor/popper.js/dist/umd/popper.js' %}"></script>
     <script src="{% static 'assets/vendor/bootstrap/dist/js/bootstrap.js' %}"></script>
     <script src="{% static 'assets/vendor/jquery-slimscroll/jquery.slimscroll.js' %}"></script>
     <script src="{% static 'assets/vendor/js-storage/js.storage.js' %}"></script>
-    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/parsley.js/2.9.2/parsley.min.js"></script>
     
-    <script src="{% static 'assets/js/modules/common/sidebar.js' %}"></script>
-    <script src="{% static 'assets/js/modules/common/toggle-state.js' %}"></script>
-    <script src="{% static 'assets/js/modules/common/slimscroll.js' %}"></script>
-    <script src="{% static 'assets/js/modules/common/bootstrap-start.js' %}"></script>
-    
-    <script src="{% static 'assets/js/app.init.js' %}"></script>
     <script src="{% static 'assets/js/app.js' %}"></script>
 
     <!-- DataTables and related plugins -->
@@ -129,32 +132,25 @@
     <script src="{% static 'assets/vendor/pdfmake/build/vfs_fonts.js' %}"></script>
     <script src="{% static 'assets/js/custom/custom.js' %}"></script>
     
+    <script src="{% static 'assets/js/app.init.js' %}"></script>
+
     <script>
         $(function() {
+            // Manual user block toggle support
             $('#user-block-toggle').on('click', function(e) {
                 e.preventDefault();
                 $('#user-block').collapse('toggle');
             });
-            
+
+            // Auto-hide sidebar toggled class on large screens
             $(window).on('resize', function() {
                 if ($(window).width() > 992) {
                     $('body').removeClass('aside-toggled');
                 }
             });
-            
-            if ($.fn.slimscroll && $('.sidebar').length) {
-                $('.sidebar').slimscroll({
-                    height: '100%',
-                    size: '3px',
-                    color: '#a1a2a3',
-                    alwaysVisible: false,
-                    distance: '3px',
-                    railVisible: true,
-                    railColor: '#f5f5f5'
-                });
-            }
         });
     </script>
-    {% block extra_js %}{% endblock %}
+
+    {% block extra_js %}{% endblock extra_js %}
 </body>
 </html>
