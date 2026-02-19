@@ -28,7 +28,7 @@ body, .wrapper .section-container {
     .topnavbar .navbar-nav > .nav-item > .nav-link:hover, .topnavbar .navbar-nav > .nav-item > .nav-link:focus,
     .topnavbar .navbar-nav > .nav-item.show > .nav-link:hover,
     .topnavbar .navbar-nav > .nav-item.show > .nav-link:focus {
-      color: #117391; }
+      color: #fff; }
   .topnavbar .dropdown-item.active, .topnavbar .dropdown-item:active {
     background-color: #23b7e5; }
 

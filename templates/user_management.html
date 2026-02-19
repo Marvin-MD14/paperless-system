@@ -54,19 +54,18 @@
             </div>
         </div>
     </div>
-
-    <!-- Add User Button -->
-    <div class="mb-4">
-        <button class="btn btn-primary" data-toggle="modal" data-target="#addUserModal">
-            <i class="fas fa-user-plus me-2"></i> Register New User
-        </button>
-    </div>
-
+    
 <!-- Users Table -->
 <div class="card">
-    <div class="card-header">
-        <div class="card-title">Registered User Profiles</div>
-        <div class="text-sm">Manage all system users, their roles, and account status.</div>
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <div>
+            <div class="card-title">Registered User Profiles</div>
+        </div>
+        <!-- <div>
+            <button class="btn btn-primary" data-toggle="modal" data-target="#addUserModal">
+                <i class="fas fa-user-plus me-2"></i> Register New User
+            </button>
+        </div> -->
     </div>
     <div class="card-body">
         <table class="table table-striped my-4 w-100" id="userTable">
@@ -115,10 +114,14 @@
                     </td>
                     <td>
                         <div class="btn-group" role="group">
-                            <button class="btn btn-sm btn-outline-primary" onclick="editUser({{ userprofile.id }})" title="Edit">
+                            <button class="btn btn-sm btn-outline-primary edit-user" 
+                                    data-user-id="{{ userprofile.id }}" 
+                                    title="Edit">
                                 <i class="fas fa-edit"></i>
                             </button>
-                            <button class="btn btn-sm btn-outline-danger" onclick="deleteUser({{ userprofile.id }})" title="Delete">
+                            <button class="btn btn-sm btn-outline-danger delete-user" 
+                                    data-user-id="{{ userprofile.id }}" 
+                                    title="Delete">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </div>
@@ -346,44 +349,85 @@
 {% endblock %}
 
 {% block extra_js %}
+{% if messages %}
+    <div id="django-messages" style="display: none;" 
+         data-messages='[
+            {% for message in messages %}
+                {"tag": "{{ message.tags }}", "text": "{{ message|escapejs }}"}{% if not forloop.last %},{% endif %}
+            {% endfor %}
+         ]'>
+    </div>
+{% endif %}
 <script>
 let deleteUserId = null;
 
 $(document).ready(function() {
-    // Initialize DataTable with responsive controls
-    $('#userTable').DataTable({
-        dom: "<'row'<'col-sm-12 col-md-6 mb-3 mb-md-0'l><'col-sm-12 col-md-6'f>>" +
-             "<'row'<'col-sm-12'tr>>" +
-             "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
-        responsive: true,
-        autoWidth: false,
-        order: [[0, 'asc']],
-        columnDefs: [
-            { orderable: false, targets: 5 }
-        ],
-        language: {
-            search: "Search all columns:",
-            searchPlaceholder: "Search all columns...",
-            lengthMenu: "Show _MENU_ entries",
-            info: "Showing _START_ to _END_ of _TOTAL_ entries",
-            infoEmpty: "Showing 0 to 0 of 0 entries",
-            infoFiltered: "(filtered from _MAX_ total entries)",
-            paginate: {
-                first: '<em class="fa fa-angle-double-left"></em>',
-                previous: '<em class="fa fa-caret-left"></em>',
-                next: '<em class="fa fa-caret-right"></em>',
-                last: '<em class="fa fa-angle-double-right"></em>'
-            }
-        }
+    // Modal fix
+    $('#addUserModal').appendTo('body');
+    
+    $('#addUserModal').on('show.bs.modal', function() {
+        $('body').addClass('modal-open');
+        $('.wrapper, .content-wrapper, .main-content, .container-fluid').css('z-index', 'auto');
     });
     
-    // Make sure the search input has the proper Bootstrap class
-    $('.dataTables_filter input').addClass('form-control form-control-sm').attr('placeholder', 'Search all columns...');
+    $('#addUserModal').on('hidden.bs.modal', function() {
+        $('body').removeClass('modal-open');
+        $('.modal-backdrop').remove();
+    });
+
+    // Handle Django messages
+    var messagesData = $('#django-messages').data('messages');
+    if (messagesData && messagesData.length > 0) {
+        messagesData.forEach(function(message) {
+            if (message.tag === 'success') {
+                showToast('success', message.text);
+            } else if (message.tag === 'error') {
+                showToast('error', message.text);
+            } else {
+                showToast('error', message.text);
+            }
+        });
+    }
+
+    // Initialize DataTable
+$('#userTable').DataTable({
+    dom: "<'row'<'col-sm-6'f><'col-sm-6 text-end'B>>" +  // Search on left, Button on right
+         "<'row'<'col-sm-12'tr>>" +
+         "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+    responsive: true,
+    autoWidth: false,
+    order: [[0, 'asc']],
+    buttons: [
+        {
+            text: '<i class="fas fa-user-plus me-2"></i> Register New User',
+            className: 'btn btn-primary',
+            action: function (e, dt, node, config) {
+                $('#addUserModal').modal('show');
+            }
+        }
+    ],
+    columnDefs: [
+        { orderable: false, targets: 5 }
+    ],
+    language: {
+        searchPlaceholder: "Search all columns...",
+        lengthMenu: "Show _MENU_ entries",
+        info: "Showing _START_ to _END_ of _TOTAL_ entries",
+        infoEmpty: "Showing 0 to 0 of 0 entries",
+        infoFiltered: "(filtered from _MAX_ total entries)",
+        paginate: {
+            first: '<em class="fa fa-angle-double-left"></em>',
+            previous: '<em class="fa fa-caret-left"></em>',
+            next: '<em class="fa fa-caret-right"></em>',
+            last: '<em class="fa fa-angle-double-right"></em>'
+        }
+    }
+});
     
-    // Make sure the length select has the proper Bootstrap class
+    // Style DataTable controls
+    $('.dataTables_filter input').addClass('form-control form-control-sm').attr('placeholder', 'Search all columns...');
     $('.dataTables_length select').addClass('custom-select custom-select-sm form-control form-control-sm');
     
-    // Add responsive behavior to the filter label
     $('.dataTables_filter label').css({
         'display': 'flex',
         'align-items': 'center',
@@ -395,6 +439,21 @@ $(document).ready(function() {
         'flex': '1 1 auto',
         'min-width': '200px'
     });
+    
+    // ===== NEW: Event listeners for edit/delete buttons =====
+    // Edit user click handler
+    $('.edit-user').on('click', function() {
+        var userId = $(this).data('user-id');
+        window.location.href = '/edit-user/' + userId + '/';
+    });
+    
+    // Delete user click handler
+    $('.delete-user').on('click', function() {
+        var userId = $(this).data('user-id');
+        deleteUserId = userId;
+        $("#deleteModal").modal('show');
+    });
+    // ===== END of new event listeners =====
     
     // Password strength checker
     $("#password").on("keyup", function() {
@@ -500,11 +559,10 @@ function checkPasswordStrength(password) {
     $("#strengthBar").removeClass().addClass("progress-bar bg-" + strengthColor).css("width", strengthWidth);
 }
 
-function deleteUser(userId) {
-    deleteUserId = userId;
-    $("#deleteModal").modal('show');
-}
+// ===== REMOVED: deleteUser(userId) function =====
+// ===== REMOVED: editUser(userId) function =====
 
+// Keep this for the delete confirmation modal
 $("#confirmDelete").click(function() {
     if (deleteUserId) {
         // Show loading state
@@ -534,10 +592,6 @@ $("#confirmDelete").click(function() {
     }
 });
 
-function editUser(userId) {
-    window.location.href = '/edit-user/' + userId + '/';
-}
-
 function viewUser(userId) {
     $("#userDetailsModal").modal('show');
     $("#userDetailsContent").html('<div class="text-center"><i class="fas fa-spinner fa-spin fa-2x"></i><p>Loading...</p></div>');
@@ -560,18 +614,5 @@ function showToast(type, message) {
     toast.toast({ delay: 3000 });
     toast.toast('show');
 }
-
-// Handle messages from Django
-{% if messages %}
-    {% for message in messages %}
-        $(document).ready(function() {
-            {% if message.tags == 'success' %}
-                showToast('success', '{{ message|escapejs }}');
-            {% else %}
-                showToast('error', '{{ message|escapejs }}');
-            {% endif %}
-        });
-    {% endfor %}
-{% endif %}
 </script>
 {% endblock %}

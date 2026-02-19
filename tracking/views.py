@@ -308,8 +308,6 @@ def register(request):
 
     return render(request, 'register.html', {'offices': offices})
 
-
-
 def logout(request):
     auth_logout(request)
 

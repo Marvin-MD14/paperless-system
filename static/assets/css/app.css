@@ -4398,8 +4398,8 @@ table.dataTable {
   text-align: center !important; }
   @media (min-width: 768px) {
     .dataTables_filter {
-      float: right;
-      text-align: right !important; } }
+      float: left;
+      text-align: left !important; } }
   .dataTables_filter label > em {
     color: inherit; }
   .dataTables_filter input {
@@ -4427,8 +4427,8 @@ table.dataTable {
   @media (min-width: 768px) {
     .dt-buttons {
       margin-bottom: 0;
-      justify-content: start;
-      float: left; } }
+      justify-content: end;
+      float: right; } }
 
 .dataTables_info {
   text-align: center;

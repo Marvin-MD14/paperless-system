@@ -1,7 +1,7 @@
 OFFICE_CHOICES = (
     ('GO', 'Governors Office'),
     ('IU', 'Governors Office - Information Unit'),
-    ('ITU', 'Governors Office - Information Technology Department'),
+    ('ITD', 'Governors Office - Information Technology Department'),
     ('LEDIPO', 'Governors Office - LEDIPO'),
     ('PNO', 'Provincial Nutrition Office'),
     ('POPCOM', 'Governors Office - POPCOM'),
