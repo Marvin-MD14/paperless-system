@@ -1,7 +1,7 @@
 # tracking/models.py
 from django.db import models
 from django.contrib.auth.models import User
-from .choices import OFFICE_CHOICES, OFFICE_DICT, STATUS_CHOICES
+from .choices import OFFICE_CHOICES, OFFICE_DICT, STATUS_CHOICES, ROLE_CHOICES
 
 class Office(models.Model):
     office_code = models.CharField(max_length=50, choices=OFFICE_CHOICES, unique=True)
@@ -14,13 +14,6 @@ class Office(models.Model):
         ordering = ['office_name']
 
 class UserProfile(models.Model):
-    ROLE_CHOICES = (
-        ('HEAD', 'Department Head'),
-        ('STAFF', 'Staff'),
-        ('GOVERNOR', 'Governor'),
-        ('EXECUTIVE', 'Executive'),
-    )
-    
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='userprofile')
     office = models.ForeignKey(Office, on_delete=models.SET_NULL, null=True, blank=True)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='STAFF')

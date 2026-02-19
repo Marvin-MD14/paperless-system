@@ -30,7 +30,7 @@ def login(request):
     if request.method == "POST":
         email = request.POST.get('email')
         password = request.POST.get('password')
-        remember_me = request.POST.get('remember_me')  # <-- Get remember me checkbox
+        remember_me = request.POST.get('remember_me')  
 
         user = authenticate_by_email(email, password)
 
@@ -39,9 +39,9 @@ def login(request):
 
             # --- REMEMBER ME FUNCTIONALITY ---
             if remember_me:
-                request.session.set_expiry(1209600)  # 2 weeks
+                request.session.set_expiry(1209600)  
             else:
-                request.session.set_expiry(0)        # expires on browser close
+                request.session.set_expiry(0)        
 
             return redirect_by_role(user)
         else:
@@ -139,7 +139,7 @@ def admin_dashboard(request):
     if request.method == "POST":
         email = request.POST.get('email')
         password = request.POST.get('password')
-        full_name = request.POST.get('full_name')  # <-- Get Full Name from modal
+        full_name = request.POST.get('full_name')  
         role = request.POST.get('role')
         office_id = request.POST.get('office')
 
@@ -262,7 +262,7 @@ def register(request):
     offices = Office.objects.all().order_by('office_name')
 
     if request.method == "POST":
-        email = request.POST.get('username')  # <-- matches HTML field name
+        email = request.POST.get('username')  
         password = request.POST.get('pwd')
         full_name = request.POST.get('full_name')
         office_id = request.POST.get('office')

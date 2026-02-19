@@ -46,7 +46,7 @@ STATUS_CHOICES = (
 )
 
 ROLE_CHOICES = (
-    ('HEAD', 'Department Head'),
+    ('HEAD', 'Office Head'),
     ('STAFF', 'Staff'),
     ('GOVERNOR', 'Governor'),
     ('EXECUTIVE', 'Executive'),
