@@ -1,130 +1,174 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Employee Dashboard | EDMS{% endblock %}
+{% block title %}Employee Dashboard | ERDMS{% endblock %}
 
 {% block content %}
-<div class="container-fluid p-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="dashboard-container p-4">
+    <div class="d-flex justify-content-between align-items-center mb-5">
         <div>
-            <h2 class="fw-bold text-dark">Welcome back, {{ request.user.username }}!</h2>
-            <p class="text-muted">
-                <i class="fas fa-building me-1"></i> Office: <strong>{{ profile.office.office_name }}</strong> | 
-                <span class="badge bg-primary">{{ profile.role }}</span>
+            <h2 class="fw-bold text-dark mb-1">Hello, {{ request.user.username }}!</h2>
+            <p class="text-muted small">
+                <i class="fas fa-calendar-alt me-1"></i> Today is {% now "F j, Y" %} | 
+                <span class="badge bg-soft-primary text-primary">{{ profile.role|default:"Staff" }}</span>
             </p>
         </div>
-        <div>
-            <button class="btn btn-primary shadow-sm px-4" style="background-color: #348fe2; border: none;">
-                <i class="fas fa-plus me-2"></i> New Document
+        <div class="d-flex gap-3">
+            <div class="search-glass d-none d-md-flex">
+                <i class="fas fa-search text-muted mt-2 ms-3"></i>
+                <input type="text" class="form-control border-0 bg-transparent" placeholder="Search documents...">
+            </div>
+            <button class="btn btn-orange shadow-orange px-4 py-2 rounded-pill fw-bold">
+                <i class="fas fa-plus me-2"></i> Create Notice
             </button>
         </div>
     </div>
 
-    <div class="row mb-4">
-        <div class="col-md-4">
-            <div class="card border-0 shadow-sm p-3">
-                <div class="d-flex align-items-center">
-                    <div class="icon-box bg-light-blue p-3 rounded-3 me-3">
-                        <i class="fas fa-file-alt fa-2x text-primary"></i>
-                    </div>
-                    <div>
-                        <h6 class="text-muted mb-0">My Uploads</h6>
-                        <h3 class="fw-bold mb-0">{{ my_uploads_count }}</h3>
-                    </div>
+    <div class="row g-3 mb-5">
+        <div class="col-xl-2-4 col-md-4 col-6">
+            <div class="stat-card">
+                <div class="circle-box blue-ring">
+                    <i class="fas fa-file-upload text-primary"></i>
+                </div>
+                <div>
+                    <h3 class="fw-bold mb-0 counter">{{ my_uploads_count|default:"348" }}</h3>
+                    <p class="text-muted small mb-0">My Uploads</p>
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="card border-0 shadow-sm p-3">
-                <div class="d-flex align-items-center">
-                    <div class="icon-box bg-light-success p-3 rounded-3 me-3">
-                        <i class="fas fa-inbox fa-2x text-success"></i>
-                    </div>
-                    <div>
-                        <h6 class="text-muted mb-0">Incoming Docs (Office)</h6>
-                        <h3 class="fw-bold mb-0">{{ office_docs_count }}</h3>
-                    </div>
+        <div class="col-xl-2-4 col-md-4 col-6">
+            <div class="stat-card">
+                <div class="circle-box green-ring">
+                    <i class="fas fa-inbox text-success"></i>
+                </div>
+                <div>
+                    <h3 class="fw-bold mb-0">{{ office_docs_count|default:"128" }}</h3>
+                    <p class="text-muted small mb-0">Incoming</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2-4 col-md-4 col-6">
+            <div class="stat-card">
+                <div class="circle-box orange-ring">
+                    <i class="fas fa-pen-nib text-orange"></i>
+                </div>
+                <div>
+                    <h3 class="fw-bold mb-0">10</h3>
+                    <p class="text-muted small mb-0">Pending Sign</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2-4 col-md-4 col-6">
+            <div class="stat-card">
+                <div class="circle-box purple-ring">
+                    <i class="fas fa-check-double text-purple"></i>
+                </div>
+                <div>
+                    <h3 class="fw-bold mb-0">3,458</h3>
+                    <p class="text-muted small mb-0">Processed</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2-4 col-md-4 col-6">
+            <div class="stat-card">
+                <div class="circle-box red-ring">
+                    <i class="fas fa-exclamation-circle text-danger"></i>
+                </div>
+                <div>
+                    <h3 class="fw-bold mb-0">34</h3>
+                    <p class="text-muted small mb-0">Returned</p>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="row">
+    <div class="row g-4 mb-5">
         <div class="col-lg-8">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white py-3 border-0">
-                    <h5 class="mb-0 fw-bold text-dark">My Recent Uploads</h5>
+            <div class="glass-card p-4 h-100">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h5 class="fw-bold">Document Processing Trend</h5>
+                    <select class="form-select form-select-sm border-0 bg-light-gray" style="width: 120px;">
+                        <option>This Week</option>
+                        <option>Last Month</option>
+                    </select>
                 </div>
-                <div class="card-body pt-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Ref No.</th>
-                                    <th>Document Title</th>
-                                    <th>Date</th>
-                                    <th>Status</th>
-                                    <th class="text-center">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for doc in my_uploads %}
-                                <tr>
-                                    <td><span class="text-muted small">#{{ doc.id }}</span></td>
-                                    <td><span class="fw-bold text-dark">{{ doc.title }}</span></td>
-                                    <td>{{ doc.created_at|date:"M d, Y" }}</td>
-                                    <td>
-                                        {% if doc.status == 'PENDING' %}
-                                            <span class="badge rounded-pill bg-warning text-dark">Pending</span>
-                                        {% elif doc.status == 'COMPLETED' %}
-                                            <span class="badge rounded-pill bg-success">Completed</span>
-                                        {% else %}
-                                            <span class="badge rounded-pill bg-info text-dark">{{ doc.status }}</span>
-                                        {% endif %}
-                                    </td>
-                                    <td class="text-center">
-                                        <a href="#" class="btn btn-sm btn-outline-primary rounded-circle">
-                                            <i class="fas fa-eye"></i>
-                                        </a>
-                                    </td>
-                                </tr>
-                                {% empty %}
-                                <tr>
-                                    <td colspan="5" class="text-center text-muted py-5">
-                                        <i class="fas fa-folder-open d-block mb-2 fa-3x opacity-25"></i>
-                                        No documents uploaded yet.
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
+                <div class="chart-container">
+                    <canvas id="areaChart"></canvas>
                 </div>
             </div>
         </div>
-
         <div class="col-lg-4">
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-body">
-                    <h5 class="fw-bold mb-3 text-dark">System Notification</h5>
-                    <div class="alert alert-primary border-0 small mb-0" style="background-color: #f0f7ff; color: #004a99;">
-                        <i class="fas fa-info-circle me-2"></i> 
-                        <strong>Pro Tip:</strong> Ensure all scanned documents are in <strong>PDF format</strong> before uploading to maintain quality.
+            <div class="glass-card p-4 h-100 text-center">
+                <h5 class="fw-bold mb-4">Overall Completion</h5>
+                <div class="position-relative">
+                    <canvas id="gaugeChart"></canvas>
+                    <div class="gauge-value">
+                        <h2 class="fw-bold mb-0">74%</h2>
+                        <span class="text-muted small">Target met</span>
                     </div>
                 </div>
-            </div>
-            
-            <div class="card border-0 shadow-sm">
-                <div class="card-body">
-                    <h6 class="fw-bold mb-3">Quick Links</h6>
-                    <div class="list-group list-group-flush small">
-                        <a href="#" class="list-group-item list-group-item-action border-0 px-0">
-                            <i class="fas fa-search me-2 text-muted"></i> Track a Document
-                        </a>
-                        <a href="#" class="list-group-item list-group-item-action border-0 px-0">
-                            <i class="fas fa-history me-2 text-muted"></i> Activity Logs
-                        </a>
+                <div class="mt-4">
+                    <div class="progress rounded-pill mb-2" style="height: 8px;">
+                        <div class="progress-bar bg-orange" style="width: 74%"></div>
                     </div>
+                    <p class="text-muted small">Success rate of processed documents</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-5">
+            <div class="glass-card p-4 h-100">
+                <h5 class="fw-bold mb-4">Sent vs Received</h5>
+                <div class="chart-container" style="height: 250px;">
+                    <canvas id="barChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-7">
+            <div class="glass-card p-4 h-100">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h5 class="fw-bold">Recent Uploads</h5>
+                    <a href="#" class="btn btn-sm btn-light rounded-pill px-3">View All</a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle custom-table">
+                        <thead>
+                            <tr>
+                                <th>Ref No.</th>
+                                <th>Title</th>
+                                <th>Status</th>
+                                <th class="text-end">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for doc in my_uploads|slice:":4" %}
+                            <tr>
+                                <td><span class="text-muted small">#{{ doc.id }}</span></td>
+                                <td><span class="fw-600">{{ doc.title }}</span></td>
+                                <td><span class="badge bg-soft-warning text-warning">Pending</span></td>
+                                <td class="text-end"><button class="btn btn-icon"><i class="fas fa-eye"></i></button></td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td><span class="text-muted small">#1024</span></td>
+                                <td><span class="fw-600">Travel_Order_Req.pdf</span></td>
+                                <td><span class="badge bg-soft-warning text-warning">Pending</span></td>
+                                <td class="text-end"><button class="btn btn-icon"><i class="fas fa-eye text-primary"></i></button></td>
+                            </tr>
+                            <tr>
+                                <td><span class="text-muted small">#1025</span></td>
+                                <td><span class="fw-600">Quarterly_Report_Q1.pdf</span></td>
+                                <td><span class="badge bg-soft-success text-success">Completed</span></td>
+                                <td class="text-end"><button class="btn btn-icon"><i class="fas fa-eye text-primary"></i></button></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -132,11 +176,189 @@
 </div>
 
 <style>
-    .bg-light-blue { background-color: #e3f2fd; }
-    .bg-light-success { background-color: #e8f5e9; }
-    .card { border-radius: 12px; transition: transform 0.2s; }
-    .table thead th { border-top: none; font-size: 0.75rem; text-transform: uppercase; color: #888; letter-spacing: 1px; }
-    .badge { font-weight: 500; padding: 0.5em 0.8em; }
-    .icon-box { min-width: 60px; text-align: center; }
+    /* GLOBAL STYLES */
+    :root {
+        --orange-main: #ff793f;
+        --purple-main: #a29bfe;
+        --bg-gradient: linear-gradient(135deg, #fdf2f8 0%, #f3f4f6 50%, #eef2ff 100%);
+    }
+
+    body {
+        background: var(--bg-gradient);
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    .dashboard-container { min-height: 100vh; }
+
+    /* GLASS CARDS */
+    .glass-card {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.8);
+        border-radius: 24px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+    }
+
+    /* STAT CARDS */
+    .stat-card {
+        background: white;
+        border-radius: 20px;
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.02);
+        transition: transform 0.3s ease;
+    }
+    .stat-card:hover { transform: translateY(-5px); }
+
+    /* ICON RINGS (Inspired by Image 6ee383) */
+    .circle-box {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        border: 4px solid #f8f9fa;
+    }
+    .blue-ring { border-top-color: #348fe2; }
+    .green-ring { border-top-color: #28a745; }
+    .orange-ring { border-top-color: var(--orange-main); }
+    .purple-ring { border-top-color: var(--purple-main); }
+    .red-ring { border-top-color: #dc3545; }
+
+    /* 5-COLUMN GRID FIX */
+    @media (min-width: 1200px) {
+        .col-xl-2-4 { width: 20%; flex: 0 0 20%; }
+    }
+
+    /* SEARCH BAR */
+    .search-glass {
+        background: rgba(255, 255, 255, 0.6);
+        border-radius: 50px;
+        width: 300px;
+        border: 1px solid #fff;
+    }
+
+    /* BUTTONS */
+    .btn-orange {
+        background: var(--orange-main);
+        color: white;
+        border: none;
+    }
+    .shadow-orange { box-shadow: 0 8px 20px rgba(255, 121, 63, 0.3); }
+    .bg-orange { background-color: var(--orange-main) !important; }
+    .text-orange { color: var(--orange-main); }
+    .text-purple { color: var(--purple-main); }
+
+    /* BADGES */
+    .bg-soft-primary { background: #e3f2fd; }
+    .bg-soft-warning { background: #fff3e0; }
+    .bg-soft-success { background: #e8f5e9; }
+
+    /* TABLE */
+    .custom-table thead th {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #adb5bd;
+        border: none;
+    }
+    .fw-600 { font-weight: 600; }
+    .btn-icon { color: #348fe2; background: #f0f7ff; border-radius: 10px; padding: 5px 10px; }
+
+    /* GAUGE CHART TEXT */
+    .gauge-value {
+        position: absolute;
+        top: 60%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+
+    .chart-container { position: relative; height: 300px; width: 100%; }
 </style>
+
+<script>
+    // 1. AREA CHART: Modern Gradient Line
+    const areaCtx = document.getElementById('areaChart').getContext('2d');
+    const blueGrad = areaCtx.createLinearGradient(0, 0, 0, 400);
+    blueGrad.addColorStop(0, 'rgba(52, 143, 226, 0.2)');
+    blueGrad.addColorStop(1, 'rgba(52, 143, 226, 0)');
+
+    new Chart(areaCtx, {
+        type: 'line',
+        data: {
+            labels: ['2019', '2020', '2021', '2022', '2023', '2024'],
+            datasets: [{
+                data: [30, 55, 40, 75, 60, 90],
+                borderColor: '#348fe2',
+                backgroundColor: blueGrad,
+                fill: true,
+                tension: 0.4,
+                pointRadius: 0,
+                borderWidth: 3
+            }, {
+                data: [20, 35, 60, 45, 80, 65],
+                borderColor: '#ff793f',
+                fill: false,
+                tension: 0.4,
+                pointRadius: 0,
+                borderWidth: 3,
+                borderDash: [5, 5]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { grid: { display: false }, border: { display: false } },
+                y: { grid: { color: '#f0f0f0' }, border: { display: false }, ticks: { stepSize: 20 } }
+            }
+        }
+    });
+
+    // 2. GAUGE CHART (Satisfaction/Completion)
+    new Chart(document.getElementById('gaugeChart'), {
+        type: 'doughnut',
+        data: {
+            datasets: [{
+                data: [74, 26],
+                backgroundColor: ['#ff793f', '#f0f0f0'],
+                borderWidth: 0,
+                circumference: 180,
+                rotation: 270,
+                cutout: '85%'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { tooltip: { enabled: false } }
+        }
+    });
+
+    new Chart(document.getElementById('barChart'), {
+        type: 'bar',
+        data: {
+            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May'],
+            datasets: [
+                { label: 'Sent', data: [45, 60, 50, 80, 70], backgroundColor: '#348fe2', borderRadius: 10, barThickness: 12 },
+                { label: 'Received', data: [30, 40, 35, 60, 50], backgroundColor: '#e3f2fd', borderRadius: 10, barThickness: 12 }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'top', align: 'end', labels: { usePointStyle: true, boxWidth: 8 } } },
+            scales: {
+                x: { grid: { display: false }, border: { display: false } },
+                y: { display: false }
+            }
+        }
+    });
+</script>
+
 {% endblock %}

@@ -7,33 +7,160 @@
     <title>{% block title %}ERDMS{% endblock title %}</title>
     
     <link rel="icon" type="image/png" href="{% static 'assets/img/capitol_logo.png' %}">
-    <link href="{% static 'assets/css/bootstrap.css' %}" rel="stylesheet">
-    <link href="{% static 'assets/css/app.css' %}" rel="stylesheet">
-    <link href="{% static 'assets/css/themes/theme-a.css' %}" rel="stylesheet">
-    <link href="{% static 'assets/vendor/datatables.net-bs4/css/dataTables.bootstrap4.css' %}" rel="stylesheet">
-    <link href="{% static 'assets/vendor/datatables.net-buttons-bs/css/buttons.bootstrap.css' %}" rel="stylesheet">
-    <link href="{% static 'assets/vendor/datatables.net-keytable-bs/css/keyTable.bootstrap.css' %}" rel="stylesheet">
-    <link href="{% static 'assets/vendor/datatables.net-responsive-bs/css/responsive.bootstrap.css' %}" rel="stylesheet">
-    <!-- Icon Libraries -->
-    <link rel="stylesheet" href="{% static 'assets/vendor/simple-line-icons/css/simple-line-icons.css' %}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
-
-    <link rel="stylesheet" href="vendor/@fortawesome/fontawesome-free/css/brands.css">
-   <link rel="stylesheet" href="vendor/@fortawesome/fontawesome-free/css/regular.css">
-   <link rel="stylesheet" href="vendor/@fortawesome/fontawesome-free/css/solid.css">
-   <link rel="stylesheet" href="vendor/@fortawesome/fontawesome-free/css/fontawesome.css"><!-- SIMPLE LINE ICONS-->
-   <link rel="stylesheet" href="vendor/simple-line-icons/css/simple-line-icons.css"><!-- ANIMATE.CSS-->
-   <link rel="stylesheet" href="vendor/animate.css/animate.css"><!-- WHIRL (spinners)-->
-   <link rel="stylesheet" href="vendor/whirl/dist/whirl.css"><!-- =============== PAGE VENDOR STYLES ===============-->
-   <!-- =============== BOOTSTRAP STYLES ===============-->
-   <link rel="stylesheet" href="css/bootstrap.css" id="bscss"><!-- =============== APP STYLES ===============-->
-   <link rel="stylesheet" href="css/app.css" id="maincss">
     
-    <style>
-        body { font-family: 'Poppins', sans-serif; background-color: #f8f9fa; min-height: 100vh; margin: 0; }
-        .navbar-brand img { width: 40px; margin-right: 10px; }
-    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'assets/vendor/simple-line-icons/css/simple-line-icons.css' %}">
+    <link rel="stylesheet" href="{% static 'assets/vendor/animate.css/animate.css' %}">
+    <link rel="stylesheet" href="{% static 'assets/vendor/whirl/dist/whirl.css' %}">
+    
+    <link href="{% static 'assets/css/bootstrap.css' %}" rel="stylesheet" id="bscss">
+    
+    <link href="{% static 'assets/css/app.css' %}" rel="stylesheet" id="maincss">
+    <link href="{% static 'assets/css/themes/theme-a.css' %}" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+    * { 
+        box-sizing: border-box; 
+    }
+
+    html, body { 
+        margin: 0 !important; 
+        padding: 0 !important; 
+        border: none !important;
+        height: 100%;
+        background-color: #f8f9fa; 
+    }
+
+    .wrapper, .topnavbar-wrapper { 
+        margin-top: 0 !important; 
+        padding-top: 0 !important; 
+        border: none !important;
+        background-color: #0062cc !important; 
+    }
+
+    .topnavbar { 
+        min-height: 50px; 
+        background-color: #0062cc !important; 
+        border: none !important;
+        box-shadow: none !important; 
+        top: 0 !important;
+        position: relative;
+    } 
+
+    .topnavbar .navbar-header { 
+        height: 50px; 
+        background-color: #0062cc !important; 
+        border: none !important; 
+        width: 210px;
+        /* display: flex;  */
+        /* align-items: center;  */
+        /* justify-content: space-between;  */
+        /* padding: 0 15px; */
+    }
+
+    .topnavbar .navbar-nav > li > a { 
+        padding-top: 13px !important; 
+        padding-bottom: 13px !important; 
+    }
+
+    .navbar-brand img { 
+        width: 25px; 
+        margin-right: 8px; 
+    }
+    
+    .topnavbar .navbar-nav > li > a,
+    .topnavbar .navbar-nav > li > a em,
+    .topnavbar .navbar-nav > li > a span {
+        color: #ffffff !important;
+        opacity: 1 !important;
+    }
+
+    .topnavbar .navbar-nav > li > a:hover {
+        background-color: rgba(255,255,255,0.1) !important;
+    }
+
+    .user-nav-img { 
+        width: 28px; 
+        height: 28px; 
+        object-fit: cover; 
+        border-radius: 50%; 
+        border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    .aside-container, .sidebar {
+        background-color: #ffffff !important; 
+        border-right: 1px solid #eee;
+    }
+
+    .item.user-block {
+        padding: 12px 15px !important; 
+        border-bottom: 1px solid #eee;
+        background-color: #ffffff;
+    }
+
+    .user-block-picture img { 
+        width: 45px !important; 
+        height: 45px !important; 
+        border: 1px solid #ddd;
+    }
+
+    .user-block-info .user-block-name {
+        color: #333333 !important; 
+        font-weight: 600;
+        display: block;
+        font-size: 13px;
+        margin-top: 5px;
+    }
+
+    .user-block-info .user-block-role {
+        color: #0062cc !important;
+        display: block;
+        font-size: 10px;
+        text-transform: uppercase;
+        font-weight: bold;
+    }
+
+    .sidebar-nav > li > a {
+        padding: 8px 15px !important; 
+        color: #555555 !important;
+        font-size: 13px;
+    }
+
+    .sidebar-nav > li > a em {
+        font-size: 14px;
+        margin-right: 10px;
+        color: #0062cc !important;
+    }
+
+    .sidebar-nav > li > a:hover, 
+    .sidebar-nav > li.active > a {
+        color: #0062cc !important;
+        background-color: #f8f9fa !important;
+        font-weight: 600;
+    }
+
+    .sidebar-nav > li.active {
+        border-left: 3px solid #0062cc;
+    }
+
+    .nav-heading span {
+        color: #999999 !important;
+        font-size: 10px;
+        padding: 10px 15px 5px !important;
+        background-color: transparent !important;
+    }
+
+    .content-wrapper { 
+        padding: 15px !important; 
+    }
+
+    footer.footer-container { 
+        padding: 10px; 
+        font-size: 11px; 
+        background-color: #ffffff; 
+        border-top: 1px solid #eee; 
+    }
+</style>
     {% block extra_css %}{% endblock extra_css %}
 </head>
 
@@ -46,13 +173,14 @@
                 <div class="navbar-header">
                     <a class="navbar-brand" href="#/">
                         <div class="brand-logo">
-                            <img src="{% static 'assets/img/capitol_logo.png' %}" alt="Logo" style="width: 30px;"> ERDMS
+                            <img class="img-fluid" src="{% static 'assets/img/capitol_logo.png' %}" alt="App Logo"> ERDMS System
                         </div>
                         <div class="brand-logo-collapsed">
-                            <img src="{% static 'assets/img/capitol_logo.png' %}" alt="Logo" style="width: 30px;">
+                            <img class="img-fluid" src="{% static 'assets/img/capitol_logo.png' %}" alt="App Logo">
                         </div>
                     </a>
                 </div>
+                
                 <ul class="navbar-nav mr-auto flex-row">
                     <li class="nav-item">
                         <a class="nav-link d-none d-md-block" href="#" data-trigger-resize="" data-toggle-state="aside-collapsed">
@@ -62,22 +190,67 @@
                             <em class="fas fa-bars"></em>
                         </a>
                     </li>
-                    <li class="nav-item d-none d-md-block">
-                        <a class="nav-link" id="user-block-toggle" href="#user-block" data-toggle="collapse">
-                            <em class="icon-user"></em>
+                </ul>
+
+                <ul class="navbar-nav flex-row ms-auto align-items-center">
+                    <li class="nav-item dropdown dropdown-list">
+                        <a class="nav-link dropdown-toggle dropdown-toggle-nocaret" href="#" data-toggle="dropdown">
+                            <em class="icon-bell"></em>
+                            <span class="badge badge-danger">11</span>
                         </a>
+                        <div class="dropdown-menu dropdown-menu-right animated flipInX">
+                            <div class="dropdown-item">
+                                <div class="list-group">
+                                    <div class="list-group-item list-group-item-action">
+                                        <div class="media">
+                                            <div class="align-self-start mr-2"><em class="fas fa-envelope fa-2x text-warning"></em></div>
+                                            <div class="media-body">
+                                                <p class="m-0">New Documents</p>
+                                                <p class="m-0 text-muted text-sm">You have 10 new documents</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="list-group-item list-group-item-action text-center">
+                                        <span class="text-sm">More notifications</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </li>
+
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle dropdown-toggle-nocaret d-flex align-items-center" href="#" data-toggle="dropdown">
+                            <span class="d-none d-md-block me-2 small">{{ user.username }}</span>
+                            <img src="{% if user.userprofile.profile_picture %}{{ user.userprofile.profile_picture.url }}{% else %}{% static 'assets/img/dummy.png' %}{% endif %}" alt="User Profile" class="user-nav-img">
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-right animated fadeInUp">
+                            <div class="dropdown-header text-center">
+                                <strong>Account Settings</strong>
+                            </div>
+                            <a class="dropdown-item" href="#">
+                                <em class="icon-user me-2 text-primary"></em> Edit Profile
+                            </a>
+                            <a class="dropdown-item" href="#">
+                                <em class="icon-settings me-2 text-info"></em> Settings
+                            </a>
+                            <div class="dropdown-divider"></div>
+                            <a class="dropdown-item text-danger" href="{% url 'logout' %}">
+                                <em class="icon-logout me-2"></em> Logout
+                            </a>
+                        </div>
                     </li>
                 </ul>
-                <ul class="navbar-nav flex-row ms-auto">
-                    <li class="nav-item d-flex align-items-center">
-                        <span class="text-white me-4 small d-none d-md-block">Welcome, {{ user.username|title }}</span>
-                        <a href="{% url 'logout' %}" class="btn btn-outline-light btn-sm">
-                            <em class="icon-logout"></em> Logout
-                        </a>
-                    </li>
-                </ul>
-                </nav>
+                
+                <!-- <form class="navbar-form" role="search" action="#">
+                    <div class="form-group">
+                        <input class="form-control" type="text" placeholder="Type and hit enter ...">
+                        <div class="fas fa-times navbar-form-close" data-search-dismiss=""></div>
+                    </div>
+                    <button class="d-none" type="submit">Submit</button>
+                </form> -->
+            </nav>
         </header>
+
         <aside class="aside-container">
             {% block sidebar %}
                 {% if user.is_superuser %}
@@ -89,15 +262,17 @@
                 {% endif %}
             {% endblock sidebar %}
         </aside>
+
         <section class="section-container">
             <div class="content-wrapper">
                 {% block content %}{% endblock content %}
             </div>
         </section>
+
         <footer class="footer-container text-center">
             <span>&copy; 2026 - Provincial Government of Catanduanes | GO-IT Dept.</span>
         </footer>
-        </div>
+    </div>
     {% else %}
     <div style="min-height: 100vh; width: 100vw; overflow-x: hidden;">
         {% block auth_content %}{% endblock auth_content %}
@@ -111,46 +286,31 @@
     <script src="{% static 'assets/vendor/jquery-slimscroll/jquery.slimscroll.js' %}"></script>
     <script src="{% static 'assets/vendor/js-storage/js.storage.js' %}"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/parsley.js/2.9.2/parsley.min.js"></script>
-    
-    <script src="{% static 'assets/js/app.js' %}"></script>
 
-    <!-- DataTables and related plugins -->
     <script src="{% static 'assets/vendor/datatables.net/js/jquery.dataTables.js' %}"></script>
     <script src="{% static 'assets/vendor/datatables.net-bs4/js/dataTables.bootstrap4.js' %}"></script>
     <script src="{% static 'assets/vendor/datatables.net-buttons/js/dataTables.buttons.js' %}"></script>
-    <script src="{% static 'assets/vendor/datatables.net-buttons/js/buttons.colVis.js' %}"></script>
-    <script src="{% static 'assets/vendor/datatables.net-buttons/js/buttons.flash.js' %}"></script>
-    <script src="{% static 'assets/vendor/datatables.net-buttons/js/buttons.html5.js' %}"></script>
-    <script src="{% static 'assets/vendor/datatables.net-buttons/js/buttons.print.js' %}"></script>
     <script src="{% static 'assets/vendor/datatables.net-buttons-bs/js/buttons.bootstrap.js' %}"></script>
-    <script src="{% static 'assets/vendor/datatables.net-keytable/js/dataTables.keyTable.js' %}"></script>
     <script src="{% static 'assets/vendor/datatables.net-responsive/js/dataTables.responsive.js' %}"></script>
     <script src="{% static 'assets/vendor/datatables.net-responsive-bs/js/responsive.bootstrap.js' %}"></script>
 
     <script src="{% static 'assets/vendor/jszip/dist/jszip.js' %}"></script>
     <script src="{% static 'assets/vendor/pdfmake/build/pdfmake.js' %}"></script>
     <script src="{% static 'assets/vendor/pdfmake/build/vfs_fonts.js' %}"></script>
+
+    <script src="{% static 'assets/js/app.js' %}"></script>
     <script src="{% static 'assets/js/custom/custom.js' %}"></script>
-    
-    <script src="{% static 'assets/js/app.init.js' %}"></script>
+
+    <!-- <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> -->
 
     <script>
         $(function() {
-            // Manual user block toggle support
-            $('#user-block-toggle').on('click', function(e) {
-                e.preventDefault();
+            $('#user-block-toggle').on('click', function() {
                 $('#user-block').collapse('toggle');
-            });
-
-            // Auto-hide sidebar toggled class on large screens
-            $(window).on('resize', function() {
-                if ($(window).width() > 992) {
-                    $('body').removeClass('aside-toggled');
-                }
             });
         });
     </script>
-
+    
     {% block extra_js %}{% endblock extra_js %}
 </body>
 </html>

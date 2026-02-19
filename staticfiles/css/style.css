@@ -1,0 +1,16 @@
+
+/* LOGIN FORM */
+
+body { 
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); 
+    height: 100vh;
+    display: flex;
+    align-items: center;
+}
+.login-card { border-radius: 15px; overflow: hidden; }
+.login-header { background-color: #0d6efd; color: white; padding: 30px; text-align: center; }
+.login-header img { width: 80px; margin-bottom: 10px; }
+.widget-stats { border-radius: 12px; transition: 0.3s; }
+    .widget-stats:hover { transform: translateY(-5px); }
+    .card { border-radius: 15px; }
+    .table thead { background-color: #f8f9fa; }
