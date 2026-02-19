@@ -2,9 +2,14 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.models import User
 from .models import Office, UserProfile, Document
 from django.contrib import messages
+from django.core.paginator import Paginator
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.views.decorators.cache import never_cache
+from django.db.models import Q
+from django.http import JsonResponse
+import json
 
 # --- HELPER FUNCTION: Authenticate by email ---
 def authenticate_by_email(email, password):
@@ -17,7 +22,6 @@ def authenticate_by_email(email, password):
         return None
 
 # --- LOGIN SECTION ---
-
 @never_cache
 def login(request):
     if request.user.is_authenticated:
@@ -112,8 +116,8 @@ def head_login(request):
 
                     return redirect('head_dashboard')
                 else:
-                    messages.error(request, "Access Denied: Account is not a Department Head.")
-            except UserProfile.DoesNotExist:
+                    messages.error(request, "Access Denied: Account is not an Office Head.")
+            except:
                 messages.error(request, "Profile not found.")
         else:
             messages.error(request, "Invalid email or password.")
@@ -318,3 +322,179 @@ def logout(request):
     response['Pragma'] = 'no-cache'
     response['Expires'] = '0'
     return response
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)  # Only admins
+def user_management(request):
+    # Get filter parameters
+    role_filter = request.GET.get('role', '')
+    search_query = request.GET.get('search', '')
+    
+    # Get all user profiles
+    userprofiles = UserProfile.objects.select_related('user', 'office').all().order_by('-user__date_joined')
+    
+    # Apply filters
+    if role_filter:
+        userprofiles = userprofiles.filter(role=role_filter)
+    
+    if search_query:
+        userprofiles = userprofiles.filter(
+            Q(user__username__icontains=search_query) |
+            Q(user__first_name__icontains=search_query) |
+            Q(user__last_name__icontains=search_query) |
+            Q(user__email__icontains=search_query) |
+            Q(office__office_name__icontains=search_query) |
+            Q(office__office_code__icontains=search_query)
+        )
+    
+    # Get counts by role
+    governor_count = UserProfile.objects.filter(role='GOVERNOR').count()
+    heads_count = UserProfile.objects.filter(role='HEAD').count()
+    executive_count = UserProfile.objects.filter(role='EXECUTIVE').count()
+    staff_count = UserProfile.objects.filter(role='STAFF').count()
+    
+    # Pagination
+    paginator = Paginator(userprofiles, 10)  # Show 10 users per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # Get all offices for dropdown
+    offices = Office.objects.all().order_by('office_name')
+    
+    context = {
+        'userprofiles': page_obj,
+        'governor_count': governor_count,
+        'heads_count': heads_count,
+        'executive_count': executive_count,
+        'staff_count': staff_count,
+        'offices': offices,
+        'role_filter': role_filter,
+        'search_query': search_query,
+    }
+    
+    return render(request, 'user_management.html', context)
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def register_user(request):
+    if request.method == 'POST':
+        # Get form data
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        email = request.POST.get('email', '')
+        first_name = request.POST.get('first_name', '')
+        last_name = request.POST.get('last_name', '')
+        office_id = request.POST.get('office')
+        role = request.POST.get('role')
+        is_active = request.POST.get('is_active') == 'on'
+        
+        # Validate required fields
+        if not username or not password:
+            messages.error(request, 'Username and password are required.')
+            return redirect('user_management')
+        
+        # Check if username already exists
+        if User.objects.filter(username=username).exists():
+            messages.error(request, f'Username "{username}" is already taken.')
+            return redirect('user_management')
+        
+        try:
+            # Create user
+            user = User.objects.create_user(
+                username=username,
+                password=password,
+                email=email,
+                first_name=first_name,
+                last_name=last_name,
+                is_active=is_active
+            )
+            
+            # Get office if selected
+            office = None
+            if office_id:
+                office = get_object_or_404(Office, id=office_id)
+            
+            # Create user profile
+            UserProfile.objects.create(
+                user=user,
+                office=office,
+                role=role
+            )
+            
+            messages.success(request, f'User {username} created successfully!')
+            
+        except Exception as e:
+            messages.error(request, f'Error creating user: {str(e)}')
+    
+    return redirect('user_management')
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def delete_user(request, user_id):
+    if request.method == 'POST':
+        try:
+            user = get_object_or_404(User, id=user_id)
+            username = user.username
+            user.delete()
+            return JsonResponse({'success': True, 'message': f'User {username} deleted successfully'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=400)
+    
+    return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def user_details(request, user_id):
+    userprofile = get_object_or_404(UserProfile.objects.select_related('user', 'office'), id=user_id)
+    
+    # Get additional stats
+    documents_created = userprofile.user.created_documents.count() if hasattr(userprofile.user, 'created_documents') else 0
+    
+    context = {
+        'profile': userprofile,
+        'documents_count': documents_created,
+    }
+    
+    return render(request, 'user_details_partial.html', context)
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def edit_user(request, user_id):
+    userprofile = get_object_or_404(UserProfile.objects.select_related('user'), id=user_id)
+    
+    if request.method == 'POST':
+        # Update user data
+        user = userprofile.user
+        user.username = request.POST.get('username', user.username)
+        user.email = request.POST.get('email', user.email)
+        user.first_name = request.POST.get('first_name', user.first_name)
+        user.last_name = request.POST.get('last_name', user.last_name)
+        user.is_active = request.POST.get('is_active') == 'on'
+        
+        # Update password if provided
+        new_password = request.POST.get('new_password')
+        if new_password:
+            user.set_password(new_password)
+        
+        user.save()
+        
+        # Update profile
+        office_id = request.POST.get('office')
+        if office_id:
+            userprofile.office = get_object_or_404(Office, id=office_id)
+        else:
+            userprofile.office = None
+        
+        userprofile.role = request.POST.get('role', userprofile.role)
+        userprofile.save()
+        
+        messages.success(request, f'User {user.username} updated successfully!')
+        return redirect('user_management')
+    
+    # GET request - show edit form
+    offices = Office.objects.all()
+    context = {
+        'profile': userprofile,
+        'offices': offices,
+    }
+    return render(request, 'edit_user.html', context)

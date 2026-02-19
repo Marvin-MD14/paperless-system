@@ -52,7 +52,7 @@
                             <th>Office</th>
                             <th>Role</th>
                             <th>Status</th>
-                            <th>Action</th>
+                            <!-- <th>Action</th> -->
                         </tr>
                     </thead>
                     <tbody>
@@ -65,9 +65,9 @@
                             <td>{{ profile.office.office_name|default:"General" }}</td>
                             <td><span class="badge bg-secondary">{{ profile.role }}</span></td>
                             <td><span class="badge bg-success">Active</span></td>
-                            <td>
+                            <!-- <td>
                                 <button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
-                            </td>
+                            </td> -->
                         </tr>
                         {% empty %}
                         <tr>

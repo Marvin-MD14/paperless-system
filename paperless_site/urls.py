@@ -10,6 +10,11 @@ from tracking.views import (
     user_dashboard,
     head_login, 
     head_dashboard,
+    user_management,
+    register_user,
+    delete_user,
+    edit_user,
+    user_details,
 )
 
 urlpatterns = [
@@ -19,8 +24,7 @@ urlpatterns = [
     
     path('adminlogin/', admin_login, name='admin_login'), 
     
-    
-    # 3. Dashboards (Dito ang bagsak pagkatapos ng login)
+    # 3. Dashboards 
     path('dashboard/', user_dashboard, name='user_dashboard'),
     path('admin_dashboard/', admin_dashboard, name='admin_dashboard'),
     path('headlogin/', head_login, name='head_login'),
@@ -28,7 +32,8 @@ urlpatterns = [
 
     path('register/', register, name='register'),
     path('logout/', logout, name='logout'),
-  # PASSWORD RESET SECTION (UPDATED TO MATCH YOUR FOLDER)
+
+  # PASSWORD RESET SECTION 
     path('password-reset/', 
          auth_views.PasswordResetView.as_view(
              template_name='password_reset_form.html',          # Tinanggal ang registration/
@@ -56,4 +61,11 @@ urlpatterns = [
              template_name='password_reset_complete.html'      # Tinanggal ang registration/
          ), 
          name='password_reset_complete'),
+
+    # User Management
+    path('user-management/', user_management, name='user_management'),
+    path('register-user/', register_user, name='register_user'),
+    path('delete-user/<int:user_id>/', delete_user, name='delete_user'),
+    path('edit-user/<int:user_id>/', edit_user, name='edit_user'),
+    path('user-details/<int:user_id>/', user_details, name='user_details'),
 ]
