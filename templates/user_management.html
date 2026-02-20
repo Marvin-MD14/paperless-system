@@ -1,13 +1,13 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}User Management | Paperless System{% endblock %}
+{% block title %}User List | Paperless System{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h2 class="fw-bold text-dark mb-1">User Management</h2>
+            <h2 class="fw-bold text-dark mb-1">User List</h2>
         </div>
     </div>
 
@@ -55,82 +55,80 @@
         </div>
     </div>
     
-<!-- Users Table -->
-<div class="card">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <div>
-            <div class="card-title">Registered User Profiles</div>
+    <!-- Users Table -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <div>
+                <div class="card-title">Registered User Profiles</div>
+            </div>
         </div>
-        <!-- Register button is in DataTable buttons, so no need here -->
+        <div class="card-body">
+            <table class="table table-striped my-4 w-100" id="userTable">
+                <thead>
+                    <tr>
+                        <th data-priority="1">User</th>
+                        <th data-priority="3">Office</th>
+                        <th data-priority="2">Role</th>
+                        <th data-priority="4">Status</th>
+                        <th data-priority="5">Last Login</th>
+                        <th data-priority="6">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for userprofile in userprofiles %}
+                    <tr>
+                        <td>
+                            <div class="fw-bold">{{ userprofile.user.get_full_name|default:userprofile.user.username }}</div>
+                            <small class="text-muted">{{ userprofile.user.email|default:"No email" }}</small>
+                        </td>
+                        <td>
+                            {% if userprofile.office %}
+                                {{ userprofile.office.office_name }}
+                            {% else %}
+                                <span class="text-muted">Not Assigned</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge bg-secondary">
+                                {{ userprofile.get_role_display }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if userprofile.user.is_active %}
+                                <span class="badge badge-success">Active</span>
+                            {% else %}
+                                <span class="badge badge-danger">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if userprofile.user.last_login %}
+                                {{ userprofile.user.last_login|date:"M d, Y H:i" }}
+                            {% else %}
+                                <span class="text-muted">Never</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <button class="btn btn-sm btn-outline-primary edit-user" 
+                                        data-user-id="{{ userprofile.id }}" 
+                                        title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger delete-user" 
+                                        data-user-id="{{ userprofile.id }}" 
+                                        title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <!-- Empty - DataTable will show "No data available" -->
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
-<div class="card-body">
-    <table class="table table-striped my-4 w-100" id="userTable">
-        <thead>
-            <tr>
-                <th data-priority="1">User</th>
-                <th data-priority="3">Office</th>
-                <th data-priority="2">Role</th>
-                <th data-priority="4">Status</th>
-                <th data-priority="5">Last Login</th>
-                <th data-priority="6">Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for userprofile in userprofiles %}
-            <tr>
-                <td>
-                    <div class="fw-bold">{{ userprofile.user.get_full_name|default:userprofile.user.username }}</div>
-                    <small class="text-muted">{{ userprofile.user.email|default:"No email" }}</small>
-                </td>
-                <td>
-                    {% if userprofile.office %}
-                        {{ userprofile.office.office_name }}
-                    {% else %}
-                        <span class="text-muted">Not Assigned</span>
-                    {% endif %}
-                </td>
-                <td>
-                    <span class="badge bg-secondary">
-                        {{ userprofile.get_role_display }}
-                    </span>
-                </td>
-                <td>
-                    {% if userprofile.user.is_active %}
-                        <span class="badge badge-success">Active</span>
-                    {% else %}
-                        <span class="badge badge-danger">Inactive</span>
-                    {% endif %}
-                </td>
-                <td>
-                    {% if userprofile.user.last_login %}
-                        {{ userprofile.user.last_login|date:"M d, Y H:i" }}
-                    {% else %}
-                        <span class="text-muted">Never</span>
-                    {% endif %}
-                </td>
-                <td>
-                    <div class="btn-group" role="group">
-                        <button class="btn btn-sm btn-outline-primary edit-user" 
-                                data-user-id="{{ userprofile.id }}" 
-                                title="Edit">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="btn btn-sm btn-outline-danger delete-user" 
-                                data-user-id="{{ userprofile.id }}" 
-                                title="Delete">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </td>
-            </tr>
-            {% empty %}
-            <!-- Empty - DataTable will show "No data available" -->
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
-</div>
-</div>
 </div>
 
 <!-- Add User Modal -->
@@ -168,7 +166,7 @@
                                     <div class="input-group-prepend">
                                         <span class="input-group-text"><i class="fas fa-envelope"></i></span>
                                     </div>
-                                    <input type="email" class="form-control" id="email" name="email">
+                                    <input type="email" class="form-control" id="email" name="email" required>
                                 </div>
                             </div>
                         </div>
@@ -218,7 +216,7 @@
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label for="office" class="fw-bold">Office</label>
-                                <select class="form-control" id="office" name="office">
+                                <select name="office" class="form-select select2" id="office-select" style="width: 100%;">
                                     <option value="">Select Office (Optional)</option>
                                     {% for office in offices %}
                                     <option value="{{ office.id }}">{{ office.office_name }} ({{ office.office_code }})</option>
@@ -361,6 +359,18 @@
 let deleteUserId = null;
 
 $(document).ready(function() {
+    // Initialize Select2 for the add user modal (matching registration page style)
+    if ($.fn.select2) {
+        $('#office-select').select2({
+            width: '100%',
+            placeholder: "Select Office (Optional)",
+            allowClear: true,
+            dropdownParent: $('#addUserModal')
+        });
+    } else {
+        console.error('Select2 not loaded');
+    }
+    
     // Modal fix for all modals
     $('#addUserModal, #editUserModal, #deleteModal, #userDetailsModal').appendTo('body');
     
@@ -372,6 +382,25 @@ $(document).ready(function() {
     $('[id$=Modal]').on('hidden.bs.modal', function() {
         $('body').removeClass('modal-open');
         $('.modal-backdrop').remove();
+        
+        // Destroy Select2 instance when modal is hidden to prevent issues
+        if ($.fn.select2 && $('#office-select').data('select2')) {
+            $('#office-select').select2('destroy');
+        }
+    });
+    
+    // Re-initialize Select2 when modal is shown
+    $('#addUserModal').on('shown.bs.modal', function() {
+        setTimeout(function() {
+            if ($.fn.select2 && !$('#office-select').data('select2')) {
+                $('#office-select').select2({
+                    width: '100%',
+                    placeholder: "Select Office (Optional)",
+                    allowClear: true,
+                    dropdownParent: $('#addUserModal')
+                });
+            }
+        }, 100);
     });
 
     // Handle Django messages
@@ -388,57 +417,57 @@ $(document).ready(function() {
         });
     }
 
-// Always initialize DataTable - even with no rows
-setTimeout(function() {
-    if ($('#userTable').length) {
-        // Destroy existing instance if any
-        if ($.fn.DataTable.isDataTable('#userTable')) {
-            $('#userTable').DataTable().destroy();
-        }
-        
-        $('#userTable').DataTable({
-            dom: "<'row'<'col-sm-12 col-md-6'f><'col-sm-12 col-md-6'B>>" +
-                 "<'row'<'col-sm-12'tr>>" +
-                 "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
-            responsive: true,
-            autoWidth: false,
-            order: [[0, 'asc']],
-            buttons: [
-                {
-                    text: '<i class="fas fa-user-plus me-2"></i> Register New User',
-                    className: 'btn btn-primary',
-                    action: function (e, dt, node, config) {
-                        $('#addUserModal').modal('show');
-                    }
-                }
-            ],
-            columnDefs: [
-                { orderable: false, targets: 5 }
-            ],
-            language: {
-                search: "Search:",
-                searchPlaceholder: "Search all columns...",
-                lengthMenu: "Show _MENU_ entries",
-                info: "Showing _START_ to _END_ of _TOTAL_ entries",
-                infoEmpty: "Showing 0 to 0 of 0 entries",
-                infoFiltered: "(filtered from _MAX_ total entries)",
-                emptyTable: "No users registered yet. Click 'Register New User' to add one.",
-                zeroRecords: "No matching users found",
-                paginate: {
-                    first: '<i class="fa fa-angle-double-left"></i>',
-                    previous: '<i class="fa fa-caret-left"></i>',
-                    next: '<i class="fa fa-caret-right"></i>',
-                    last: '<i class="fa fa-angle-double-right"></i>'
-                }
-            },
-            initComplete: function(settings, json) {
-                // Style DataTable controls
-                $('.dataTables_filter input').addClass('form-control form-control-sm').attr('placeholder', 'Search...');
-                $('.dataTables_length select').addClass('custom-select custom-select-sm form-control form-control-sm');
+    // Always initialize DataTable - even with no rows
+    setTimeout(function() {
+        if ($('#userTable').length) {
+            // Destroy existing instance if any
+            if ($.fn.DataTable.isDataTable('#userTable')) {
+                $('#userTable').DataTable().destroy();
             }
-        });
-    }
-}, 100);
+            
+            $('#userTable').DataTable({
+                dom: "<'row'<'col-sm-12 col-md-6'f><'col-sm-12 col-md-6'B>>" +
+                     "<'row'<'col-sm-12'tr>>" +
+                     "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+                responsive: true,
+                autoWidth: false,
+                order: [[0, 'asc']],
+                buttons: [
+                    {
+                        text: '<i class="fas fa-user-plus me-2"></i> Register New User',
+                        className: 'btn btn-primary',
+                        action: function (e, dt, node, config) {
+                            $('#addUserModal').modal('show');
+                        }
+                    }
+                ],
+                columnDefs: [
+                    { orderable: false, targets: 5 }
+                ],
+                language: {
+                    search: "Search:",
+                    searchPlaceholder: "Search all columns...",
+                    lengthMenu: "Show _MENU_ entries",
+                    info: "Showing _START_ to _END_ of _TOTAL_ entries",
+                    infoEmpty: "Showing 0 to 0 of 0 entries",
+                    infoFiltered: "(filtered from _MAX_ total entries)",
+                    emptyTable: "No users registered yet. Click 'Register New User' to add one.",
+                    zeroRecords: "No matching users found",
+                    paginate: {
+                        first: '<i class="fa fa-angle-double-left"></i>',
+                        previous: '<i class="fa fa-caret-left"></i>',
+                        next: '<i class="fa fa-caret-right"></i>',
+                        last: '<i class="fa fa-angle-double-right"></i>'
+                    }
+                },
+                initComplete: function(settings, json) {
+                    // Style DataTable controls
+                    $('.dataTables_filter input').addClass('form-control form-control-sm').attr('placeholder', 'Search...');
+                    $('.dataTables_length select').addClass('custom-select custom-select-sm form-control form-control-sm');
+                }
+            });
+        }
+    }, 100);
     
     // Edit user click handler
     $('.edit-user').on('click', function() {
@@ -456,6 +485,18 @@ setTimeout(function() {
             },
             success: function(data) {
                 $('#editUserModalContent').html(data);
+                
+                // Initialize Select2 for the edit form if it has an office select
+                setTimeout(function() {
+                    if ($.fn.select2 && $('#edit_office_select').length) {
+                        $('#edit_office_select').select2({
+                            width: '100%',
+                            placeholder: "Select Office (Optional)",
+                            allowClear: true,
+                            dropdownParent: $('#editUserModal')
+                        });
+                    }
+                }, 100);
                 
                 // Re-initialize password toggle and validation for the loaded form
                 setupEditFormValidation();

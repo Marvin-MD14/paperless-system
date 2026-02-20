@@ -6,6 +6,7 @@ from django.core.paginator import Paginator
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required, user_passes_test
+from .choices import REGISTRATION_TYPES
 from django.views.decorators.cache import never_cache
 from django.utils import timezone
 from django.db.models import Q
@@ -135,7 +136,12 @@ def admin_dashboard(request):
         return redirect('login')
 
     offices = Office.objects.all()
-    profiles = UserProfile.objects.select_related('user', 'office').all()
+    
+    # Show ALL approved AND active users (both admin-created and approved self-registered)
+    profiles = UserProfile.objects.filter(
+        is_approved=True,  # Must be approved
+        user__is_active=True  # Must be active
+    ).select_related('user', 'office').order_by('-user__date_joined')
 
     if request.method == "POST":
         email = request.POST.get('email')
@@ -163,14 +169,19 @@ def admin_dashboard(request):
                 email=email,
                 password=password,
                 first_name=first_name,
-                last_name=last_name
+                last_name=last_name,
+                is_active=True  # Admin-created users are active by default
             )
 
             office_obj = Office.objects.get(id=office_id) if office_id else None
             UserProfile.objects.create(
                 user=new_user,
                 office=office_obj,
-                role=role
+                role=role,
+                is_approved=True,  # Admin-created are auto-approved
+                registration_type='ADMIN',  # Mark as admin-created
+                approved_by=request.user,  # Track who created them
+                approved_at=timezone.now()
             )
 
             messages.success(request, f"Successfully created {role} account for {full_name} ({email})!")
@@ -179,10 +190,30 @@ def admin_dashboard(request):
         except Exception as e:
             messages.error(request, f"Error: {e}")
 
-    governor_count = UserProfile.objects.filter(role='GOVERNOR').count()
-    heads_count = UserProfile.objects.filter(role='HEAD').count()
-    executive_count = UserProfile.objects.filter(role='EXECUTIVE').count()
-    staff_count = UserProfile.objects.filter(role='STAFF').count()
+    # Count only approved AND active users for dashboard stats
+    governor_count = UserProfile.objects.filter(
+        role='GOVERNOR', 
+        is_approved=True,
+        user__is_active=True
+    ).count()
+    
+    heads_count = UserProfile.objects.filter(
+        role='HEAD', 
+        is_approved=True,
+        user__is_active=True
+    ).count()
+    
+    executive_count = UserProfile.objects.filter(
+        role='EXECUTIVE', 
+        is_approved=True,
+        user__is_active=True
+    ).count()
+    
+    staff_count = UserProfile.objects.filter(
+        role='STAFF', 
+        is_approved=True,
+        user__is_active=True
+    ).count()
 
     context = {
         'offices': offices,
@@ -194,7 +225,6 @@ def admin_dashboard(request):
     }
 
     return render(request, 'admin_dashboard.html', context)
-
 
 @login_required
 @never_cache
@@ -298,13 +328,12 @@ def register(request):
                 user=new_user,
                 office=office_obj,
                 role=role,
-                is_approved=False  # Add this field to your model
+                is_approved=False,
+                registration_type='SELF',  # Mark as self-registered
+                # registered_at will be auto-set
             )
 
             messages.success(request, "Your registration request has been submitted successfully! An administrator will review and approve your account within 24-48 hours. You will receive an email notification once your account is activated.")
-            
-            # Optional: Send notification email to admins
-            # send_admin_notification(new_user)
             
             return render(request, 'register.html', {'offices': offices})
 
@@ -329,14 +358,16 @@ def logout(request):
     return response
 
 @login_required
-@user_passes_test(lambda u: u.is_superuser)  # Only admins
+@user_passes_test(lambda u: u.is_superuser)
 def user_management(request):
     # Get filter parameters
     role_filter = request.GET.get('role', '')
     search_query = request.GET.get('search', '')
     
-    # Get all user profiles
-    userprofiles = UserProfile.objects.select_related('user', 'office').all().order_by('-user__date_joined')
+    # Get ALL approved user profiles (both admin-created AND approved self-registered)
+    userprofiles = UserProfile.objects.filter(
+        is_approved=True  # Only show approved users
+    ).select_related('user', 'office').order_by('-user__date_joined')
     
     # Apply filters
     if role_filter:
@@ -352,19 +383,23 @@ def user_management(request):
             Q(office__office_code__icontains=search_query)
         )
     
-    # Get counts by role
-    governor_count = UserProfile.objects.filter(role='GOVERNOR').count()
-    heads_count = UserProfile.objects.filter(role='HEAD').count()
-    executive_count = UserProfile.objects.filter(role='EXECUTIVE').count()
-    staff_count = UserProfile.objects.filter(role='STAFF').count()
+    # Get counts by role (only approved users)
+    governor_count = UserProfile.objects.filter(role='GOVERNOR', is_approved=True).count()
+    heads_count = UserProfile.objects.filter(role='HEAD', is_approved=True).count()
+    executive_count = UserProfile.objects.filter(role='EXECUTIVE', is_approved=True).count()
+    staff_count = UserProfile.objects.filter(role='STAFF', is_approved=True).count()
     
     # Pagination
-    paginator = Paginator(userprofiles, 10)  # Show 10 users per page
+    paginator = Paginator(userprofiles, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
     # Get all offices for dropdown
     offices = Office.objects.all().order_by('office_name')
+    
+    # You can remove this part or fix it by importing REGISTRATION_TYPES
+    # If you want to display registration type, import it from choices
+    # from .choices import REGISTRATION_TYPES
     
     context = {
         'userprofiles': page_obj,
@@ -419,11 +454,15 @@ def register_user(request):
             if office_id:
                 office = get_object_or_404(Office, id=office_id)
             
-            # Create user profile
+            # Create user profile with admin registration type
             UserProfile.objects.create(
                 user=user,
                 office=office,
-                role=role
+                role=role,
+                is_approved=True,  # Admin-created are approved
+                registration_type='ADMIN',  # Mark as admin-created
+                approved_by=request.user,
+                approved_at=timezone.now()
             )
             
             messages.success(request, f'User {username} created successfully!')
@@ -641,23 +680,26 @@ def edit_user(request, user_id):
 @login_required
 @user_passes_test(lambda u: u.is_superuser)
 def access_requests(request):
-    # Get all unapproved users
+    # Get only SELF-registered users pending approval
     pending_requests = UserProfile.objects.filter(
+        registration_type='SELF',  # Only self-registered
         is_approved=False,
         user__is_active=False
     ).select_related('user', 'office').order_by('-user__date_joined')
     
-    # Get approved users (recent)
+    # Get approved self-registered users (recent)
     approved_users = UserProfile.objects.filter(
+        registration_type='SELF',  # Only self-registered
         is_approved=True
     ).select_related('user', 'office').order_by('-approved_at')[:20]
     
-    # Get rejected users (optional)
+    # Get rejected self-registered users (optional)
     rejected_users = UserProfile.objects.filter(
+        registration_type='SELF',  # Only self-registered
         is_approved=False,
         user__is_active=False
     ).exclude(
-        user__date_joined=timezone.now()  # Customize this as needed
+        user__date_joined=timezone.now()
     )[:10]
     
     context = {
@@ -668,7 +710,6 @@ def access_requests(request):
     }
     
     return render(request, 'access_requests.html', context)
-
 
 @login_required
 @user_passes_test(lambda u: u.is_superuser)
@@ -685,10 +726,8 @@ def approve_user(request, profile_id):
             profile.is_approved = True
             profile.approved_at = timezone.now()
             profile.approved_by = request.user
+            # registration_type remains 'SELF' (no change needed)
             profile.save()
-            
-            # Optional: Send approval email to user
-            # send_approval_email(user)
             
             return JsonResponse({
                 'success': True, 

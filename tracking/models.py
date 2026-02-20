@@ -1,7 +1,7 @@
 # tracking/models.py
 from django.db import models
 from django.contrib.auth.models import User
-from .choices import OFFICE_CHOICES, OFFICE_DICT, STATUS_CHOICES, ROLE_CHOICES
+from .choices import OFFICE_CHOICES, OFFICE_DICT, STATUS_CHOICES, ROLE_CHOICES, REGISTRATION_TYPES
 
 class Office(models.Model):
     office_code = models.CharField(max_length=50, choices=OFFICE_CHOICES, unique=True)
@@ -20,6 +20,17 @@ class UserProfile(models.Model):
     is_approved = models.BooleanField(default=False)
     approved_at = models.DateTimeField(null=True, blank=True)
     approved_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='approved_users')
+    
+    # NEW FIELD: Track how the user was created
+    registration_type = models.CharField(
+        max_length=20,
+        choices=REGISTRATION_TYPES,
+        default='ADMIN',  # Default to ADMIN for backward compatibility
+        help_text="How was this user account created?"
+    )
+    
+    # Optional but useful: Track when they registered
+    registered_at = models.DateTimeField(auto_now_add=True)
     
     def __str__(self):
         return f"{self.user.username} - {self.role}"
