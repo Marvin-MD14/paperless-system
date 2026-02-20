@@ -6,12 +6,7 @@
 {% block content %}
 <div class="content-heading">
     <div>
-        <h3 class="mb-2">Access Requests</h3>
-        <span class="text-sm d-none d-sm-block">Manage user registration requests</span>
-        <ol class="breadcrumb breadcrumb px-0 pb-0">
-            <li class="breadcrumb-item"><a href="{% url 'admin_dashboard' %}">Dashboard</a></li>
-            <li class="breadcrumb-item active">Access Requests</li>
-        </ol>
+        <h2 class="fw-bold text-dark mb-1">Access Requests</h2>
     </div>
 </div>
 
@@ -32,18 +27,17 @@
             <table class="table table-hover" id="pendingRequestsTable">
                 <thead class="thead-light">
                     <tr>
-                        <th width="40">
+                        <th width="40" data-priority="1">
                             <div class="custom-control custom-checkbox">
                                 <input type="checkbox" class="custom-control-input" id="selectAll">
                                 <label class="custom-control-label" for="selectAll"></label>
                             </div>
                         </th>
-                        <th>User</th>
-                        <th>Email</th>
-                        <th>Office</th>
-                        <th>Role Requested</th>
-                        <th>Registered On</th>
-                        <th>Actions</th>
+                        <th data-priority="1">User</th>
+                        <th data-priority="2">Email</th>
+                        <th data-priority="3">Office</th>
+                        <th data-priority="4">Registered On</th>
+                        <th data-priority="1">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -58,7 +52,6 @@
                         </td>
                         <td>
                             <div class="d-flex align-items-center">
-                                <img src="{% static 'assets/img/dummy.png' %}" class="rounded-circle thumb24 mr-2" alt="">
                                 <div>
                                     <strong>{{ profile.user.get_full_name|default:profile.user.username }}</strong>
                                 </div>
@@ -66,24 +59,24 @@
                         </td>
                         <td>{{ profile.user.email }}</td>
                         <td>{{ profile.office.office_name }}</td>
-                        <td>
-                            <span class="badge badge-info">{{ profile.get_role_display }}</span>
-                        </td>
                         <td>{{ profile.user.date_joined|date:"M d, Y H:i" }}</td>
                         <td>
                             <div class="btn-group" role="group">
                                 <button class="btn btn-sm btn-success approve-user" 
                                         data-profile-id="{{ profile.id }}"
-                                        data-user-name="{{ profile.user.get_full_name|default:profile.user.username }}">
-                                    <i class="fas fa-check"></i> Approve
+                                        data-user-name="{{ profile.user.get_full_name|default:profile.user.username }}"
+                                        title="Approve">
+                                    <i class="fas fa-check"></i>
                                 </button>
                                 <button class="btn btn-sm btn-danger reject-user" 
                                         data-profile-id="{{ profile.id }}"
-                                        data-user-name="{{ profile.user.get_full_name|default:profile.user.username }}">
-                                    <i class="fas fa-times"></i> Reject
+                                        data-user-name="{{ profile.user.get_full_name|default:profile.user.username }}"
+                                        title="Reject">
+                                    <i class="fas fa-times"></i>
                                 </button>
                                 <button class="btn btn-sm btn-info view-details" 
-                                        data-profile-id="{{ profile.id }}">
+                                        data-profile-id="{{ profile.id }}"
+                                        title="View Details">
                                     <i class="fas fa-eye"></i>
                                 </button>
                             </div>
@@ -95,7 +88,17 @@
         </div>
         {% else %}
         <div class="text-center py-5">
-            <img src="{% static 'assets/img/empty.svg' %}" alt="No Requests" style="width: 150px; opacity: 0.5;" class="mb-3">
+            <div class="sk-cube-grid mb-3" style="width: 60px; height: 60px; margin: 0 auto; color: #6c757d;">
+                <div class="sk-cube sk-cube1" style="background-color: currentColor;"></div>
+                <div class="sk-cube sk-cube2" style="background-color: currentColor;"></div>
+                <div class="sk-cube sk-cube3" style="background-color: currentColor;"></div>
+                <div class="sk-cube sk-cube4" style="background-color: currentColor;"></div>
+                <div class="sk-cube sk-cube5" style="background-color: currentColor;"></div>
+                <div class="sk-cube sk-cube6" style="background-color: currentColor;"></div>
+                <div class="sk-cube sk-cube7" style="background-color: currentColor;"></div>
+                <div class="sk-cube sk-cube8" style="background-color: currentColor;"></div>
+                <div class="sk-cube sk-cube9" style="background-color: currentColor;"></div>
+            </div>
             <h5 class="text-muted">No Pending Access Requests</h5>
             <p class="text-muted">All user registration requests have been processed.</p>
         </div>
@@ -111,15 +114,14 @@
     <div class="card-body">
         {% if approved_users %}
         <div class="table-responsive">
-            <table class="table table-hover">
+            <table class="table table-hover" id="approvedUsersTable">
                 <thead class="thead-light">
                     <tr>
-                        <th>User</th>
-                        <th>Email</th>
-                        <th>Office</th>
-                        <th>Role</th>
-                        <th>Approved On</th>
-                        <th>Approved By</th>
+                        <th data-priority="1">User</th>
+                        <th data-priority="2">Email</th>
+                        <th data-priority="3">Office</th>
+                        <th data-priority="4">Approved On</th>
+                        <th data-priority="4">Approved By</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -127,13 +129,11 @@
                     <tr>
                         <td>
                             <div class="d-flex align-items-center">
-                                <img src="{% static 'assets/img/dummy.png' %}" class="rounded-circle thumb24 mr-2" alt="">
                                 <strong>{{ profile.user.get_full_name|default:profile.user.username }}</strong>
                             </div>
                         </td>
                         <td>{{ profile.user.email }}</td>
                         <td>{{ profile.office.office_name }}</td>
-                        <td><span class="badge badge-success">{{ profile.get_role_display }}</span></td>
                         <td>{{ profile.approved_at|date:"M d, Y H:i" }}</td>
                         <td>{{ profile.approved_by.get_full_name|default:profile.approved_by.username }}</td>
                     </tr>
@@ -146,23 +146,231 @@
         {% endif %}
     </div>
 </div>
+
+<!-- User Details Modal -->
+<div class="modal fade" id="userDetailsModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title">User Request Details</h5>
+                <button type="button" class="close text-white" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="userDetailsContent">
+                Loading...
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock content %}
 
 {% block extra_js %}
+{% if messages %}
+    <div id="django-messages" style="display: none;" 
+         data-messages='[
+            {% for message in messages %}
+                {"tag": "{{ message.tags }}", "text": "{{ message|escapejs }}"}{% if not forloop.last %},{% endif %}
+            {% endfor %}
+         ]'>
+    </div>
+{% endif %}
 <script>
 $(document).ready(function() {
-    // Select All checkbox
-    $('#selectAll').on('change', function() {
-        $('.request-checkbox').prop('checked', $(this).prop('checked'));
+    // Modal fix
+    $('#userDetailsModal').appendTo('body');
+    
+    $('#userDetailsModal').on('show.bs.modal', function() {
+        $('body').addClass('modal-open');
+        $('.wrapper, .content-wrapper, .main-content, .container-fluid').css('z-index', 'auto');
     });
     
-    // Individual checkbox changes
-    $('.request-checkbox').on('change', function() {
-        if ($('.request-checkbox:checked').length === $('.request-checkbox').length) {
-            $('#selectAll').prop('checked', true);
-        } else {
-            $('#selectAll').prop('checked', false);
+    $('#userDetailsModal').on('hidden.bs.modal', function() {
+        $('body').removeClass('modal-open');
+        $('.modal-backdrop').remove();
+    });
+
+    // Handle Django messages
+    var messagesData = $('#django-messages').data('messages');
+    if (messagesData && messagesData.length > 0) {
+        messagesData.forEach(function(message) {
+            if (message.tag === 'success') {
+                showSuccess(message.text);
+            } else if (message.tag === 'error') {
+                showError(message.text);
+            } else {
+                showError(message.text);
+            }
+        });
+    }
+
+    // Initialize DataTable for Pending Requests
+    setTimeout(function() {
+        if ($('#pendingRequestsTable').length && $('#pendingRequestsTable tbody tr').length > 0) {
+            // Destroy existing instance if any
+            if ($.fn.DataTable.isDataTable('#pendingRequestsTable')) {
+                $('#pendingRequestsTable').DataTable().destroy();
+            }
+            
+            var pendingTable = $('#pendingRequestsTable').DataTable({
+                dom: "<'row'<'col-sm-12 col-md-6'f><'col-sm-12 col-md-6'B>>" +
+                     "<'row'<'col-sm-12'tr>>" +
+                     "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+                buttons: [
+                    {
+                        text: '<i class="fas fa-check-double me-2"></i>Approve Selected',
+                        className: 'btn btn-success btn-sm',
+                        action: function (e, dt, node, config) {
+                            $('#bulkApproveBtn').trigger('click');
+                        }
+                    }
+                ],
+                responsive: true,
+                autoWidth: false,
+                order: [[4, 'desc']], // Sort by Registered On (newest first)
+                columnDefs: [
+                    { orderable: false, targets: [0, 5] } // Disable ordering on checkbox and actions columns
+                ],
+                language: {
+                    search: "Search:",
+                    searchPlaceholder: "Search all columns...",
+                    lengthMenu: "Show _MENU_ entries",
+                    info: "Showing _START_ to _END_ of _TOTAL_ pending requests",
+                    infoEmpty: "Showing 0 to 0 of 0 pending requests",
+                    infoFiltered: "(filtered from _MAX_ total requests)",
+                    emptyTable: "No pending requests",
+                    zeroRecords: "No matching requests found",
+                    paginate: {
+                        first: '<i class="fa fa-angle-double-left"></i>',
+                        previous: '<i class="fa fa-caret-left"></i>',
+                        next: '<i class="fa fa-caret-right"></i>',
+                        last: '<i class="fa fa-angle-double-right"></i>'
+                    }
+                },
+                initComplete: function(settings, json) {
+                    // Style DataTable controls
+                    $('.dataTables_filter input').addClass('form-control form-control-sm').attr('placeholder', 'Search requests...');
+                    $('.dataTables_length select').addClass('custom-select custom-select-sm form-control form-control-sm');
+                    
+                    // Hide the original bulk approve button and use DataTables button instead
+                    $('#bulkApproveBtn').hide();
+                }
+            });
+            
+            // Store table reference for later use
+            window.pendingRequestsTable = pendingTable;
+            
+            // Update select all functionality for DataTable
+            $('#selectAll').on('change', function() {
+                var rows = pendingTable.rows({ 'search': 'applied' }).nodes();
+                // Convert to jQuery object to use find
+                $(rows).find('.request-checkbox').prop('checked', $(this).prop('checked'));
+            });
+            
+            // Update checkbox change handler for DataTable
+            $('#pendingRequestsTable tbody').on('change', '.request-checkbox', function() {
+                var rows = pendingTable.rows({ 'search': 'applied' }).nodes();
+                var totalCheckboxes = $(rows).find('.request-checkbox').length;
+                var checkedCheckboxes = $(rows).find('.request-checkbox:checked').length;
+                $('#selectAll').prop('checked', totalCheckboxes === checkedCheckboxes);
+            });
+            
+        } else if ($('#pendingRequestsTable').length) {
+            // Initialize with empty table message
+            $('#pendingRequestsTable').DataTable({
+                dom: "<'row'<'col-sm-12 col-md-6'f><'col-sm-12 col-md-6'>>" +
+                     "<'row'<'col-sm-12'tr>>" +
+                     "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+                responsive: true,
+                autoWidth: false,
+                language: {
+                    search: "Search:",
+                    searchPlaceholder: "Search all columns...",
+                    lengthMenu: "Show _MENU_ entries",
+                    info: "Showing _START_ to _END_ of _TOTAL_ entries",
+                    infoEmpty: "Showing 0 to 0 of 0 entries",
+                    infoFiltered: "(filtered from _MAX_ total entries)",
+                    emptyTable: "No pending requests",
+                    zeroRecords: "No matching requests found",
+                    paginate: {
+                        first: '<i class="fa fa-angle-double-left"></i>',
+                        previous: '<i class="fa fa-caret-left"></i>',
+                        next: '<i class="fa fa-caret-right"></i>',
+                        last: '<i class="fa fa-angle-double-right"></i>'
+                    }
+                },
+                initComplete: function(settings, json) {
+                    $('.dataTables_filter input').addClass('form-control form-control-sm').attr('placeholder', 'Search requests...');
+                    $('.dataTables_length select').addClass('custom-select custom-select-sm form-control form-control-sm');
+                }
+            });
         }
+    }, 100);
+    
+    // Initialize DataTable for Approved Users
+    setTimeout(function() {
+        if ($('#approvedUsersTable').length && $('#approvedUsersTable tbody tr').length > 0) {
+            if ($.fn.DataTable.isDataTable('#approvedUsersTable')) {
+                $('#approvedUsersTable').DataTable().destroy();
+            }
+            
+            $('#approvedUsersTable').DataTable({
+                dom: "<'row'<'col-sm-12 col-md-6'f><'col-sm-12 col-md-6'>>" +
+                     "<'row'<'col-sm-12'tr>>" +
+                     "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+                responsive: true,
+                autoWidth: false,
+                order: [[3, 'desc']], // Sort by Approved On (newest first)
+                pageLength: 5,
+                language: {
+                    search: "Search:",
+                    searchPlaceholder: "Search approved users...",
+                    lengthMenu: "Show _MENU_ entries",
+                    info: "Showing _START_ to _END_ of _TOTAL_ approved users",
+                    infoEmpty: "Showing 0 to 0 of 0 approved users",
+                    infoFiltered: "(filtered from _MAX_ total users)",
+                    emptyTable: "No approved users yet",
+                    zeroRecords: "No matching users found",
+                    paginate: {
+                        first: '<i class="fa fa-angle-double-left"></i>',
+                        previous: '<i class="fa fa-caret-left"></i>',
+                        next: '<i class="fa fa-caret-right"></i>',
+                        last: '<i class="fa fa-angle-double-right"></i>'
+                    }
+                },
+                initComplete: function(settings, json) {
+                    $('.dataTables_filter input').addClass('form-control form-control-sm');
+                    $('.dataTables_length select').addClass('custom-select custom-select-sm form-control form-control-sm');
+                }
+            });
+        }
+    }, 200);
+    
+    // Select All checkbox (non-DataTable mode)
+    $('#selectAll').on('change', function() {
+        if (!$.fn.DataTable.isDataTable('#pendingRequestsTable')) {
+            $('.request-checkbox').prop('checked', $(this).prop('checked'));
+        }
+    });
+    
+    // Individual checkbox changes (non-DataTable mode)
+    $('.request-checkbox').on('change', function() {
+        if (!$.fn.DataTable.isDataTable('#pendingRequestsTable')) {
+            if ($('.request-checkbox:checked').length === $('.request-checkbox').length) {
+                $('#selectAll').prop('checked', true);
+            } else {
+                $('#selectAll').prop('checked', false);
+            }
+        }
+    });
+    
+    // View details handler
+    $('.view-details').on('click', function() {
+        var profileId = $(this).data('profile-id');
+        viewUserDetails(profileId);
     });
     
     // Approve single user
@@ -203,9 +411,21 @@ $(document).ready(function() {
     
     // Bulk approve
     $('#bulkApproveBtn').on('click', function() {
-        const selectedIds = $('.request-checkbox:checked').map(function() {
-            return $(this).val();
-        }).get();
+        var selectedIds = [];
+        
+        if ($.fn.DataTable.isDataTable('#pendingRequestsTable') && window.pendingRequestsTable) {
+            var table = window.pendingRequestsTable;
+            var rows = table.rows({ 'search': 'applied' }).nodes();
+            
+            // Convert to jQuery and find checked checkboxes
+            $(rows).find('.request-checkbox:checked').each(function() {
+                selectedIds.push($(this).val());
+            });
+        } else {
+            $('.request-checkbox:checked').each(function() {
+                selectedIds.push($(this).val());
+            });
+        }
         
         if (selectedIds.length === 0) {
             swal('No Selection', 'Please select at least one user to approve.', 'info');
@@ -231,17 +451,31 @@ $(document).ready(function() {
             headers: {'X-CSRFToken': '{{ csrf_token }}'},
             success: function(response) {
                 if (response.success) {
-                    swal('Approved!', response.message, 'success');
-                    $('#request-row-' + profileId).fadeOut(500, function() {
-                        $(this).remove();
-                        if ($('#pendingRequestsTable tbody tr').length === 0) {
-                            location.reload();
+                    showSuccess(response.message || 'User approved successfully!');
+                    
+                    if ($.fn.DataTable.isDataTable('#pendingRequestsTable') && window.pendingRequestsTable) {
+                        // Remove row from DataTable
+                        var table = window.pendingRequestsTable;
+                        table.row($('#request-row-' + profileId)).remove().draw();
+                        
+                        // Check if table is empty after removal
+                        if (table.rows().count() === 0) {
+                            setTimeout(function() {
+                                location.reload();
+                            }, 1000);
                         }
-                    });
+                    } else {
+                        $('#request-row-' + profileId).fadeOut(500, function() {
+                            $(this).remove();
+                            if ($('#pendingRequestsTable tbody tr').length === 0) {
+                                location.reload();
+                            }
+                        });
+                    }
                 }
             },
             error: function(xhr) {
-                swal('Error!', xhr.responseJSON?.error || 'Failed to approve user', 'error');
+                showError(xhr.responseJSON?.error || 'Failed to approve user');
             }
         });
     }
@@ -253,17 +487,31 @@ $(document).ready(function() {
             headers: {'X-CSRFToken': '{{ csrf_token }}'},
             success: function(response) {
                 if (response.success) {
-                    swal('Rejected!', response.message, 'success');
-                    $('#request-row-' + profileId).fadeOut(500, function() {
-                        $(this).remove();
-                        if ($('#pendingRequestsTable tbody tr').length === 0) {
-                            location.reload();
+                    showSuccess(response.message || 'User rejected successfully!');
+                    
+                    if ($.fn.DataTable.isDataTable('#pendingRequestsTable') && window.pendingRequestsTable) {
+                        // Remove row from DataTable
+                        var table = window.pendingRequestsTable;
+                        table.row($('#request-row-' + profileId)).remove().draw();
+                        
+                        // Check if table is empty after removal
+                        if (table.rows().count() === 0) {
+                            setTimeout(function() {
+                                location.reload();
+                            }, 1000);
                         }
-                    });
+                    } else {
+                        $('#request-row-' + profileId).fadeOut(500, function() {
+                            $(this).remove();
+                            if ($('#pendingRequestsTable tbody tr').length === 0) {
+                                location.reload();
+                            }
+                        });
+                    }
                 }
             },
             error: function(xhr) {
-                swal('Error!', xhr.responseJSON?.error || 'Failed to reject user', 'error');
+                showError(xhr.responseJSON?.error || 'Failed to reject user');
             }
         });
     }
@@ -277,20 +525,89 @@ $(document).ready(function() {
             contentType: 'application/json',
             success: function(response) {
                 if (response.success) {
-                    swal('Approved!', response.message, 'success');
-                    profileIds.forEach(function(id) {
-                        $('#request-row-' + id).fadeOut(500);
-                    });
-                    setTimeout(function() {
-                        location.reload();
-                    }, 1000);
+                    showSuccess(response.message || `${profileIds.length} user(s) approved successfully!`);
+                    
+                    if ($.fn.DataTable.isDataTable('#pendingRequestsTable') && window.pendingRequestsTable) {
+                        // Remove each row from DataTable
+                        var table = window.pendingRequestsTable;
+                        profileIds.forEach(function(id) {
+                            table.row($('#request-row-' + id)).remove();
+                        });
+                        table.draw();
+                        
+                        // Check if table is empty after removal
+                        if (table.rows().count() === 0) {
+                            setTimeout(function() {
+                                location.reload();
+                            }, 1000);
+                        }
+                    } else {
+                        profileIds.forEach(function(id) {
+                            $('#request-row-' + id).fadeOut(500);
+                        });
+                        setTimeout(function() {
+                            location.reload();
+                        }, 1000);
+                    }
                 }
             },
             error: function(xhr) {
-                swal('Error!', xhr.responseJSON?.error || 'Failed to approve users', 'error');
+                showError(xhr.responseJSON?.error || 'Failed to approve users');
+            }
+        });
+    }
+    
+    function viewUserDetails(profileId) {
+        $("#userDetailsModal").modal('show');
+        $("#userDetailsContent").html('<div class="text-center"><i class="fas fa-spinner fa-spin fa-2x"></i><p>Loading...</p></div>');
+        
+        $.ajax({
+            url: '/user-request-details/' + profileId + '/',
+            method: 'GET',
+            success: function(data) {
+                $("#userDetailsContent").html(data);
+            },
+            error: function() {
+                $("#userDetailsContent").html('<div class="alert alert-danger">Error loading user details.</div>');
+                showError('Error loading user details.');
             }
         });
     }
 });
+
+// SweetAlert helper functions
+function showSuccess(message) {
+    swal({
+        title: "Success!",
+        text: message,
+        icon: "success",
+        buttons: {
+            confirm: {
+                text: "OK",
+                value: true,
+                visible: true,
+                className: "",
+                closeModal: true
+            }
+        }
+    });
+}
+
+function showError(message) {
+    swal({
+        title: "Error!",
+        text: message,
+        icon: "error",
+        buttons: {
+            confirm: {
+                text: "OK",
+                value: true,
+                visible: true,
+                className: "",
+                closeModal: true
+            }
+        }
+    });
+}
 </script>
 {% endblock extra_js %}

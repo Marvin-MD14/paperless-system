@@ -1138,7 +1138,6 @@ hr {
     padding: 0.625rem 0.9375rem; }
 
 .card-default {
-  border-top-width: 3px;
   border-color: #cfdbe2; }
   .card-default .card-header {
     background-color: #fff; }
