@@ -277,6 +277,32 @@
     </div>
 </div>
 
+<!-- Edit User Modal -->
+<div class="modal fade" id="editUserModal" tabindex="-1" role="dialog" aria-labelledby="editUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="editUserModalLabel">
+                    <i class="fas fa-user-edit me-2"></i>
+                    Edit User
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div id="editUserModalContent">
+                <!-- Content will be loaded dynamically via AJAX -->
+                <div class="modal-body text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="sr-only">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading user data...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Delete Confirmation Modal -->
 <div class="modal fade" id="deleteModal" tabindex="-1" role="dialog">
     <div class="modal-dialog modal-dialog-centered" role="document">
@@ -319,24 +345,6 @@
     </div>
 </div>
 
-<!-- Toast Notifications Container -->
-<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1050">
-    <div id="successToast" class="toast hide" role="alert">
-        <div class="toast-header bg-success text-white">
-            <strong class="mr-auto">Success</strong>
-            <button type="button" class="ml-2 mb-1 close text-white" data-dismiss="toast">&times;</button>
-        </div>
-        <div class="toast-body"></div>
-    </div>
-    <div id="errorToast" class="toast hide" role="alert">
-        <div class="toast-header bg-danger text-white">
-            <strong class="mr-auto">Error</strong>
-            <button type="button" class="ml-2 mb-1 close text-white" data-dismiss="toast">&times;</button>
-        </div>
-        <div class="toast-body"></div>
-    </div>
-</div>
-
 <style>
 .modal-lg {
     max-width: 800px;
@@ -362,7 +370,7 @@
 let deleteUserId = null;
 
 $(document).ready(function() {
-    // Modal fix
+    // Modal fix for Add User Modal
     $('#addUserModal').appendTo('body');
     
     $('#addUserModal').on('show.bs.modal', function() {
@@ -375,54 +383,91 @@ $(document).ready(function() {
         $('.modal-backdrop').remove();
     });
 
+    // Modal fix for Edit User Modal
+    $('#editUserModal').appendTo('body');
+    
+    $('#editUserModal').on('show.bs.modal', function() {
+        $('body').addClass('modal-open');
+        $('.wrapper, .content-wrapper, .main-content, .container-fluid').css('z-index', 'auto');
+    });
+    
+    $('#editUserModal').on('hidden.bs.modal', function() {
+        $('body').removeClass('modal-open');
+        $('.modal-backdrop').remove();
+        // Reset modal content to loading state
+        $('#editUserModalContent').html(
+            '<div class="modal-body text-center py-4">' +
+                '<div class="spinner-border text-primary" role="status">' +
+                    '<span class="sr-only">Loading...</span>' +
+                '</div>' +
+                '<p class="mt-2">Loading user data...</p>' +
+            '</div>'
+        );
+    });
+
+    // Modal fix for Delete Modal
+    $('#deleteModal').appendTo('body');
+    
+    $('#deleteModal').on('show.bs.modal', function() {
+        $('body').addClass('modal-open');
+        $('.wrapper, .content-wrapper, .main-content, .container-fluid').css('z-index', 'auto');
+    });
+    
+    $('#deleteModal').on('hidden.bs.modal', function() {
+        $('body').removeClass('modal-open');
+        $('.modal-backdrop').remove();
+        // Reset delete button state
+        $('#confirmDelete').html('Delete').prop('disabled', false);
+    });
+
     // Handle Django messages
     var messagesData = $('#django-messages').data('messages');
     if (messagesData && messagesData.length > 0) {
         messagesData.forEach(function(message) {
             if (message.tag === 'success') {
-                showToast('success', message.text);
+                showSuccess(message.text);
             } else if (message.tag === 'error') {
-                showToast('error', message.text);
+                showError(message.text);
             } else {
-                showToast('error', message.text);
+                showError(message.text);
             }
         });
     }
 
     // Initialize DataTable
-$('#userTable').DataTable({
-    dom: "<'row'<'col-sm-6'f><'col-sm-6 text-end'B>>" +  // Search on left, Button on right
-         "<'row'<'col-sm-12'tr>>" +
-         "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
-    responsive: true,
-    autoWidth: false,
-    order: [[0, 'asc']],
-    buttons: [
-        {
-            text: '<i class="fas fa-user-plus me-2"></i> Register New User',
-            className: 'btn btn-primary',
-            action: function (e, dt, node, config) {
-                $('#addUserModal').modal('show');
+    $('#userTable').DataTable({
+        dom: "<'row'<'col-sm-6'f><'col-sm-6 text-end'B>>" +  // Search on left, Button on right
+             "<'row'<'col-sm-12'tr>>" +
+             "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+        responsive: true,
+        autoWidth: false,
+        order: [[0, 'asc']],
+        buttons: [
+            {
+                text: '<i class="fas fa-user-plus me-2"></i> Register New User',
+                className: 'btn btn-primary',
+                action: function (e, dt, node, config) {
+                    $('#addUserModal').modal('show');
+                }
+            }
+        ],
+        columnDefs: [
+            { orderable: false, targets: 5 }
+        ],
+        language: {
+            searchPlaceholder: "Search all columns...",
+            lengthMenu: "Show _MENU_ entries",
+            info: "Showing _START_ to _END_ of _TOTAL_ entries",
+            infoEmpty: "Showing 0 to 0 of 0 entries",
+            infoFiltered: "(filtered from _MAX_ total entries)",
+            paginate: {
+                first: '<em class="fa fa-angle-double-left"></em>',
+                previous: '<em class="fa fa-caret-left"></em>',
+                next: '<em class="fa fa-caret-right"></em>',
+                last: '<em class="fa fa-angle-double-right"></em>'
             }
         }
-    ],
-    columnDefs: [
-        { orderable: false, targets: 5 }
-    ],
-    language: {
-        searchPlaceholder: "Search all columns...",
-        lengthMenu: "Show _MENU_ entries",
-        info: "Showing _START_ to _END_ of _TOTAL_ entries",
-        infoEmpty: "Showing 0 to 0 of 0 entries",
-        infoFiltered: "(filtered from _MAX_ total entries)",
-        paginate: {
-            first: '<em class="fa fa-angle-double-left"></em>',
-            previous: '<em class="fa fa-caret-left"></em>',
-            next: '<em class="fa fa-caret-right"></em>',
-            last: '<em class="fa fa-angle-double-right"></em>'
-        }
-    }
-});
+    });
     
     // Style DataTable controls
     $('.dataTables_filter input').addClass('form-control form-control-sm').attr('placeholder', 'Search all columns...');
@@ -440,20 +485,73 @@ $('#userTable').DataTable({
         'min-width': '200px'
     });
     
-    // ===== NEW: Event listeners for edit/delete buttons =====
     // Edit user click handler
     $('.edit-user').on('click', function() {
         var userId = $(this).data('user-id');
-        window.location.href = '/edit-user/' + userId + '/';
+        
+        // Show the modal with loading spinner
+        $('#editUserModal').modal('show');
+        
+        // Load the edit form via AJAX
+        $.ajax({
+            url: '/edit-user/' + userId + '/',
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            success: function(data) {
+                $('#editUserModalContent').html(data);
+                
+                // Re-initialize password toggle and validation for the loaded form
+                setupEditFormValidation();
+            },
+            error: function() {
+                $('#editUserModalContent').html(
+                    '<div class="modal-body">' +
+                        '<div class="alert alert-danger">' +
+                            'Error loading user data. Please try again.' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="modal-footer bg-light">' +
+                        '<button type="button" class="btn btn-secondary" data-dismiss="modal">' +
+                            '<i class="fas fa-times me-2"></i>Close' +
+                        '</button>' +
+                    '</div>'
+                );
+            }
+        });
     });
     
     // Delete user click handler
     $('.delete-user').on('click', function() {
         var userId = $(this).data('user-id');
         deleteUserId = userId;
-        $("#deleteModal").modal('show');
+        
+        showConfirmDelete(function() {
+            // Show loading state on the delete button in the modal
+            $('#confirmDelete').html('<i class="fas fa-spinner fa-spin me-2"></i>Deleting...').prop('disabled', true);
+            
+            // Perform delete
+            $.ajax({
+                url: '/delete-user/' + deleteUserId + '/',
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                success: function(response) {
+                    $("#deleteModal").modal('hide');
+                    showSuccess('User deleted successfully!');
+                    setTimeout(function() {
+                        location.reload();
+                    }, 2000);
+                },
+                error: function(xhr) {
+                    showError(xhr.responseJSON?.error || 'Error deleting user. Please try again.');
+                    $('#confirmDelete').html('Delete').prop('disabled', false);
+                }
+            });
+        });
     });
-    // ===== END of new event listeners =====
     
     // Password strength checker
     $("#password").on("keyup", function() {
@@ -477,23 +575,16 @@ $('#userTable').DataTable({
     $("#addUserForm").submit(function(e) {
         var password = $("#password").val();
         var confirm = $("#confirm_password").val();
-        var username = $("#username").val();
         
         if (password !== confirm) {
             e.preventDefault();
-            showToast('error', 'Passwords do not match!');
+            showError('Passwords do not match!');
             return false;
         }
         
         if (password.length < 8) {
             e.preventDefault();
-            showToast('error', 'Password must be at least 8 characters long!');
-            return false;
-        }
-        
-        if (username.length < 3) {
-            e.preventDefault();
-            showToast('error', 'Username must be at least 3 characters long!');
+            showError('Password must be at least 8 characters long!');
             return false;
         }
     });
@@ -559,38 +650,146 @@ function checkPasswordStrength(password) {
     $("#strengthBar").removeClass().addClass("progress-bar bg-" + strengthColor).css("width", strengthWidth);
 }
 
-// ===== REMOVED: deleteUser(userId) function =====
-// ===== REMOVED: editUser(userId) function =====
-
-// Keep this for the delete confirmation modal
-$("#confirmDelete").click(function() {
-    if (deleteUserId) {
-        // Show loading state
-        $(this).html('<i class="fas fa-spinner fa-spin me-2"></i>Deleting...');
-        $(this).prop('disabled', true);
+function setupEditFormValidation() {
+    // Password toggle for edit modal
+    $('#editUserModal').off('click', '#editToggleIcon').on('click', '#editToggleIcon', function() {
+        toggleEditPassword();
+    });
+    
+    // Password strength checker
+    $('#editUserModal').off('keyup', '#new_password').on('keyup', '#new_password', function() {
+        var password = $(this).val();
+        checkEditPasswordStrength(password);
+    });
+    
+    // Password confirmation
+    $('#editUserModal').off('keyup', '#confirm_password').on('keyup', '#confirm_password', function() {
+        var password = $("#new_password").val();
+        var confirm = $(this).val();
         
-        // Perform delete
+        if (password !== confirm) {
+            $(this).addClass("is-invalid");
+        } else {
+            $(this).removeClass("is-invalid");
+        }
+    });
+    
+    // Handle form submission via AJAX
+    $('#editUserModal').off('submit', '#editUserForm').on('submit', '#editUserForm', function(e) {
+        e.preventDefault();
+        
+        var form = $(this);
+        var password = $("#new_password").val();
+        var confirm = $("#confirm_password").val();
+        
+        // Validate if password is being changed
+            if (password || confirm) {
+                if (password !== confirm) {
+                    showError('Passwords do not match!');
+                    return false;
+                }
+                
+                if (password.length < 8) {
+                    showError('Password must be at least 8 characters long!');
+                    return false;
+                }
+            }
+        
+        // Show loading state
+        $('#editSubmitBtn').html('<i class="fas fa-spinner fa-spin me-2"></i>Saving...').prop('disabled', true);
+        
+        // Submit via AJAX
         $.ajax({
-            url: '/delete-user/' + deleteUserId + '/',
+            url: form.attr('action'),
             method: 'POST',
+            data: form.serialize(),
             headers: {
+                'X-Requested-With': 'XMLHttpRequest',
                 'X-CSRFToken': '{{ csrf_token }}'
             },
             success: function(response) {
-                $("#deleteModal").modal('hide');
-                showToast('success', 'User deleted successfully!');
+                $('#editUserModal').modal('hide');
+                showSuccess(response.message || 'User updated successfully!');
                 setTimeout(function() {
                     location.reload();
                 }, 2000);
             },
             error: function(xhr) {
-                showToast('error', xhr.responseJSON?.error || 'Error deleting user. Please try again.');
-                $("#confirmDelete").html('Delete');
-                $("#confirmDelete").prop('disabled', false);
+                $('#editSubmitBtn').html('<i class="fas fa-save me-2"></i>Save Changes').prop('disabled', false);
+                
+                var errorMessage = 'Error updating user. Please try again.';
+                if (xhr.responseJSON && xhr.responseJSON.error) {
+                    errorMessage = xhr.responseJSON.error;
+                }
+                showError(errorMessage);
             }
         });
+    });
+}
+
+function toggleEditPassword() {
+    var passwordField = $("#new_password");
+    var toggleIcon = $("#editToggleIcon");
+    
+    if (passwordField.attr("type") === "password") {
+        passwordField.attr("type", "text");
+        toggleIcon.removeClass("fa-eye").addClass("fa-eye-slash");
+    } else {
+        passwordField.attr("type", "password");
+        toggleIcon.removeClass("fa-eye-slash").addClass("fa-eye");
     }
-});
+}
+
+function checkEditPasswordStrength(password) {
+    var strength = 0;
+    var strengthText = "";
+    var strengthColor = "";
+    var strengthWidth = 0;
+    
+    if (password.length >= 8) strength += 1;
+    if (password.match(/[a-z]+/)) strength += 1;
+    if (password.match(/[A-Z]+/)) strength += 1;
+    if (password.match(/[0-9]+/)) strength += 1;
+    if (password.match(/[$@#&!]+/)) strength += 1;
+    
+    if (password.length > 0) {
+        $("#editPasswordStrength").show();
+    } else {
+        $("#editPasswordStrength").hide();
+    }
+    
+    switch(strength) {
+        case 0:
+        case 1:
+            strengthText = "Very Weak";
+            strengthColor = "danger";
+            strengthWidth = "20%";
+            break;
+        case 2:
+            strengthText = "Weak";
+            strengthColor = "warning";
+            strengthWidth = "40%";
+            break;
+        case 3:
+            strengthText = "Medium";
+            strengthColor = "info";
+            strengthWidth = "60%";
+            break;
+        case 4:
+            strengthText = "Strong";
+            strengthColor = "primary";
+            strengthWidth = "80%";
+            break;
+        case 5:
+            strengthText = "Very Strong";
+            strengthColor = "success";
+            strengthWidth = "100%";
+            break;
+    }
+    
+    $("#editStrengthText").text(strengthText);
+    $("#editStrengthBar").removeClass().addClass("progress-bar bg-" + strengthColor).css("width", strengthWidth);
+}
 
 function viewUser(userId) {
     $("#userDetailsModal").modal('show');
@@ -604,15 +803,67 @@ function viewUser(userId) {
         },
         error: function() {
             $("#userDetailsContent").html('<div class="alert alert-danger">Error loading user details.</div>');
+            showError('Error loading user details.');
         }
     });
 }
 
-function showToast(type, message) {
-    var toast = type === 'success' ? $('#successToast') : $('#errorToast');
-    toast.find('.toast-body').text(message);
-    toast.toast({ delay: 3000 });
-    toast.toast('show');
+function showSuccess(message) {
+    swal({
+        title: "Success!",
+        text: message,
+        type: "success",
+        timer: 2000,
+        showConfirmButton: true
+    });
+}
+
+function showError(message) {
+    swal({
+        title: "Error!",
+        text: message,
+        type: "error",
+        timer: 3000,
+        showConfirmButton: true
+    });
+}
+
+function showWarning(message) {
+    swal({
+        title: "Warning!",
+        text: message,
+        type: "warning",
+        timer: 3000,
+        showConfirmButton: true
+    });
+}
+
+function showInfo(message) {
+    swal({
+        title: "Info",
+        text: message,
+        type: "info",
+        timer: 3000,
+        showConfirmButton: true
+    });
+}
+
+function showConfirmDelete(callback) {
+    swal({
+        title: "Are you sure?",
+        text: "This user will be permanently deleted!",
+        type: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#DD6B55",
+        confirmButtonText: "Yes, delete it!",
+        cancelButtonText: "No, cancel!",
+        closeOnConfirm: false,
+        closeOnCancel: true
+    }).then(function(isConfirm) {
+        if (isConfirm) {
+            callback();
+        }
+    });
 }
 </script>
 {% endblock %}

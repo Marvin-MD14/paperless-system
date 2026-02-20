@@ -19,16 +19,18 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
 
-    <link rel="stylesheet" href="vendor/@fortawesome/fontawesome-free/css/brands.css">
-   <link rel="stylesheet" href="vendor/@fortawesome/fontawesome-free/css/regular.css">
-   <link rel="stylesheet" href="vendor/@fortawesome/fontawesome-free/css/solid.css">
-   <link rel="stylesheet" href="vendor/@fortawesome/fontawesome-free/css/fontawesome.css"><!-- SIMPLE LINE ICONS-->
-   <link rel="stylesheet" href="vendor/simple-line-icons/css/simple-line-icons.css"><!-- ANIMATE.CSS-->
-   <link rel="stylesheet" href="vendor/animate.css/animate.css"><!-- WHIRL (spinners)-->
-   <link rel="stylesheet" href="vendor/whirl/dist/whirl.css"><!-- =============== PAGE VENDOR STYLES ===============-->
+    <link rel="stylesheet" href="{% static 'assets/vendor/@fortawesome/fontawesome-free/css/brands.css' %}">
+    <link rel="stylesheet" href="{% static 'assets/vendor/@fortawesome/fontawesome-free/css/regular.css' %}">
+    <link rel="stylesheet" href="{% static 'assets/vendor/@fortawesome/fontawesome-free/css/solid.css' %}">
+    <link rel="stylesheet" href="{% static 'assets/vendor/@fortawesome/fontawesome-free/css/fontawesome.css' %}">
+
+    <link rel="stylesheet" href="{% static 'assets/vendor/simple-line-icons/css/simple-line-icons.css' %}">
+    <link rel="stylesheet" href="{% static 'assets/vendor/animate.css/animate.css' %}">
+    <link rel="stylesheet" href="{% static 'assets/vendor/whirl/dist/whirl.css' %}">
+   
    <!-- =============== BOOTSTRAP STYLES ===============-->
-   <link rel="stylesheet" href="css/bootstrap.css" id="bscss"><!-- =============== APP STYLES ===============-->
-   <link rel="stylesheet" href="css/app.css" id="maincss">
+   <link rel="stylesheet" href="{% static 'assets/css/bootstrap.css' %}" id="bscss">
+   <link rel="stylesheet" href="{% static 'assets/css/app.css' %}" id="maincss">
     
     <style>
         body { font-family: 'Poppins', sans-serif; background-color: #f8f9fa; min-height: 100vh; margin: 0; }
@@ -130,8 +132,9 @@
     <script src="{% static 'assets/vendor/jszip/dist/jszip.js' %}"></script>
     <script src="{% static 'assets/vendor/pdfmake/build/pdfmake.js' %}"></script>
     <script src="{% static 'assets/vendor/pdfmake/build/vfs_fonts.js' %}"></script>
+
+    <script src="{% static 'assets/vendor/sweetalert/dist/sweetalert.min.js' %}"></script>
     <script src="{% static 'assets/js/custom/custom.js' %}"></script>
-    
     <script src="{% static 'assets/js/app.init.js' %}"></script>
 
     <script>

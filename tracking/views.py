@@ -8,7 +8,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.views.decorators.cache import never_cache
 from django.db.models import Q
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 import json
 
 # --- HELPER FUNCTION: Authenticate by email ---
@@ -486,13 +486,139 @@ def edit_user(request, user_id):
         userprofile.role = request.POST.get('role', userprofile.role)
         userprofile.save()
         
+        # Return JSON response for AJAX
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': True, 
+                'message': f'User {user.username} updated successfully!'
+            })
+        
         messages.success(request, f'User {user.username} updated successfully!')
         return redirect('user_management')
     
-    # GET request - show edit form
+    # GET request - return the form HTML
     offices = Office.objects.all()
-    context = {
-        'profile': userprofile,
-        'offices': offices,
-    }
-    return render(request, 'edit_user.html', context)
+    
+    # If it's an AJAX request, return just the form HTML
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        html = f'''
+        <form method="POST" action="/edit-user/{user_id}/" id="editUserForm">
+            <input type="hidden" name="csrfmiddlewaretoken" value="{request.COOKIES.get('csrftoken', '')}">
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="username" class="fw-bold">Username <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="fas fa-user"></i></span>
+                                </div>
+                                <input type="text" class="form-control" id="username" name="username" value="{userprofile.user.username}" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="email" class="fw-bold">Email Address</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+                                </div>
+                                <input type="email" class="form-control" id="email" name="email" value="{userprofile.user.email or ''}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="first_name" class="fw-bold">First Name</label>
+                            <input type="text" class="form-control" id="first_name" name="first_name" value="{userprofile.user.first_name or ''}">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="last_name" class="fw-bold">Last Name</label>
+                            <input type="text" class="form-control" id="last_name" name="last_name" value="{userprofile.user.last_name or ''}">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="new_password" class="fw-bold">New Password</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                                </div>
+                                <input type="password" class="form-control" id="new_password" name="new_password" placeholder="Leave blank to keep current">
+                                <div class="input-group-append">
+                                    <span class="input-group-text" style="cursor: pointer;" id="editToggleIcon">
+                                        <i class="fas fa-eye"></i>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="confirm_password" class="fw-bold">Confirm Password</label>
+                            <input type="password" class="form-control" id="confirm_password" name="confirm_password" placeholder="Confirm new password">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="office" class="fw-bold">Office</label>
+                            <select class="form-control" id="office" name="office">
+                                <option value="">Select Office (Optional)</option>
+                                {''.join([f'<option value="{office.id}" {"selected" if userprofile.office and userprofile.office.id == office.id else ""}>{office.office_name} ({office.office_code})</option>' for office in offices])}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="role" class="fw-bold">Role <span class="text-danger">*</span></label>
+                            <select class="form-control" id="role" name="role" required>
+                                <option value="STAFF" {"selected" if userprofile.role == 'STAFF' else ""}>Staff</option>
+                                <option value="HEAD" {"selected" if userprofile.role == 'HEAD' else ""}>Office Head</option>
+                                <option value="EXECUTIVE" {"selected" if userprofile.role == 'EXECUTIVE' else ""}>Executive</option>
+                                <option value="GOVERNOR" {"selected" if userprofile.role == 'GOVERNOR' else ""}>Governor</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <div class="custom-control custom-switch">
+                        <input type="checkbox" class="custom-control-input" id="is_active" name="is_active" {"checked" if userprofile.user.is_active else ""}>
+                        <label class="custom-control-label" for="is_active">Active Account</label>
+                    </div>
+                    <small class="text-muted">If unchecked, user won't be able to log in</small>
+                </div>
+                
+                <div class="alert alert-info mt-3" id="editPasswordStrength" style="display: none;">
+                    <strong>Password Strength:</strong> <span id="editStrengthText">Weak</span>
+                    <div class="progress mt-2" style="height: 5px;">
+                        <div class="progress-bar" id="editStrengthBar" role="progressbar" style="width: 0%;"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Cancel
+                </button>
+                <button type="submit" class="btn btn-primary" id="editSubmitBtn">
+                    <i class="fas fa-save me-2"></i>Save Changes
+                </button>
+            </div>
+        </form>
+        '''
+        return HttpResponse(html)
+    
+    # For non-AJAX requests (fallback), redirect to management page
+    return redirect('user_management')
