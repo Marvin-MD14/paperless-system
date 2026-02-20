@@ -430,6 +430,10 @@ def register_user(request):
 @user_passes_test(lambda u: u.is_superuser)
 def delete_user(request, user_id):
     if request.method == 'POST':
+        # Prevent deleting yourself
+        if request.user.id == int(user_id):
+            return JsonResponse({'success': False, 'error': 'You cannot delete your own account!'}, status=400)
+            
         try:
             user = get_object_or_404(User, id=user_id)
             username = user.username

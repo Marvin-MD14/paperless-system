@@ -558,7 +558,7 @@ $(document).ready(function() {
         var password = $(this).val();
         checkPasswordStrength(password);
     });
-    
+        });
     // Password confirmation
     $("#confirm_password").on("keyup", function() {
         var password = $("#password").val();
@@ -569,7 +569,6 @@ $(document).ready(function() {
         } else {
             $(this).removeClass("is-invalid");
         }
-    });
     
     // Form validation
     $("#addUserForm").submit(function(e) {
