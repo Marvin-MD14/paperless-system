@@ -68,4 +68,7 @@ urlpatterns = [
     path('delete-user/<int:user_id>/', delete_user, name='delete_user'),
     path('edit-user/<int:user_id>/', edit_user, name='edit_user'),
     path('user-details/<int:user_id>/', user_details, name='user_details'),
+
+    path('upload-document/', user_dashboard, name='upload_document'), 
+    path('document-list/', user_dashboard, name='document_list'),
 ]
