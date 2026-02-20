@@ -61,84 +61,75 @@
         <div>
             <div class="card-title">Registered User Profiles</div>
         </div>
-        <!-- <div>
-            <button class="btn btn-primary" data-toggle="modal" data-target="#addUserModal">
-                <i class="fas fa-user-plus me-2"></i> Register New User
-            </button>
-        </div> -->
+        <!-- Register button is in DataTable buttons, so no need here -->
     </div>
-    <div class="card-body">
-        <table class="table table-striped my-4 w-100" id="userTable">
-            <thead>
-                <tr>
-                    <th data-priority="1">User</th>
-                    <th data-priority="3">Office</th>
-                    <th data-priority="2">Role</th>
-                    <th data-priority="4">Status</th>
-                    <th data-priority="5">Last Login</th>
-                    <th data-priority="6">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for userprofile in userprofiles %}
-                <tr class="gradeX">
-                    <td>
-                        <div class="fw-bold">{{ userprofile.user.get_full_name|default:userprofile.user.username }}</div>
-                        <small class="text-muted">{{ userprofile.user.email|default:"No email" }}</small>
-                    </td>
-                    <td>
-                        {% if userprofile.office %}
-                            {{ userprofile.office.office_name }}
-                        {% else %}
-                            <span class="text-muted">Not Assigned</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        <span class="badge bg-secondary">
-                            {{ userprofile.get_role_display }}
-                        </span>
-                    </td>
-                    <td>
-                        {% if userprofile.user.is_active %}
-                            <span class="badge badge-success">Active</span>
-                        {% else %}
-                            <span class="badge badge-danger">Inactive</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if userprofile.user.last_login %}
-                            {{ userprofile.user.last_login|date:"M d, Y H:i" }}
-                        {% else %}
-                            <span class="text-muted">Never</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        <div class="btn-group" role="group">
-                            <button class="btn btn-sm btn-outline-primary edit-user" 
-                                    data-user-id="{{ userprofile.id }}" 
-                                    title="Edit">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="btn btn-sm btn-outline-danger delete-user" 
-                                    data-user-id="{{ userprofile.id }}" 
-                                    title="Delete">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="6" class="text-center py-5">
-                        <i class="fas fa-users fa-4x text-muted mb-3"></i>
-                        <h5 class="mt-3 text-muted">No users registered yet</h5>
-                        <p class="text-muted">Click the "Register New User" button to add your first user.</p>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+<div class="card-body">
+    <table class="table table-striped my-4 w-100" id="userTable">
+        <thead>
+            <tr>
+                <th data-priority="1">User</th>
+                <th data-priority="3">Office</th>
+                <th data-priority="2">Role</th>
+                <th data-priority="4">Status</th>
+                <th data-priority="5">Last Login</th>
+                <th data-priority="6">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for userprofile in userprofiles %}
+            <tr>
+                <td>
+                    <div class="fw-bold">{{ userprofile.user.get_full_name|default:userprofile.user.username }}</div>
+                    <small class="text-muted">{{ userprofile.user.email|default:"No email" }}</small>
+                </td>
+                <td>
+                    {% if userprofile.office %}
+                        {{ userprofile.office.office_name }}
+                    {% else %}
+                        <span class="text-muted">Not Assigned</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <span class="badge bg-secondary">
+                        {{ userprofile.get_role_display }}
+                    </span>
+                </td>
+                <td>
+                    {% if userprofile.user.is_active %}
+                        <span class="badge badge-success">Active</span>
+                    {% else %}
+                        <span class="badge badge-danger">Inactive</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if userprofile.user.last_login %}
+                        {{ userprofile.user.last_login|date:"M d, Y H:i" }}
+                    {% else %}
+                        <span class="text-muted">Never</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="btn-group" role="group">
+                        <button class="btn btn-sm btn-outline-primary edit-user" 
+                                data-user-id="{{ userprofile.id }}" 
+                                title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger delete-user" 
+                                data-user-id="{{ userprofile.id }}" 
+                                title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <!-- Empty - DataTable will show "No data available" -->
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+</div>
 </div>
 </div>
 
@@ -303,6 +294,26 @@
     </div>
 </div>
 
+<!-- User Details Modal -->
+<div class="modal fade" id="userDetailsModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title">User Details</h5>
+                <button type="button" class="close text-white" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="userDetailsContent">
+                Loading...
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Delete Confirmation Modal -->
 <div class="modal fade" id="deleteModal" tabindex="-1" role="dialog">
     <div class="modal-dialog modal-dialog-centered" role="document">
@@ -320,26 +331,6 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-danger" id="confirmDelete">Delete</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- User Details Modal -->
-<div class="modal fade" id="userDetailsModal" tabindex="-1" role="dialog">
-    <div class="modal-dialog modal-dialog-centered" role="document">
-        <div class="modal-content">
-            <div class="modal-header bg-info text-white">
-                <h5 class="modal-title">User Details</h5>
-                <button type="button" class="close text-white" data-dismiss="modal">
-                    <span>&times;</span>
-                </button>
-            </div>
-            <div class="modal-body" id="userDetailsContent">
-                Loading...
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
@@ -370,54 +361,17 @@
 let deleteUserId = null;
 
 $(document).ready(function() {
-    // Modal fix for Add User Modal
-    $('#addUserModal').appendTo('body');
+    // Modal fix for all modals
+    $('#addUserModal, #editUserModal, #deleteModal, #userDetailsModal').appendTo('body');
     
-    $('#addUserModal').on('show.bs.modal', function() {
+    $('[id$=Modal]').on('show.bs.modal', function() {
         $('body').addClass('modal-open');
         $('.wrapper, .content-wrapper, .main-content, .container-fluid').css('z-index', 'auto');
     });
     
-    $('#addUserModal').on('hidden.bs.modal', function() {
+    $('[id$=Modal]').on('hidden.bs.modal', function() {
         $('body').removeClass('modal-open');
         $('.modal-backdrop').remove();
-    });
-
-    // Modal fix for Edit User Modal
-    $('#editUserModal').appendTo('body');
-    
-    $('#editUserModal').on('show.bs.modal', function() {
-        $('body').addClass('modal-open');
-        $('.wrapper, .content-wrapper, .main-content, .container-fluid').css('z-index', 'auto');
-    });
-    
-    $('#editUserModal').on('hidden.bs.modal', function() {
-        $('body').removeClass('modal-open');
-        $('.modal-backdrop').remove();
-        // Reset modal content to loading state
-        $('#editUserModalContent').html(
-            '<div class="modal-body text-center py-4">' +
-                '<div class="spinner-border text-primary" role="status">' +
-                    '<span class="sr-only">Loading...</span>' +
-                '</div>' +
-                '<p class="mt-2">Loading user data...</p>' +
-            '</div>'
-        );
-    });
-
-    // Modal fix for Delete Modal
-    $('#deleteModal').appendTo('body');
-    
-    $('#deleteModal').on('show.bs.modal', function() {
-        $('body').addClass('modal-open');
-        $('.wrapper, .content-wrapper, .main-content, .container-fluid').css('z-index', 'auto');
-    });
-    
-    $('#deleteModal').on('hidden.bs.modal', function() {
-        $('body').removeClass('modal-open');
-        $('.modal-backdrop').remove();
-        // Reset delete button state
-        $('#confirmDelete').html('Delete').prop('disabled', false);
     });
 
     // Handle Django messages
@@ -434,56 +388,57 @@ $(document).ready(function() {
         });
     }
 
-    // Initialize DataTable
-    $('#userTable').DataTable({
-        dom: "<'row'<'col-sm-6'f><'col-sm-6 text-end'B>>" +  // Search on left, Button on right
-             "<'row'<'col-sm-12'tr>>" +
-             "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
-        responsive: true,
-        autoWidth: false,
-        order: [[0, 'asc']],
-        buttons: [
-            {
-                text: '<i class="fas fa-user-plus me-2"></i> Register New User',
-                className: 'btn btn-primary',
-                action: function (e, dt, node, config) {
-                    $('#addUserModal').modal('show');
-                }
-            }
-        ],
-        columnDefs: [
-            { orderable: false, targets: 5 }
-        ],
-        language: {
-            searchPlaceholder: "Search all columns...",
-            lengthMenu: "Show _MENU_ entries",
-            info: "Showing _START_ to _END_ of _TOTAL_ entries",
-            infoEmpty: "Showing 0 to 0 of 0 entries",
-            infoFiltered: "(filtered from _MAX_ total entries)",
-            paginate: {
-                first: '<em class="fa fa-angle-double-left"></em>',
-                previous: '<em class="fa fa-caret-left"></em>',
-                next: '<em class="fa fa-caret-right"></em>',
-                last: '<em class="fa fa-angle-double-right"></em>'
-            }
+// Always initialize DataTable - even with no rows
+setTimeout(function() {
+    if ($('#userTable').length) {
+        // Destroy existing instance if any
+        if ($.fn.DataTable.isDataTable('#userTable')) {
+            $('#userTable').DataTable().destroy();
         }
-    });
-    
-    // Style DataTable controls
-    $('.dataTables_filter input').addClass('form-control form-control-sm').attr('placeholder', 'Search all columns...');
-    $('.dataTables_length select').addClass('custom-select custom-select-sm form-control form-control-sm');
-    
-    $('.dataTables_filter label').css({
-        'display': 'flex',
-        'align-items': 'center',
-        'flex-wrap': 'wrap',
-        'gap': '0.5rem'
-    });
-    
-    $('.dataTables_filter input').css({
-        'flex': '1 1 auto',
-        'min-width': '200px'
-    });
+        
+        $('#userTable').DataTable({
+            dom: "<'row'<'col-sm-12 col-md-6'f><'col-sm-12 col-md-6'B>>" +
+                 "<'row'<'col-sm-12'tr>>" +
+                 "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+            responsive: true,
+            autoWidth: false,
+            order: [[0, 'asc']],
+            buttons: [
+                {
+                    text: '<i class="fas fa-user-plus me-2"></i> Register New User',
+                    className: 'btn btn-primary',
+                    action: function (e, dt, node, config) {
+                        $('#addUserModal').modal('show');
+                    }
+                }
+            ],
+            columnDefs: [
+                { orderable: false, targets: 5 }
+            ],
+            language: {
+                search: "Search:",
+                searchPlaceholder: "Search all columns...",
+                lengthMenu: "Show _MENU_ entries",
+                info: "Showing _START_ to _END_ of _TOTAL_ entries",
+                infoEmpty: "Showing 0 to 0 of 0 entries",
+                infoFiltered: "(filtered from _MAX_ total entries)",
+                emptyTable: "No users registered yet. Click 'Register New User' to add one.",
+                zeroRecords: "No matching users found",
+                paginate: {
+                    first: '<i class="fa fa-angle-double-left"></i>',
+                    previous: '<i class="fa fa-caret-left"></i>',
+                    next: '<i class="fa fa-caret-right"></i>',
+                    last: '<i class="fa fa-angle-double-right"></i>'
+                }
+            },
+            initComplete: function(settings, json) {
+                // Style DataTable controls
+                $('.dataTables_filter input').addClass('form-control form-control-sm').attr('placeholder', 'Search...');
+                $('.dataTables_length select').addClass('custom-select custom-select-sm form-control form-control-sm');
+            }
+        });
+    }
+}, 100);
     
     // Edit user click handler
     $('.edit-user').on('click', function() {
@@ -522,34 +477,78 @@ $(document).ready(function() {
         });
     });
     
-    // Delete user click handler
+    // Delete user click handler - using SweetAlert directly
     $('.delete-user').on('click', function() {
         var userId = $(this).data('user-id');
         deleteUserId = userId;
         
-        showConfirmDelete(function() {
-            // Show loading state on the delete button in the modal
-            $('#confirmDelete').html('<i class="fas fa-spinner fa-spin me-2"></i>Deleting...').prop('disabled', true);
-            
-            // Perform delete
-            $.ajax({
-                url: '/delete-user/' + deleteUserId + '/',
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': '{{ csrf_token }}'
+        swal({
+            title: "Are you sure?",
+            text: "This user will be permanently deleted!",
+            icon: "warning",
+            buttons: {
+                cancel: {
+                    text: "Cancel",
+                    value: null,
+                    visible: true,
+                    className: "",
+                    closeModal: true,
                 },
-                success: function(response) {
-                    $("#deleteModal").modal('hide');
-                    showSuccess('User deleted successfully!');
-                    setTimeout(function() {
-                        location.reload();
-                    }, 2000);
-                },
-                error: function(xhr) {
-                    showError(xhr.responseJSON?.error || 'Error deleting user. Please try again.');
-                    $('#confirmDelete').html('Delete').prop('disabled', false);
+                confirm: {
+                    text: "Yes, delete it!",
+                    value: true,
+                    visible: true,
+                    className: "bg-danger",
+                    closeModal: false
                 }
-            });
+            },
+            dangerMode: true,
+        })
+        .then((willDelete) => {
+            if (willDelete) {
+                // Perform delete
+                $.ajax({
+                    url: '/delete-user/' + deleteUserId + '/',
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    success: function(response) {
+                        swal({
+                            title: "Deleted!",
+                            text: response.message || "User deleted successfully!",
+                            icon: "success",
+                            buttons: {
+                                confirm: {
+                                    text: "OK",
+                                    value: true,
+                                    visible: true,
+                                    className: "",
+                                    closeModal: true
+                                }
+                            }
+                        }).then(function() {
+                            location.reload();
+                        });
+                    },
+                    error: function(xhr) {
+                        swal({
+                            title: "Error!",
+                            text: xhr.responseJSON?.error || "Error deleting user. Please try again.",
+                            icon: "error",
+                            buttons: {
+                                confirm: {
+                                    text: "OK",
+                                    value: true,
+                                    visible: true,
+                                    className: "",
+                                    closeModal: true
+                                }
+                            }
+                        });
+                    }
+                });
+            }
         });
     });
     
@@ -558,7 +557,7 @@ $(document).ready(function() {
         var password = $(this).val();
         checkPasswordStrength(password);
     });
-        });
+
     // Password confirmation
     $("#confirm_password").on("keyup", function() {
         var password = $("#password").val();
@@ -569,6 +568,7 @@ $(document).ready(function() {
         } else {
             $(this).removeClass("is-invalid");
         }
+    });
     
     // Form validation
     $("#addUserForm").submit(function(e) {
@@ -682,17 +682,17 @@ function setupEditFormValidation() {
         var confirm = $("#confirm_password").val();
         
         // Validate if password is being changed
-            if (password || confirm) {
-                if (password !== confirm) {
-                    showError('Passwords do not match!');
-                    return false;
-                }
-                
-                if (password.length < 8) {
-                    showError('Password must be at least 8 characters long!');
-                    return false;
-                }
+        if (password || confirm) {
+            if (password !== confirm) {
+                showError('Passwords do not match!');
+                return false;
             }
+            
+            if (password.length < 8) {
+                showError('Password must be at least 8 characters long!');
+                return false;
+            }
+        }
         
         // Show loading state
         $('#editSubmitBtn').html('<i class="fas fa-spinner fa-spin me-2"></i>Saving...').prop('disabled', true);
@@ -807,13 +807,21 @@ function viewUser(userId) {
     });
 }
 
+// Updated SweetAlert functions with correct v2 syntax
 function showSuccess(message) {
     swal({
         title: "Success!",
         text: message,
-        type: "success",
-        timer: 2000,
-        showConfirmButton: true
+        icon: "success",
+        buttons: {
+            confirm: {
+                text: "OK",
+                value: true,
+                visible: true,
+                className: "",
+                closeModal: true
+            }
+        }
     });
 }
 
@@ -821,9 +829,16 @@ function showError(message) {
     swal({
         title: "Error!",
         text: message,
-        type: "error",
-        timer: 3000,
-        showConfirmButton: true
+        icon: "error",
+        buttons: {
+            confirm: {
+                text: "OK",
+                value: true,
+                visible: true,
+                className: "",
+                closeModal: true
+            }
+        }
     });
 }
 
@@ -831,9 +846,16 @@ function showWarning(message) {
     swal({
         title: "Warning!",
         text: message,
-        type: "warning",
-        timer: 3000,
-        showConfirmButton: true
+        icon: "warning",
+        buttons: {
+            confirm: {
+                text: "OK",
+                value: true,
+                visible: true,
+                className: "",
+                closeModal: true
+            }
+        }
     });
 }
 
@@ -841,26 +863,15 @@ function showInfo(message) {
     swal({
         title: "Info",
         text: message,
-        type: "info",
-        timer: 3000,
-        showConfirmButton: true
-    });
-}
-
-function showConfirmDelete(callback) {
-    swal({
-        title: "Are you sure?",
-        text: "This user will be permanently deleted!",
-        type: "warning",
-        showCancelButton: true,
-        confirmButtonColor: "#DD6B55",
-        confirmButtonText: "Yes, delete it!",
-        cancelButtonText: "No, cancel!",
-        closeOnConfirm: false,
-        closeOnCancel: true
-    }).then(function(isConfirm) {
-        if (isConfirm) {
-            callback();
+        icon: "info",
+        buttons: {
+            confirm: {
+                text: "OK",
+                value: true,
+                visible: true,
+                className: "",
+                closeModal: true
+            }
         }
     });
 }
