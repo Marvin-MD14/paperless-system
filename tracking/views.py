@@ -7,6 +7,7 @@ from django.contrib.auth import authenticate, login as auth_login, logout as aut
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.views.decorators.cache import never_cache
+from django.utils import timezone
 from django.db.models import Q
 from django.http import HttpResponse, JsonResponse
 import json
@@ -257,7 +258,6 @@ def user_dashboard(request):
 
 
 # --- ACCOUNT ACTIONS ---
-
 def register(request):
     offices = Office.objects.all().order_by('office_name')
 
@@ -266,7 +266,7 @@ def register(request):
         password = request.POST.get('pwd')
         full_name = request.POST.get('full_name')
         office_id = request.POST.get('office')
-        role = 'STAFF'
+        role = 'STAFF'  # Default role for self-registration
 
         if User.objects.filter(username=email).exists():
             messages.error(request, f"The email '{email}' is already registered.")
@@ -281,24 +281,31 @@ def register(request):
                 first_name = parts[0]
                 last_name = ' '.join(parts[1:])
 
-            # Create new User
+            # Create new User with is_active=False
             new_user = User.objects.create_user(
                 username=email,
                 email=email,
                 password=password,
                 first_name=first_name,
-                last_name=last_name
+                last_name=last_name,
+                is_active=False  # Set to inactive until approved
             )
 
             office_obj = get_object_or_404(Office, id=office_id)
 
+            # Create UserProfile with pending status
             UserProfile.objects.create(
                 user=new_user,
                 office=office_obj,
-                role=role
+                role=role,
+                is_approved=False  # Add this field to your model
             )
 
-            messages.success(request, "Your account has been created successfully. Please log in.")
+            messages.success(request, "Your registration request has been submitted successfully! An administrator will review and approve your account within 24-48 hours. You will receive an email notification once your account is activated.")
+            
+            # Optional: Send notification email to admins
+            # send_admin_notification(new_user)
+            
             return render(request, 'register.html', {'offices': offices})
 
         except Exception as e:
@@ -630,3 +637,123 @@ def edit_user(request, user_id):
     
     # For non-AJAX requests (fallback), redirect to management page
     return redirect('user_management')
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def access_requests(request):
+    # Get all unapproved users
+    pending_requests = UserProfile.objects.filter(
+        is_approved=False,
+        user__is_active=False
+    ).select_related('user', 'office').order_by('-user__date_joined')
+    
+    # Get approved users (recent)
+    approved_users = UserProfile.objects.filter(
+        is_approved=True
+    ).select_related('user', 'office').order_by('-approved_at')[:20]
+    
+    # Get rejected users (optional)
+    rejected_users = UserProfile.objects.filter(
+        is_approved=False,
+        user__is_active=False
+    ).exclude(
+        user__date_joined=timezone.now()  # Customize this as needed
+    )[:10]
+    
+    context = {
+        'pending_requests': pending_requests,
+        'approved_users': approved_users,
+        'rejected_users': rejected_users,
+        'pending_count': pending_requests.count(),
+    }
+    
+    return render(request, 'access_requests.html', context)
+
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def approve_user(request, profile_id):
+    if request.method == 'POST':
+        try:
+            profile = get_object_or_404(UserProfile, id=profile_id)
+            user = profile.user
+            
+            # Approve the user
+            user.is_active = True
+            user.save()
+            
+            profile.is_approved = True
+            profile.approved_at = timezone.now()
+            profile.approved_by = request.user
+            profile.save()
+            
+            # Optional: Send approval email to user
+            # send_approval_email(user)
+            
+            return JsonResponse({
+                'success': True, 
+                'message': f'User {user.username} has been approved successfully!'
+            })
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=400)
+    
+    return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def reject_user(request, profile_id):
+    if request.method == 'POST':
+        try:
+            profile = get_object_or_404(UserProfile, id=profile_id)
+            username = profile.user.username
+            
+            # Delete the user (or you can mark as rejected instead)
+            profile.user.delete()
+            
+            return JsonResponse({
+                'success': True, 
+                'message': f'User {username} has been rejected and removed.'
+            })
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=400)
+    
+    return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def bulk_approve_users(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            profile_ids = data.get('profile_ids', [])
+            
+            if not profile_ids:
+                return JsonResponse({'success': False, 'error': 'No users selected'}, status=400)
+            
+            profiles = UserProfile.objects.filter(id__in=profile_ids, is_approved=False)
+            approved_count = 0
+            
+            for profile in profiles:
+                user = profile.user
+                user.is_active = True
+                user.save()
+                
+                profile.is_approved = True
+                profile.approved_at = timezone.now()
+                profile.approved_by = request.user
+                profile.save()
+                approved_count += 1
+            
+            return JsonResponse({
+                'success': True, 
+                'message': f'{approved_count} user(s) have been approved successfully!'
+            })
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=400)
+    
+    return JsonResponse({'error': 'Method not allowed'}, status=405)

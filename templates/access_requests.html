@@ -1,0 +1,296 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Access Requests - ERDMS{% endblock title %}
+
+{% block content %}
+<div class="content-heading">
+    <div>
+        <h3 class="mb-2">Access Requests</h3>
+        <span class="text-sm d-none d-sm-block">Manage user registration requests</span>
+        <ol class="breadcrumb breadcrumb px-0 pb-0">
+            <li class="breadcrumb-item"><a href="{% url 'admin_dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item active">Access Requests</li>
+        </ol>
+    </div>
+</div>
+
+<!-- Pending Requests Card -->
+<div class="card card-default mb-4">
+    <div class="card-header d-flex align-items-center">
+        <h3 class="card-title h5 mb-0">Pending Requests</h3>
+        <span class="badge badge-warning ml-2">{{ pending_count }}</span>
+        {% if pending_requests %}
+        <button class="btn btn-sm btn-success ml-auto" id="bulkApproveBtn">
+            <i class="fas fa-check-double me-2"></i>Approve Selected
+        </button>
+        {% endif %}
+    </div>
+    <div class="card-body">
+        {% if pending_requests %}
+        <div class="table-responsive">
+            <table class="table table-hover" id="pendingRequestsTable">
+                <thead class="thead-light">
+                    <tr>
+                        <th width="40">
+                            <div class="custom-control custom-checkbox">
+                                <input type="checkbox" class="custom-control-input" id="selectAll">
+                                <label class="custom-control-label" for="selectAll"></label>
+                            </div>
+                        </th>
+                        <th>User</th>
+                        <th>Email</th>
+                        <th>Office</th>
+                        <th>Role Requested</th>
+                        <th>Registered On</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for profile in pending_requests %}
+                    <tr id="request-row-{{ profile.id }}">
+                        <td>
+                            <div class="custom-control custom-checkbox">
+                                <input type="checkbox" class="custom-control-input request-checkbox" 
+                                       id="check-{{ profile.id }}" value="{{ profile.id }}">
+                                <label class="custom-control-label" for="check-{{ profile.id }}"></label>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <img src="{% static 'assets/img/dummy.png' %}" class="rounded-circle thumb24 mr-2" alt="">
+                                <div>
+                                    <strong>{{ profile.user.get_full_name|default:profile.user.username }}</strong>
+                                </div>
+                            </div>
+                        </td>
+                        <td>{{ profile.user.email }}</td>
+                        <td>{{ profile.office.office_name }}</td>
+                        <td>
+                            <span class="badge badge-info">{{ profile.get_role_display }}</span>
+                        </td>
+                        <td>{{ profile.user.date_joined|date:"M d, Y H:i" }}</td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <button class="btn btn-sm btn-success approve-user" 
+                                        data-profile-id="{{ profile.id }}"
+                                        data-user-name="{{ profile.user.get_full_name|default:profile.user.username }}">
+                                    <i class="fas fa-check"></i> Approve
+                                </button>
+                                <button class="btn btn-sm btn-danger reject-user" 
+                                        data-profile-id="{{ profile.id }}"
+                                        data-user-name="{{ profile.user.get_full_name|default:profile.user.username }}">
+                                    <i class="fas fa-times"></i> Reject
+                                </button>
+                                <button class="btn btn-sm btn-info view-details" 
+                                        data-profile-id="{{ profile.id }}">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <img src="{% static 'assets/img/empty.svg' %}" alt="No Requests" style="width: 150px; opacity: 0.5;" class="mb-3">
+            <h5 class="text-muted">No Pending Access Requests</h5>
+            <p class="text-muted">All user registration requests have been processed.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Recently Approved Users -->
+<div class="card card-default">
+    <div class="card-header">
+        <h3 class="card-title h5 mb-0">Recently Approved Users</h3>
+    </div>
+    <div class="card-body">
+        {% if approved_users %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="thead-light">
+                    <tr>
+                        <th>User</th>
+                        <th>Email</th>
+                        <th>Office</th>
+                        <th>Role</th>
+                        <th>Approved On</th>
+                        <th>Approved By</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for profile in approved_users %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <img src="{% static 'assets/img/dummy.png' %}" class="rounded-circle thumb24 mr-2" alt="">
+                                <strong>{{ profile.user.get_full_name|default:profile.user.username }}</strong>
+                            </div>
+                        </td>
+                        <td>{{ profile.user.email }}</td>
+                        <td>{{ profile.office.office_name }}</td>
+                        <td><span class="badge badge-success">{{ profile.get_role_display }}</span></td>
+                        <td>{{ profile.approved_at|date:"M d, Y H:i" }}</td>
+                        <td>{{ profile.approved_by.get_full_name|default:profile.approved_by.username }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted text-center mb-0">No recently approved users</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock content %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Select All checkbox
+    $('#selectAll').on('change', function() {
+        $('.request-checkbox').prop('checked', $(this).prop('checked'));
+    });
+    
+    // Individual checkbox changes
+    $('.request-checkbox').on('change', function() {
+        if ($('.request-checkbox:checked').length === $('.request-checkbox').length) {
+            $('#selectAll').prop('checked', true);
+        } else {
+            $('#selectAll').prop('checked', false);
+        }
+    });
+    
+    // Approve single user
+    $('.approve-user').on('click', function() {
+        const profileId = $(this).data('profile-id');
+        const userName = $(this).data('user-name');
+        
+        swal({
+            title: 'Approve User?',
+            text: `Are you sure you want to approve ${userName}'s access request?`,
+            icon: 'warning',
+            buttons: ['Cancel', 'Approve'],
+            dangerMode: false,
+        }).then((willApprove) => {
+            if (willApprove) {
+                approveUser(profileId);
+            }
+        });
+    });
+    
+    // Reject single user
+    $('.reject-user').on('click', function() {
+        const profileId = $(this).data('profile-id');
+        const userName = $(this).data('user-name');
+        
+        swal({
+            title: 'Reject User?',
+            text: `Are you sure you want to reject ${userName}'s access request? This will delete their registration.`,
+            icon: 'warning',
+            buttons: ['Cancel', 'Reject'],
+            dangerMode: true,
+        }).then((willReject) => {
+            if (willReject) {
+                rejectUser(profileId);
+            }
+        });
+    });
+    
+    // Bulk approve
+    $('#bulkApproveBtn').on('click', function() {
+        const selectedIds = $('.request-checkbox:checked').map(function() {
+            return $(this).val();
+        }).get();
+        
+        if (selectedIds.length === 0) {
+            swal('No Selection', 'Please select at least one user to approve.', 'info');
+            return;
+        }
+        
+        swal({
+            title: 'Bulk Approve Users?',
+            text: `Are you sure you want to approve ${selectedIds.length} user(s)?`,
+            icon: 'warning',
+            buttons: ['Cancel', 'Approve All'],
+        }).then((willApprove) => {
+            if (willApprove) {
+                bulkApproveUsers(selectedIds);
+            }
+        });
+    });
+    
+    function approveUser(profileId) {
+        $.ajax({
+            url: '{% url "approve_user" 0 %}'.replace('0', profileId),
+            method: 'POST',
+            headers: {'X-CSRFToken': '{{ csrf_token }}'},
+            success: function(response) {
+                if (response.success) {
+                    swal('Approved!', response.message, 'success');
+                    $('#request-row-' + profileId).fadeOut(500, function() {
+                        $(this).remove();
+                        if ($('#pendingRequestsTable tbody tr').length === 0) {
+                            location.reload();
+                        }
+                    });
+                }
+            },
+            error: function(xhr) {
+                swal('Error!', xhr.responseJSON?.error || 'Failed to approve user', 'error');
+            }
+        });
+    }
+    
+    function rejectUser(profileId) {
+        $.ajax({
+            url: '{% url "reject_user" 0 %}'.replace('0', profileId),
+            method: 'POST',
+            headers: {'X-CSRFToken': '{{ csrf_token }}'},
+            success: function(response) {
+                if (response.success) {
+                    swal('Rejected!', response.message, 'success');
+                    $('#request-row-' + profileId).fadeOut(500, function() {
+                        $(this).remove();
+                        if ($('#pendingRequestsTable tbody tr').length === 0) {
+                            location.reload();
+                        }
+                    });
+                }
+            },
+            error: function(xhr) {
+                swal('Error!', xhr.responseJSON?.error || 'Failed to reject user', 'error');
+            }
+        });
+    }
+    
+    function bulkApproveUsers(profileIds) {
+        $.ajax({
+            url: '{% url "bulk_approve_users" %}',
+            method: 'POST',
+            headers: {'X-CSRFToken': '{{ csrf_token }}'},
+            data: JSON.stringify({profile_ids: profileIds}),
+            contentType: 'application/json',
+            success: function(response) {
+                if (response.success) {
+                    swal('Approved!', response.message, 'success');
+                    profileIds.forEach(function(id) {
+                        $('#request-row-' + id).fadeOut(500);
+                    });
+                    setTimeout(function() {
+                        location.reload();
+                    }, 1000);
+                }
+            },
+            error: function(xhr) {
+                swal('Error!', xhr.responseJSON?.error || 'Failed to approve users', 'error');
+            }
+        });
+    }
+});
+</script>
+{% endblock extra_js %}

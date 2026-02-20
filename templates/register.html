@@ -4,8 +4,6 @@
 {% block title %}Register | EDMS{% endblock %}
 
 {% block extra_css %}
-<link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet" />
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <style>
     :root {
         --primary-blue: #348fe2;
@@ -80,7 +78,6 @@
         font-size: 0.95rem;
         font-weight: 600;
         color: var(--text-gray);
-        /* text-align: left; */
     }
 
     .form-control,
@@ -95,7 +92,6 @@
         transition: all 0.2s;
         background-color: #fff;
     }
-
 
     .select2-container {
         width: 100% !important;
@@ -195,6 +191,7 @@
     }
 </style>
 {% endblock %}
+
 {% block auth_content %}
 <div class="login-with-news-feed">
     <div class="news-feed">
@@ -210,7 +207,6 @@
                 </path>
             </svg>
         </div>
-
     </div>
 
     <div class="login-section">
@@ -223,36 +219,7 @@
 
             {% if messages %}
             {% for message in messages %}
-            <script>
-                window.onload = function () {
-                    {% if message.tags == "success" %}
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Registration Successful!',
-                        text: '{{ message }}',
-                        confirmButtonColor: '#348fe2',
-                        iconColor: '#348fe2',
-                        confirmButtonText: 'PROCEED TO LOGIN',
-                        allowOutsideClick: false,
-                        showClass: {
-                            popup: 'animate__animated animate__fadeInDown'
-                        }
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            window.location.href = "{% url 'login' %}";
-                        }
-                    });
-                    {% else %}
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Registration Rejected',
-                        text: '{{ message }}',
-                        confirmButtonColor: '#1a4a7c',
-                        background: '#fff'
-                    });
-                    {% endif %}
-                }
-            </script>
+            <div data-message="{{ message }}" data-tags="{{ message.tags }}" data-login-url="{% url 'login' %}" class="d-none"></div>
             {% endfor %}
             {% endif %}
 
@@ -265,13 +232,11 @@
                         required>
                 </div>
 
-
                 <div class="mb-3">
                     <label class="form-label">Email Address</label>
                     <input type="email" name="username" class="form-control" placeholder="Enter your email address"
                         required>
                 </div>
-
 
                 <div class="mb-3">
                     <label class="form-label">Password</label>
@@ -312,38 +277,105 @@
         </div>
     </div>
 </div>
+{% endblock %}
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
+{% block extra_js %}
 <script>
-    $(document).ready(function () {
-        $('#office-select').select2({
-            width: '100%',
-            placeholder: "Search your office...",
-            allowClear: true,
-            dropdownParent: $('.login-box')
-        });
-
-        $('#registerForm').on('submit', function (e) {
-            const pwd = $('#pwd').val();
-            const cpwd = $('#cpwd').val();
-
-            if (pwd !== cpwd) {
-                e.preventDefault();
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Mismatch!',
-                    text: 'Passwords do not match. Please try again.',
-                    confirmButtonColor: '#348fe2'
-                });
-                return false;
+    (function() {
+        // Function to initialize everything when DOM is ready
+        function initRegistration() {
+            if (typeof jQuery === 'undefined') {
+                console.error('jQuery not loaded yet');
+                return;
             }
-            const btn = $('#signupBtn');
-            btn.html('<span class="spinner-border spinner-border-sm me-2"></span> CREATING ACCOUNT...');
-            btn.prop('disabled', true);
-        });
-    });
+
+            $(document).ready(function() {
+                // Initialize Select2
+                if ($.fn.select2) {
+                    $('#office-select').select2({
+                        width: '100%',
+                        placeholder: "Search your office...",
+                        allowClear: true,
+                        dropdownParent: $('.login-box')
+                    });
+                } else {
+                    console.error('Select2 not loaded');
+                }
+
+                // Check for messages from Django
+                var messageElements = $('[data-message]');
+                if (messageElements.length > 0) {
+                    messageElements.each(function() {
+                        var message = $(this).data('message');
+                        var tags = $(this).data('tags');
+                        var loginUrl = $(this).data('login-url');
+                        
+                        if (typeof swal !== 'undefined') {
+                            if (tags === 'success') {
+                                swal({
+                                    title: 'Registration Successful!',
+                                    text: message,
+                                    type: 'success',
+                                    confirmButtonColor: '#348fe2',
+                                    confirmButtonText: 'PROCEED TO LOGIN',
+                                    closeOnConfirm: false
+                                }, function() {
+                                    window.location.href = loginUrl;
+                                });
+                            } else {
+                                swal({
+                                    title: 'Registration Rejected',
+                                    text: message,
+                                    type: 'error',
+                                    confirmButtonColor: '#1a4a7c'
+                                });
+                            }
+                        }
+                    });
+                }
+
+                // Form submission with validation
+                $('#registerForm').on('submit', function(e) {
+                    const pwd = $('#pwd').val();
+                    const cpwd = $('#cpwd').val();
+
+                    if (pwd !== cpwd) {
+                        e.preventDefault();
+                        if (typeof swal !== 'undefined') {
+                            swal({
+                                title: 'Mismatch!',
+                                text: 'Passwords do not match. Please try again.',
+                                type: 'error',
+                                confirmButtonColor: '#348fe2'
+                            });
+                        }
+                        return false;
+                    }
+                    
+                    const btn = $('#signupBtn');
+                    btn.html('<span class="spinner-border spinner-border-sm me-2"></span> CREATING ACCOUNT...');
+                    btn.prop('disabled', true);
+                });
+            });
+        }
+
+        // Check if jQuery is already loaded
+        if (typeof jQuery !== 'undefined') {
+            initRegistration();
+        } else {
+            // If not, wait for it
+            var checkInterval = setInterval(function() {
+                if (typeof jQuery !== 'undefined') {
+                    clearInterval(checkInterval);
+                    initRegistration();
+                }
+            }, 50);
+            
+            // Timeout after 5 seconds
+            setTimeout(function() {
+                clearInterval(checkInterval);
+            }, 5000);
+        }
+    })();
 </script>
 {% endblock %}

@@ -15,6 +15,10 @@ from tracking.views import (
     delete_user,
     edit_user,
     user_details,
+    access_requests,
+    approve_user,
+    reject_user,
+    bulk_approve_users,
 )
 
 urlpatterns = [
@@ -68,6 +72,12 @@ urlpatterns = [
     path('delete-user/<int:user_id>/', delete_user, name='delete_user'),
     path('edit-user/<int:user_id>/', edit_user, name='edit_user'),
     path('user-details/<int:user_id>/', user_details, name='user_details'),
+
+    # Access Requests
+    path('access-requests/', access_requests, name='access_requests'),
+    path('approve-user/<int:profile_id>/', approve_user, name='approve_user'),
+    path('reject-user/<int:profile_id>/', reject_user, name='reject_user'),
+    path('bulk-approve-users/', bulk_approve_users, name='bulk_approve_users'),
 
     path('upload-document/', user_dashboard, name='upload_document'), 
     path('document-list/', user_dashboard, name='document_list'),
