@@ -2,27 +2,28 @@
 <div class="aside-inner">
    <nav class="sidebar" data-sidebar-anyclick-close="">
       <ul class="sidebar-nav">
-        <li class="has-user-block">
-   <div class="collapse show" id="user-block">
-      <div class="item user-block">
-         <div class="user-block-picture">
-            <div class="user-block-status">
-               <img class="img-thumbnail rounded-circle" src="{% static 'assets/img/user/default.png' %}" alt="Avatar" width="60" height="60">
-               <div class="circle bg-success circle-lg"></div>
+         <li class="has-user-block">
+            <div class="collapse show" id="user-block">
+               <div class="item user-block">
+                  <div class="user-block-picture">
+                     <div class="user-block-status">
+                        <img class="img-thumbnail rounded-circle" src="{% static 'assets/img/user/default.png' %}"
+                           alt="Avatar" width="60" height="60">
+                        <div class="circle bg-success circle-lg"></div>
+                     </div>
+                  </div>
+                  <div class="user-block-info">
+                     <span class="user-block-name">
+                        {{ user.get_full_name|default:user.username|title }}
+                     </span>
+                     <span class="user-block-role">
+                        {{ user.userprofile.get_role_display|default:"Employee" }}
+                     </span>
+                  </div>
+               </div>
             </div>
-         </div>
-         <div class="user-block-info">
-            <span class="user-block-name">
-               {{ user.get_full_name|default:user.username|title }}
-            </span>
+         </li>
 
-            <span class="user-block-role">
-               {{ user.userprofile.get_role_display|default:"Employee" }}
-            </span>
-         </div>
-      </div>
-   </div>
-</li>
          <li class="nav-heading"><span>Main Navigation</span></li>
 
          <li class="{% if request.resolver_match.url_name == 'user_dashboard' %}active{% endif %}">
@@ -32,25 +33,44 @@
             </a>
          </li>
 
-        <li class="">
-   <a href="#docs-submenu" title="Documents" data-toggle="collapse" class="collapsed">
-      <em class="icon-doc"></em>
-      <span>My Documents</span>
-   </a>
-   <ul class="sidebar-nav sidebar-subnav collapse" id="docs-submenu">
-      <li class="sidebar-subnav-header">My Documents</li>
-      <li>
-         <a href="{% url 'upload_document' %}" title="Upload New">
-            <span>Upload New</span>
-         </a>
-      </li>
-      <li>
-         <a href="{% url 'document_list' %}" title="Recent Uploads">
-            <span>Recent Uploads</span>
-         </a>
-      </li>
-   </ul>
-</li>
+         <li class="{% if request.resolver_match.url_name == 'received_docs_page' %}active{% endif %}">
+            <a href="#" title="Received Documents">
+               {% if unread_received_count > 0 %}
+               <div class="badge badge-danger float-right">{{ unread_received_count }}</div>
+               {% endif %}
+               <em class="icon-envelope-letter"></em>
+               <span>Received Documents</span>
+            </a>
+         </li>
+
+         <li class="{% if 'document' in request.path %}active{% endif %}">
+            <a href="#docs-submenu" title="Documents" data-toggle="collapse" class="collapsed">
+               <em class="icon-doc"></em>
+               <span>My Documents</span>
+            </a>
+            <ul class="sidebar-nav sidebar-subnav collapse" id="docs-submenu">
+               <li class="sidebar-subnav-header">My Documents</li>
+               <li>
+                  <a href="{% url 'upload_document' %}" title="Upload New">
+                     <span>Upload New</span>
+                  </a>
+               </li>
+               <li>
+                  <a href="{% url 'all_documents' %}" title="Recent Uploads">
+                     <span>Recent Uploads</span>
+                  </a>
+               </li>
+
+               <li>
+                  <a href="{% url 'sent_status' %}" title="Sent Tracking">
+                     <span class="d-flex align-items-center">
+                        Sent Status
+                        <i class="fas fa-paper-plane ms-2 text-primary" style="font-size: 0.7rem;"></i>
+                     </span>
+                  </a>
+               </li>
+            </ul>
+         </li>
 
          <li>
             <a href="#tracking-submenu" title="Tracking" data-toggle="collapse">
@@ -59,7 +79,14 @@
             </a>
             <ul class="sidebar-nav sidebar-subnav collapse" id="tracking-submenu">
                <li class="sidebar-subnav-header">Document Tracking</li>
-               <li><a href="#"><span>Incoming Docs</span></a></li>
+               <li>
+                  <a href="#">
+                     <span>Incoming Docs</span>
+                     {% if unread_received_count > 0 %}
+                     <span class="label label-danger float-right">{{ unread_received_count }}</span>
+                     {% endif %}
+                  </a>
+               </li>
                <li><a href="#"><span>Outgoing Docs</span></a></li>
             </ul>
          </li>
@@ -74,5 +101,3 @@
       </ul>
    </nav>
 </div>
-
-

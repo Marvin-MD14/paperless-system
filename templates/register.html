@@ -15,8 +15,7 @@
         --border-color: #d0d5dd;
     }
 
-    body,
-    html {
+    body, html {
         height: 100%;
         margin: 0;
         font-family: 'Inter', sans-serif;
@@ -45,17 +44,9 @@
     }
 
     @keyframes gradientBG {
-        0% {
-            background-position: 0% 50%;
-        }
-
-        50% {
-            background-position: 100% 50%;
-        }
-
-        100% {
-            background-position: 0% 50%;
-        }
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
     }
 
     .login-section {
@@ -80,11 +71,9 @@
         font-size: 0.95rem;
         font-weight: 600;
         color: var(--text-gray);
-        /* text-align: left; */
     }
 
-    .form-control,
-    .form-select {
+    .form-control, .form-select {
         display: block;
         width: 100%;
         height: 48px;
@@ -96,10 +85,41 @@
         background-color: #fff;
     }
 
+    .input-group {
+        position: relative;
+        display: flex;
+        align-items: stretch;
+        width: 100%;
+    }
 
-    .select2-container {
-        width: 100% !important;
-        display: block;
+    .input-group .form-control {
+        flex: 1 1 auto;
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
+        border-right: none;
+    }
+
+    .password-toggle {
+        background: white;
+        border: 1px solid #d0d5dd;
+        border-left: none;
+        border-top-right-radius: 8px;
+        border-bottom-right-radius: 8px;
+        display: flex;
+        align-items: center;
+        padding: 0 15px;
+        cursor: pointer;
+        color: #667085;
+        transition: 0.2s;
+    }
+
+    .password-toggle:hover {
+        color: var(--primary-blue);
+    }
+
+    .input-group:focus-within .form-control,
+    .input-group:focus-within .password-toggle {
+        border-color: var(--primary-blue);
     }
 
     .select2-container--default .select2-selection--single {
@@ -108,52 +128,6 @@
         border-radius: 8px !important;
         display: flex !important;
         align-items: center !important;
-        padding: 0 10px !important;
-        background-color: #fff !important;
-    }
-
-    .select2-container--default .select2-selection--single .select2-selection__rendered {
-        color: #444 !important;
-        line-height: 48px !important;
-        padding-left: 5px !important;
-    }
-
-    .select2-container--default .select2-selection--single .select2-selection__arrow {
-        height: 46px !important;
-        right: 10px !important;
-        display: flex !important;
-        align-items: center !important;
-    }
-
-    .select2-dropdown {
-        border: 1px solid var(--border-color) !important;
-        border-radius: 8px !important;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
-        z-index: 1060;
-        overflow: hidden;
-    }
-
-    .select2-search--dropdown {
-        padding: 10px !important;
-    }
-
-    .select2-search--dropdown .select2-search__field {
-        border-radius: 6px !important;
-        border: 1px solid var(--border-color) !important;
-        padding: 8px !important;
-    }
-
-    .select2-results__options {
-        max-height: 250px !important;
-    }
-
-    .select2-results__option {
-        padding: 10px 15px !important;
-        font-size: 0.9rem !important;
-    }
-
-    .select2-container--default .select2-results__option--highlighted[aria-selected] {
-        background-color: var(--primary-blue) !important;
     }
 
     .btn-signin {
@@ -185,16 +159,12 @@
     }
 
     @media (max-width: 992px) {
-        .news-feed {
-            display: none;
-        }
-
-        .login-section {
-            flex: 1;
-        }
+        .news-feed { display: none; }
+        .login-section { flex: 1; }
     }
 </style>
 {% endblock %}
+
 {% block auth_content %}
 <div class="login-with-news-feed">
     <div class="news-feed">
@@ -205,12 +175,9 @@
         </div>
         <div style="position: absolute; bottom: 0; width: 100%; opacity: 0.2;">
             <svg viewBox="0 0 1440 320">
-                <path fill="#ffffff"
-                    d="M0,160L48,176C96,192,192,224,288,213.3C384,203,480,149,576,149.3C672,149,768,203,864,197.3C960,192,1056,128,1152,117.3C1248,107,1344,149,1392,170.7L1440,192L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z">
-                </path>
+                <path fill="#ffffff" d="M0,160L48,176C96,192,192,224,288,213.3C384,203,480,149,576,149.3C672,149,768,203,864,197.3C960,192,1056,128,1152,117.3C1248,107,1344,149,1392,170.7L1440,192L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
             </svg>
         </div>
-
     </div>
 
     <div class="login-section">
@@ -222,75 +189,55 @@
             </div>
 
             {% if messages %}
-            {% for message in messages %}
-            <script>
-                window.onload = function () {
-                    {% if message.tags == "success" %}
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Registration Successful!',
-                        text: '{{ message }}',
-                        confirmButtonColor: '#348fe2',
-                        iconColor: '#348fe2',
-                        confirmButtonText: 'PROCEED TO LOGIN',
-                        allowOutsideClick: false,
-                        showClass: {
-                            popup: 'animate__animated animate__fadeInDown'
-                        }
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            window.location.href = "{% url 'login' %}";
-                        }
-                    });
-                    {% else %}
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Registration Rejected',
-                        text: '{{ message }}',
-                        confirmButtonColor: '#1a4a7c',
-                        background: '#fff'
-                    });
-                    {% endif %}
-                }
-            </script>
-            {% endfor %}
+                {% for message in messages %}
+                    <div class="alert {% if message.tags == 'success' %}alert-success{% else %}alert-danger{% endif %} py-2 small text-center">
+                        {{ message }}
+                        {% if message.tags == 'success' %}
+                            <br><a href="{% url 'login' %}" class="fw-bold">Login now</a>
+                        {% endif %}
+                    </div>
+                {% endfor %}
             {% endif %}
 
-            <form method="POST" id="registerForm" name="signup">
+            <form method="POST" action="{% url 'register' %}" id="registerForm" name="signup">
                 {% csrf_token %}
 
-                <div class="mb-3">
+                <div class="mb-3 text-start">
                     <label class="form-label">Full Name</label>
-                    <input type="text" name="full_name" class="form-control" placeholder="Enter your full name"
-                        required>
+                    <input type="text" name="full_name" class="form-control" placeholder="Enter your full name" required>
                 </div>
 
-
-                <div class="mb-3">
+                <div class="mb-3 text-start">
                     <label class="form-label">Email Address</label>
-                    <input type="email" name="username" class="form-control" placeholder="Enter your email address"
-                        required>
+                    <input type="email" name="username" class="form-control" placeholder="Enter your email address" required>
                 </div>
 
-
-                <div class="mb-3">
+                <div class="mb-3 text-start">
                     <label class="form-label">Password</label>
-                    <input type="password" name="pwd" id="pwd" class="form-control" placeholder="Create a password"
-                        required>
+                    <div class="input-group">
+                        <input type="password" name="pwd" id="pwd" class="form-control" placeholder="Create a password" required minlength="8">
+                        <span class="password-toggle toggle-pwd" data-target="#pwd">
+                            <i class="fas fa-eye"></i>
+                        </span>
+                    </div>
                 </div>
 
-                <div class="mb-3">
+                <div class="mb-3 text-start">
                     <label class="form-label">Confirm Password</label>
-                    <input type="password" name="cpwd" id="cpwd" class="form-control"
-                        placeholder="Confirm your password" required>
+                    <div class="input-group">
+                        <input type="password" name="cpwd" id="cpwd" class="form-control" placeholder="Confirm your password" required minlength="8">
+                        <span class="password-toggle toggle-pwd" data-target="#cpwd">
+                            <i class="fas fa-eye"></i>
+                        </span>
+                    </div>
                 </div>
 
-                <div class="mb-4">
+                <div class="mb-4 text-start">
                     <label class="form-label">Office</label>
                     <select name="office" class="form-select select2" id="office-select" required>
                         <option value="" disabled selected>Search your office...</option>
-                        {% for office in offices %}
-                        <option value="{{ office.id }}">{{ office.office_name }}</option>
+                        {% for code, name in offices %}
+                            <option value="{{ code }}">{{ name }}</option>
                         {% endfor %}
                     </select>
                 </div>
@@ -301,8 +248,7 @@
 
                 <div class="text-center mt-3">
                     <span class="text-muted small">Already have an account?</span>
-                    <a href="{% url 'login' %}" class="fw-bold text-decoration-none"
-                        style="color: var(--primary-blue); font-size: 0.9rem;">Click Here</a>
+                    <a href="{% url 'login' %}" class="fw-bold text-decoration-none" style="color: var(--primary-blue); font-size: 0.9rem;">Click Here</a>
                 </div>
             </form>
 
@@ -319,6 +265,12 @@
 
 <script>
     $(document).ready(function () {
+        // Prevent form resubmission on refresh
+        if (window.history.replaceState) {
+            window.history.replaceState(null, null, window.location.href);
+        }
+
+        // Initialize Select2
         $('#office-select').select2({
             width: '100%',
             placeholder: "Search your office...",
@@ -326,10 +278,28 @@
             dropdownParent: $('.login-box')
         });
 
+        // Password Visibility Toggle
+        $('.toggle-pwd').on('click', function() {
+            const targetId = $(this).data('target');
+            const passwordField = $(targetId);
+            const icon = $(this).find('i');
+            
+            if (passwordField.attr('type') === 'password') {
+                passwordField.attr('type', 'text');
+                icon.removeClass('fa-eye').addClass('fa-eye-slash');
+            } else {
+                passwordField.attr('type', 'password');
+                icon.removeClass('fa-eye-slash').addClass('fa-eye');
+            }
+        });
+
+        // Form Validation and Submission
         $('#registerForm').on('submit', function (e) {
             const pwd = $('#pwd').val();
             const cpwd = $('#cpwd').val();
+            const btn = $('#signupBtn');
 
+            // 1. Password Match Validation
             if (pwd !== cpwd) {
                 e.preventDefault();
                 Swal.fire({
@@ -340,9 +310,20 @@
                 });
                 return false;
             }
-            const btn = $('#signupBtn');
-            btn.html('<span class="spinner-border spinner-border-sm me-2"></span> CREATING ACCOUNT...');
+
+            // 2. Loading State
             btn.prop('disabled', true);
+            btn.html('<span class="spinner-border spinner-border-sm me-2"></span> CREATING ACCOUNT...');
+
+            // 3. Optional: Show a SweetAlert loading overlay
+            Swal.fire({
+                title: 'Processing...',
+                text: 'Creating your account, please wait.',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
         });
     });
 </script>

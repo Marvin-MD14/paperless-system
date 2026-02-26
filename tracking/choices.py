@@ -50,7 +50,7 @@ ROLE_CHOICES = (
     ('STAFF', 'Staff'),
     ('GOVERNOR', 'Governor'),
     ('EXECUTIVE', 'Executive'),
-    ('ADMIN', 'Administrator'),
+    ('ADMIN', 'Administrator')
 )
 
 OFFICE_DICT = dict(OFFICE_CHOICES)

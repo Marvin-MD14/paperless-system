@@ -1,0 +1,471 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Upload & Manage Documents | ERDMS{% endblock title %}
+
+{% block content %}
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<style>
+    :root {
+        --primary-color: #4361ee;
+        --font-main: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    /* Layout Fixes */
+    body { overflow-y: scroll !important; }
+    
+    .dashboard-wrapper {
+        font-family: var(--font-main);
+        background: #f8fafd;
+        min-height: 100vh;
+        padding: 1.5rem;
+    }
+
+    .header-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    /* Stat Cards Styling */
+    .stat-grid {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 1rem;
+    }
+
+    @media (max-width: 1200px) { .stat-grid { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 768px) { .stat-grid { grid-template-columns: repeat(2, 1fr); } }
+
+    .stat-card {
+        padding: 1.2rem;
+        border-radius: 1rem;
+        color: white;
+        position: relative;
+        overflow: hidden;
+        min-height: 110px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        border: none;
+    }
+
+    .stat-card.blue { background: linear-gradient(135deg, #4361ee, #4cc9f0); }
+    .stat-card.green { background: linear-gradient(135deg, #2ec4b6, #80ed99); }
+    .stat-card.purple { background: linear-gradient(135deg, #7209b7, #b5179e); }
+    .stat-card.red { background: linear-gradient(135deg, #e63946, #ff4d6d); }
+    .stat-card.orange { background: linear-gradient(135deg, #f77f00, #fcbf49); }
+
+    .stat-icon-bg {
+        font-size: 2.5rem;
+        opacity: 0.2;
+        position: absolute;
+        right: 10px;
+        bottom: 10px;
+    }
+
+    .counter-value { font-size: 1.5rem; font-weight: 800; margin-bottom: 0; line-height: 1; }
+    .stat-label { font-size: 0.75rem; font-weight: 500; opacity: 0.9; margin-top: 4px; }
+
+    /* Action Buttons */
+    .btn-action {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        border: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: 0.2s;
+        background: #f1f5f9;
+        color: #64748b;
+        font-size: 0.85rem;
+        cursor: pointer;
+    }
+
+    .btn-send:hover { background: #4361ee !important; color: white !important; }
+    .btn-download:hover { background: #10b981 !important; color: white !important; }
+    .btn-delete:hover { background: #ef4444 !important; color: white !important; }
+
+    /* Forms */
+    .drop-zone {
+        border: 2px dashed #e2e8f0;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        text-align: center;
+        cursor: pointer;
+        background: #ffffff;
+    }
+
+    .form-control-modern {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        padding: 0.6rem 1rem;
+        border-radius: 10px;
+        font-size: 0.9rem;
+    }
+
+    .label-custom {
+        font-size: 0.65rem;
+        font-weight: 700;
+        color: #94a3b8;
+        text-transform: uppercase;
+        margin-bottom: 6px;
+        display: block;
+    }
+
+    .x-small { font-size: 0.7rem; }
+    .view-all-link { font-size: 0.75rem; text-decoration: none; color: var(--primary-color); font-weight: 600; }
+   /* Fix para sa Select Box height at visibility */
+/* Siguraduhin na ang select field at ang dropdown nito ay hindi lalabas sa modal */
+/* Fix para sa Select Box at Dropdown Width */
+/* Limitahan ang dropdown height para mag-scroll */
+/* I-ensure na ang dropdown list ay mag-scroll kapag marami ang options */
+.form-control-modern {
+    display: block;
+    width: 100% !important;
+    max-width: 100%;
+    box-sizing: border-box;
+    height: 48px !important;
+    padding: 10px 15px !important;
+    outline: none;
+    font-size: 0.9rem;
+}
+
+/* Scrollbar para sa Modal Body kung sakaling masyadong mahaba ang listahan */
+.modal-body {
+    max-height: 70vh; /* Limit sa 70% ng screen height */
+    overflow-y: auto; /* Lalabas ang scrollbar pag kailangan */
+}
+
+/* Custom design para sa scrollbar (Chrome, Safari, Edge) */
+.modal-body::-webkit-scrollbar {
+    width: 6px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Header fix para magkadikit ang icon at text */
+.modal-header-custom {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.modal-header-custom i {
+    color: #0088cc;
+    font-size: 1.2rem;
+    margin: 0;
+}
+
+/* Close button (X) fix */
+.close-custom {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    line-height: 1;
+    color: #333;
+    opacity: 0.7;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+}
+.close-custom:hover { opacity: 1; }
+</style>
+
+<div class="dashboard-wrapper">
+    <div class="header-container">
+        <div>
+            <h3 class="fw-bold text-dark mb-1">Document Management</h3>
+            <p class="text-muted small mb-0">Professional tracking and digital asset storage.</p>
+        </div>
+        <div class="d-flex align-items-center gap-3">
+            <div id="liveClock" class="bg-white px-3 py-2 rounded-pill shadow-sm border small fw-bold text-primary"></div>
+        </div>
+    </div>
+
+    <div class="stat-grid mb-4">
+        <div class="stat-card blue">
+            <h3 class="counter-value">{{ word_count|default:"0" }}</h3>
+            <p class="stat-label mb-0">Word Docs</p>
+            <i class="fas fa-file-word stat-icon-bg"></i>
+        </div>
+        <div class="stat-card green">
+            <h3 class="counter-value">{{ excel_count|default:"0" }}</h3>
+            <p class="stat-label mb-0">Excel Sheets</p>
+            <i class="fas fa-file-excel stat-icon-bg"></i>
+        </div>
+        <div class="stat-card purple">
+            <h3 class="counter-value">{{ ppt_count|default:"0" }}</h3>
+            <p class="stat-label mb-0">PowerPoint</p>
+            <i class="fas fa-file-powerpoint stat-icon-bg"></i>
+        </div>
+        <div class="stat-card red">
+            <h3 class="counter-value">{{ pdf_count|default:"0" }}</h3>
+            <p class="stat-label mb-0">PDF Files</p>
+            <i class="fas fa-file-pdf stat-icon-bg"></i>
+        </div>
+        <div class="stat-card orange">
+            <h3 class="counter-value">{{ unread_received_count|default:"0" }}</h3>
+            <p class="stat-label mb-0">Unread Received</p>
+            <i class="fas fa-envelope stat-icon-bg"></i>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-4 col-xl-3">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <h6 class="fw-bold text-dark mb-0">Upload Resource</h6>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST" enctype="multipart/form-data" id="uploadForm">
+                        {% csrf_token %}
+                        <div class="drop-zone" onclick="document.getElementById('file-input').click()">
+                            <input type="file" name="file" id="file-input" hidden required>
+                            <div id="preview-text">
+                                <i class="fas fa-cloud-arrow-up text-primary mb-2 fa-lg"></i>
+                                <h6 class="fw-bold mb-1 x-small text-dark">Select File</h6>
+                                <p class="text-muted" style="font-size: 0.65rem;">Drag & drop here</p>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <label class="label-custom">Document Title</label>
+                            <input type="text" name="title" class="form-control form-control-modern" placeholder="E.g. Monthly Report" required>
+                        </div>
+                        <div class="mt-3">
+                            <label class="label-custom">Category</label>
+                            <select name="category" class="form-select form-control-modern" required>
+                                <option value="word">Word Document</option>
+                                <option value="excel">Excel Spreadsheet</option>
+                                <option value="ppt">PowerPoint Presentation</option>
+                                <option value="pdf">PDF File</option>
+                            </select>
+                        </div>
+                        <button type="submit" id="btnUpload" class="btn btn-primary w-100 rounded-pill py-2 fw-bold shadow-sm mt-4 small">
+                            <i class="fas fa-upload me-2"></i> Confirm Upload
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8 col-xl-6">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-transparent border-0 pt-4 px-0 pb-2">
+                    <div class="d-flex align-items-center">
+                        <h6 class="fw-bold text-dark mb-0 ps-4" style="flex: 1;">Recent Uploads</h6>
+                        <div class="text-center" style="width: 120px;">
+                            <a href="#" class="view-all-link">View All</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="ps-4 x-small fw-bold text-muted">FILE</th>
+                                <th class="x-small fw-bold text-muted text-center">TYPE</th>
+                                <th class="text-center x-small fw-bold text-muted" style="width: 120px;">ACTIONS</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for doc in recent_logs|slice:":6" %}
+                            <tr>
+                                <td class="ps-4">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas {% if doc.category == 'word' %}fa-file-word text-primary{% elif doc.category == 'excel' %}fa-file-excel text-success{% elif doc.category == 'ppt' %}fa-file-powerpoint text-warning{% else %}fa-file-pdf text-danger{% endif %} fs-5 me-3"></i>
+                                        <div class="overflow-hidden">
+                                            <div class="fw-bold text-dark text-truncate small" style="max-width: 140px;">{{ doc.title }}</div>
+                                            <div class="text-muted x-small">{{ doc.uploaded_at|date:"M d, Y" }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge rounded-pill bg-light text-dark border x-small">{{ doc.category|upper }}</span>
+                                </td>
+                                <td class="text-center">
+                                    <div class="d-flex justify-content-center gap-1">
+                                        <button type="button" class="btn-action btn-send" 
+                                                onclick="openSendModal('{{ doc.id }}', '{{ doc.title|escapejs }}', '{{ doc.category }}')" 
+                                                title="Forward">
+                                            <i class="fas fa-paper-plane"></i>
+                                        </button>
+                                        <a href="{{ doc.file.url }}" class="btn-action btn-download" download title="Download">
+                                            <i class="fas fa-download"></i>
+                                        </a>
+                                        <button type="button" class="btn-action btn-delete" onclick="handleDelete('{{ doc.id }}', '{{ doc.title|escapejs }}')" title="Delete">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="3" class="text-center py-5 text-muted small">No files available.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-transparent border-0 pt-4 px-4 pb-2 d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold text-dark mb-0">Inbox</h6>
+                    <a href="#" class="view-all-link">View All</a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% for doc in unread_docs|slice:":6" %}
+                        <div class="list-group-item px-4 py-3 border-0 border-bottom">
+                            <div class="d-flex align-items-center mb-1">
+                                <i class="fas fa-file-alt text-primary x-small me-2"></i>
+                                <div class="fw-bold text-dark text-truncate small">{{ doc.title }}</div>
+                            </div>
+                            <div class="text-muted x-small ms-4">Sender: {{ doc.uploaded_by.username }}</div>
+                        </div>
+                        {% empty %}
+                        <div class="text-center py-5 text-muted x-small">
+                            <i class="fas fa-inbox d-block mb-2 fs-4 opacity-25"></i> No new items.
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="sendModal" tabindex="-1" role="dialog" aria-labelledby="sendModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 400px;">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            
+            <div class="modal-header border-0 pt-4 px-4 pb-0 d-flex justify-content-between align-items-center">
+                <div class="modal-header-custom">
+                    <i class="fa-brands fa-telegram"></i> 
+                    <h6 class="fw-bold mb-0" id="sendModalLabel">Forward Document</h6>
+                </div>
+                <button type="button" class="close-custom" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            
+            <form id="sendDocumentForm" method="POST" action="{% url 'send_document' %}">
+                {% csrf_token %}
+                <div class="modal-body p-4">
+                    <input type="hidden" name="document_id" id="modal_doc_id">
+                    
+                    <div class="mb-4">
+                        <label class="label-custom" style="font-size: 0.75rem; color: #888;">SELECT STAFF MEMBER</label>
+                        <select name="recipient_id" class="form-select form-control-modern" required>
+                            <option value="" disabled selected>Choose recipient...</option>
+                            {% for profile in staff_users %}
+                            <option value="{{ profile.user.id }}">{{ profile.user.username }} ({{ profile.office }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="p-3 rounded-4 bg-light border text-center">
+                        <i id="modal_icon" class="fas fa-file-alt mb-2 text-primary fs-3"></i>
+                        <div id="modal_doc_display_title" class="fw-bold text-dark small text-truncate px-2">File Name</div>
+                    </div>
+                </div>
+
+                <div class="modal-footer border-0 p-4 pt-0 d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-dismiss="modal" style="font-size: 0.85rem;">Cancel</button>
+                    <button type="submit" id="btnForwardConfirm" class="btn btn-primary rounded-pill px-4 fw-bold" style="background-color: #0066cc; font-size: 0.85rem;">
+                        Send Now
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Append modal to body to ensure it's not hidden behind other elements
+    $('#sendModal').appendTo('body');
+
+    // Live Clock
+    function updateClock() {
+        const clockEl = document.getElementById('liveClock');
+        if (clockEl) {
+            const now = new Date();
+            clockEl.innerHTML = '<i class="far fa-calendar-alt me-2"></i>' + now.toLocaleString('en-US', {
+                month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+            });
+        }
+    }
+    setInterval(updateClock, 1000); 
+    updateClock();
+
+    // File Preview
+    $('#file-input').on('change', function () {
+        const fileName = $(this).val().split('\\').pop();
+        if (fileName) {
+            $('#preview-text').html(`<i class="fas fa-file-circle-check text-success mb-2 fa-lg"></i><h6 class="fw-bold mb-1 x-small">${fileName}</h6>`);
+        }
+    });
+
+    // Form Loading States
+    $('#uploadForm').on('submit', function () {
+        $('#btnUpload').prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Processing...');
+    });
+
+    $('#sendDocumentForm').on('submit', function () {
+        $('#btnForwardConfirm').prop('disabled', true).text('Sending...');
+    });
+});
+
+// Global Function for opening modal
+function openSendModal(docId, title, category) {
+    $('#modal_doc_id').val(docId);
+    $('#modal_doc_display_title').text(title);
+
+    // Update icon based on category
+    const iconEl = $('#modal_icon').removeClass().addClass('fas fs-3 mb-2');
+    if (category === 'pdf') iconEl.addClass('fa-file-pdf text-danger');
+    else if (category === 'word') iconEl.addClass('fa-file-word text-primary');
+    else if (category === 'excel') iconEl.addClass('fa-file-excel text-success');
+    else if (category === 'ppt') iconEl.addClass('fa-file-powerpoint text-warning');
+    else iconEl.addClass('fa-file-alt text-secondary');
+
+    // Trigger modal using JQuery (Compatible with your base.html)
+    $('#sendModal').modal('show');
+}
+
+function handleDelete(docId, title) {
+    Swal.fire({
+        title: 'Are you sure?',
+        text: `You are about to delete "${title}"`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#e63946',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: 'Yes, Delete it'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.location.href = `/delete-document/${docId}/`;
+        }
+    });
+}
+</script>
+{% endblock %}

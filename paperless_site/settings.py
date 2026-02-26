@@ -67,7 +67,7 @@ WSGI_APPLICATION = 'paperless_site.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'db_paperless',   # <--- Dapat tugma ito sa pangalan sa phpMyAdmin
+        'NAME': 'db_paperless',  
         'USER': 'root',
         'PASSWORD': '',
         'HOST': '127.0.0.1',

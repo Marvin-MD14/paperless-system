@@ -10,6 +10,7 @@ from django.views.decorators.cache import never_cache
 from django.db.models import Q
 from django.http import JsonResponse
 import json
+from .choices import OFFICE_CHOICES
 
 # --- HELPER FUNCTION: Authenticate by email ---
 def authenticate_by_email(email, password):
@@ -51,21 +52,35 @@ def login(request):
 
 
 def redirect_by_role(user):
-    """Helper function para sa redirection logic base sa role"""
+    """
+    Helper function para sa redirection logic base sa role.
+    Updated: Gumagamit ng get_or_create para maiwasan ang DoesNotExist error.
+    """
+    # 1. Check kung Superuser (Admin ng Django)
     if user.is_superuser:
         return redirect('admin_dashboard')
 
-    try:
-        role = user.userprofile.role
-        if role == 'HEAD':
-            return redirect('head_dashboard')
-        elif role in ['GOVERNOR', 'EXECUTIVE']:
-            return redirect('executive_dashboard')
-        else:
-            return redirect('user_dashboard')
-    except UserProfile.DoesNotExist:
-        return redirect('login')
+    # 2. Siguraduhin na may UserProfile ang user. 
+    # Kung wala pa, kusa itong gagawa ng bago na may default role na 'STAFF'.
+    profile, created = UserProfile.objects.get_or_create(
+        user=user,
+        defaults={'role': 'STAFF'} # Default role kung bagong gawa
+    )
 
+    # 3. Redirection logic base sa nakuha o ginawang profile
+    role = profile.role
+    
+    if role == 'HEAD':
+        return redirect('head_dashboard')
+    
+    elif role in ['GOVERNOR', 'EXECUTIVE']:
+        return redirect('executive_dashboard')
+    
+    elif role == 'STAFF':
+        return redirect('user_dashboard')
+    
+    # Fallback kung sakaling may ibang role na hindi nahanap
+    return redirect('user_dashboard')
 
 @never_cache
 def admin_login(request):
@@ -104,21 +119,26 @@ def head_login(request):
         user = authenticate_by_email(email, password)
 
         if user is not None:
-            try:
-                profile = user.userprofile
-                if profile.role == 'HEAD':
-                    auth_login(request, user)
+            # Gagamit tayo ng get_or_create. 
+            # Kung wala pang profile si user, gagawan siya ng default na 'HEAD' role.
+            profile, created = UserProfile.objects.get_or_create(
+                user=user,
+                defaults={'role': 'HEAD'}
+            )
 
-                    if remember_me:
-                        request.session.set_expiry(1209600)
-                    else:
-                        request.session.set_expiry(0)
+            # I-verify kung HEAD nga ang role ng profile
+            if profile.role == 'HEAD':
+                auth_login(request, user)
 
-                    return redirect('head_dashboard')
+                # --- REMEMBER ME LOGIC ---
+                if remember_me:
+                    request.session.set_expiry(1209600) # 2 weeks
                 else:
-                    messages.error(request, "Access Denied: Account is not an Office Head.")
-            except:
-                messages.error(request, "Profile not found.")
+                    request.session.set_expiry(0) # Browser close logout
+
+                return redirect('head_dashboard')
+            else:
+                messages.error(request, "Access Denied: Account is not an Office Head.")
         else:
             messages.error(request, "Invalid email or password.")
 
@@ -126,37 +146,35 @@ def head_login(request):
 
 
 # --- DASHBOARD SECTION (With Cache Protection) ---
-
 @login_required
 @never_cache
 def admin_dashboard(request):
     if not request.user.is_superuser:
         return redirect('login')
 
+    # Kinukuha ang listahan para sa table at dropdowns
     offices = Office.objects.all()
-    profiles = UserProfile.objects.select_related('user', 'office').all()
+    profiles = UserProfile.objects.select_related('user', 'office').all().order_by('-user__date_joined')
 
     if request.method == "POST":
         email = request.POST.get('email')
         password = request.POST.get('password')
-        full_name = request.POST.get('full_name')  
+        full_name = request.POST.get('full_name', '')
         role = request.POST.get('role')
         office_id = request.POST.get('office')
 
+        # 1. Validation: Check kung ang email/username ay gamit na
         if User.objects.filter(username=email).exists():
-            messages.error(request, "Email already exists.")
+            messages.error(request, f"Error: The email {email} is already registered.")
             return redirect('admin_dashboard')
 
         try:
-            # Split full_name into first_name and last_name
-            first_name = full_name
-            last_name = ''
-            if ' ' in full_name:
-                parts = full_name.strip().split()
-                first_name = parts[0]
-                last_name = ' '.join(parts[1:])
+            # 2. Name Splitting Logic
+            parts = full_name.strip().split()
+            first_name = parts[0] if parts else ""
+            last_name = ' '.join(parts[1:]) if len(parts) > 1 else ""
 
-            # Create new User
+            # 3. Create the User Object
             new_user = User.objects.create_user(
                 username=email,
                 email=email,
@@ -165,35 +183,45 @@ def admin_dashboard(request):
                 last_name=last_name
             )
 
-            office_obj = Office.objects.get(id=office_id) if office_id else None
-            UserProfile.objects.create(
+            # 4. Get Office Object safely
+            # Ginagamit natin ang office_id mula sa form (karaniwang PK/ID ito)
+            office_obj = None
+            if office_id:
+                try:
+                    office_obj = Office.objects.get(id=office_id)
+                except Office.DoesNotExist:
+                    office_obj = None
+
+            # 5. Safe Profile Creation/Update
+            # Gagamit tayo ng update_or_create para iwas "Duplicate Entry" 
+            # sakaling may active na signals sa models.py mo.
+            UserProfile.objects.update_or_create(
                 user=new_user,
-                office=office_obj,
-                role=role
+                defaults={
+                    'office': office_obj,
+                    'role': role
+                }
             )
 
-            messages.success(request, f"Successfully created {role} account for {full_name} ({email})!")
+            messages.success(request, f"Successfully created {role} account for {full_name}!")
             return redirect('admin_dashboard')
 
         except Exception as e:
-            messages.error(request, f"Error: {e}")
+            messages.error(request, f"System Error: {str(e)}")
+            return redirect('admin_dashboard')
 
-    governor_count = UserProfile.objects.filter(role='GOVERNOR').count()
-    heads_count = UserProfile.objects.filter(role='HEAD').count()
-    executive_count = UserProfile.objects.filter(role='EXECUTIVE').count()
-    staff_count = UserProfile.objects.filter(role='STAFF').count()
-
+    # Counting logic for the dashboard statistics
     context = {
         'offices': offices,
+        'offices_list': OFFICE_CHOICES, # Kung kailangan mo pa ito para sa template
         'profiles': profiles,
-        'governor_count': governor_count,
-        'heads_count': heads_count,
-        'executive_count': executive_count,
-        'staff_count': staff_count,
+        'governor_count': UserProfile.objects.filter(role='GOVERNOR').count(),
+        'heads_count': UserProfile.objects.filter(role='HEAD').count(),
+        'executive_count': UserProfile.objects.filter(role='EXECUTIVE').count(),
+        'staff_count': UserProfile.objects.filter(role='STAFF').count(),
     }
 
     return render(request, 'admin_dashboard.html', context)
-
 
 @login_required
 @never_cache
@@ -223,91 +251,87 @@ def head_dashboard(request):
 @login_required
 @never_cache
 def user_dashboard(request):
-    profile = get_object_or_404(UserProfile, user=request.user)
+    # Imbes na get_object_or_404, gagamit tayo ng get_or_create
+    # para kung wala pang profile ang user, gagawan siya ng system imbes na mag-error.
+    profile, created = UserProfile.objects.get_or_create(
+        user=request.user,
+        defaults={'role': 'STAFF'} # Default role kung bagong gawa
+    )
 
     if profile.role == 'HEAD':
         return redirect('head_dashboard')
     elif profile.role in ['GOVERNOR', 'EXECUTIVE']:
         return redirect('executive_dashboard')
     elif profile.role != 'STAFF':
-        messages.error(request, "Unauthorized access to Employee Dashboard.")
+        messages.error(request, "Unauthorized access.")
         return redirect('login')
 
-    my_uploads = Document.objects.filter(
-        creator=request.user
-    ).order_by('-created_at')[:5]
-
-    my_uploads_count = Document.objects.filter(
-        creator=request.user
-    ).count()
-
-    office_docs_count = Document.objects.filter(
-        routings__to_office=profile.office,
-        status='PENDING'
-    ).distinct().count()
+    my_uploads = Document.objects.filter(uploaded_by=request.user).order_by('-uploaded_at')[:5] 
+    
+    # Siguraduhing hindi mag-error kung walang office
+    office_docs_count = 0
+    if profile.office:
+        office_docs_count = Document.objects.filter(
+            routings__to_office=profile.office,
+            status='PENDING'
+        ).distinct().count()
 
     context = {
         'profile': profile,
         'my_uploads': my_uploads,
         'office_docs_count': office_docs_count,
-        'my_uploads_count': my_uploads_count,
+        'my_uploads_count': Document.objects.filter(uploaded_by=request.user).count(),
     }
-
     return render(request, 'employee_dashboard.html', context)
-
-
 # --- ACCOUNT ACTIONS ---
-
 def register(request):
-    offices = Office.objects.all().order_by('office_name')
-
     if request.method == "POST":
-        email = request.POST.get('username')  
+        email = request.POST.get('username')
         password = request.POST.get('pwd')
         full_name = request.POST.get('full_name')
-        office_id = request.POST.get('office')
-        role = 'STAFF'
+        office_code = request.POST.get('office')
 
         if User.objects.filter(username=email).exists():
-            messages.error(request, f"The email '{email}' is already registered.")
-            return render(request, 'register.html', {'offices': offices})
+            messages.error(request, "Email already registered.")
+            return redirect('register')
 
         try:
-            # Split full_name into first_name and last_name
-            first_name = full_name
-            last_name = ''
-            if ' ' in full_name:
-                parts = full_name.strip().split()
-                first_name = parts[0]
-                last_name = ' '.join(parts[1:])
-
-            # Create new User
+            # 1. Create User
+            parts = full_name.strip().split()
+            first_name = parts[0] if parts else ""
+            last_name = " ".join(parts[1:]) if len(parts) > 1 else ""
+            
             new_user = User.objects.create_user(
-                username=email,
-                email=email,
-                password=password,
-                first_name=first_name,
-                last_name=last_name
+                username=email, email=email, password=password,
+                first_name=first_name, last_name=last_name
             )
 
-            office_obj = get_object_or_404(Office, id=office_id)
+            # 2. Setup Office
+            office_display = dict(OFFICE_CHOICES).get(office_code, office_code)
+            office_instance, _ = Office.objects.get_or_create(
+                office_code=office_code,
+                defaults={'office_name': office_display}
+            )
 
-            UserProfile.objects.create(
+            # 3. Safe Profile Creation (Ito ang fix sa Duplicate Entry)
+            # Ginagamit ang update_or_create para kung ginawa na ng Signal ang profile, 
+            # ia-update na lang nito ang office at role imbes na gumawa ng bago.
+            UserProfile.objects.update_or_create(
                 user=new_user,
-                office=office_obj,
-                role=role
+                defaults={
+                    'office': office_instance,
+                    'role': 'STAFF'
+                }
             )
 
-            messages.success(request, "Your account has been created successfully. Please log in.")
-            return render(request, 'register.html', {'offices': offices})
+            messages.success(request, "Account created! Please log in.")
+            return redirect('login')
 
         except Exception as e:
-            if 'new_user' in locals():
-                new_user.delete()
             messages.error(request, f"Registration failed: {e}")
+            return redirect('register')
 
-    return render(request, 'register.html', {'offices': offices})
-
+    return render(request, 'register.html', {'offices': OFFICE_CHOICES})
 def logout(request):
     auth_logout(request)
 
@@ -446,7 +470,7 @@ def user_details(request, user_id):
     userprofile = get_object_or_404(UserProfile.objects.select_related('user', 'office'), id=user_id)
     
     # Get additional stats
-    documents_created = userprofile.user.created_documents.count() if hasattr(userprofile.user, 'created_documents') else 0
+    documents_created = userprofile.user.uploaded_documents.count() if hasattr(userprofile.user, 'uploaded_documents') else 0
     
     context = {
         'profile': userprofile,

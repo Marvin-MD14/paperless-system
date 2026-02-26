@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% block title %}Sent Documents Status{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <h2 class="fw-bold mb-4">Tracking Sent Documents</h2>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Document Title</th>
+                            <th>Target Recipient / Office</th>
+                            <th>Date Sent</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for doc in page_obj %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-file-pdf text-danger me-2 fa-lg"></i>
+                                    <div>
+                                        <span class="fw-bold d-block">{{ doc.title }}</span>
+                                        <small class="text-muted">{{ doc.category|upper }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="fw-bold">{{ doc.recipient.get_full_name }}</span><br>
+                                <small class="text-muted">{{ doc.recipient.userprofile.office.office_name }}</small>
+                            </td>
+                            <td>{{ doc.uploaded_at|date:"M d, Y | h:i A" }}</td>
+                            <td>
+                                {% if doc.is_read %}
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-check-circle me-1"></i> Received / Read
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark">
+                                        <i class="fas fa-clock me-1"></i> Pending
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary" onclick="window.location.href='#'">
+                                    <i class="fas fa-eye"></i> View Details
+                                </button>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center py-4 text-muted">No documents sent yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

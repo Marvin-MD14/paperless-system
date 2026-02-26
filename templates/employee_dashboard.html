@@ -3,362 +3,180 @@
 
 {% block title %}Employee Dashboard | ERDMS{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/morris.js/0.5.1/morris.css">
+<style>
+    /* Disable all animations for instant load */
+    * { transition: none !important; animation: none !important; }
+    
+    .card { border-radius: 8px; border: 1px solid #eee; box-shadow: 0 2px 4px rgba(0,0,0,0.05); background: #fff; margin-bottom: 20px; overflow: hidden; }
+    .card-header { padding: 12px 15px; border-bottom: 1px solid #eee; font-weight: 600; color: #333; display: flex; justify-content: space-between; align-items: center; }
+    .card-body { padding: 15px; }
+    
+    /* Chart sizes */
+    .chart-container { height: 280px; width: 100%; }
+    .donut-container { height: 200px; width: 100%; }
+    
+    /* Stats Styling */
+    .stat-box { padding: 20px; text-align: center; }
+    .stat-box h3 { margin: 10px 0 0; font-weight: 700; }
+    
+    /* List Group Styling for Received Documents */
+    .list-group-item { border: none; border-bottom: 1px solid #f4f4f4; padding: 10px 15px; }
+    .list-group-item:last-child { border-bottom: none; }
+    .list-group-item .media-body p { margin-bottom: 0; line-height: 1.2; }
+    
+    /* Removal of Blue Footer from Charts */
+    .card-footer { background: transparent; border-top: 1px solid #eee; padding: 10px 15px; }
+    
+    /* Hover effect for unread items */
+    .unread-item { background-color: #fff9f0; border-left: 3px solid #ff902b; }
+</style>
+{% endblock %}
+
 {% block content %}
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-3">
+            <div class="card stat-box border-top border-primary">
+                <em class="icon-cloud-upload fa-2x text-primary"></em>
+                <h3 class="text-primary">{{ recent_logs.count|default:"0" }}</h3>
+                <small class="text-muted">Total Uploads</small>
+            </div>
+        </div>
 
-<div class="dashboard-container p-4">
-    <div class="d-flex justify-content-between align-items-center mb-5">
-        <div>
-            <h2 class="fw-bold text-dark mb-1">Hello, {{ request.user.username }}!</h2>
-            <p class="text-muted small">
-                <i class="fas fa-calendar-alt me-1"></i> Today is {% now "F j, Y" %} | 
-                <span class="badge bg-soft-primary text-primary">{{ profile.role|default:"Staff" }}</span>
-            </p>
-        </div>
-        <div class="d-flex gap-3">
-            <div class="search-glass d-none d-md-flex">
-                <i class="fas fa-search text-muted mt-2 ms-3"></i>
-                <input type="text" class="form-control border-0 bg-transparent" placeholder="Search documents...">
+        <div class="col-md-3">
+            <div class="card stat-box border-top border-success">
+                <em class="icon-check fa-2x text-success"></em>
+                <h3 class="text-success">{{ processed_count|default:"0" }}</h3>
+                <small class="text-muted">Processed</small>
             </div>
-            <button class="btn btn-orange shadow-orange px-4 py-2 rounded-pill fw-bold">
-                <i class="fas fa-plus me-2"></i> Create Notice
-            </button>
         </div>
-    </div>
 
-    <div class="row g-3 mb-5">
-        <div class="col-xl-2-4 col-md-4 col-6">
-            <div class="stat-card">
-                <div class="circle-box blue-ring">
-                    <i class="fas fa-file-upload text-primary"></i>
-                </div>
-                <div>
-                    <h3 class="fw-bold mb-0 counter">{{ my_uploads_count|default:"348" }}</h3>
-                    <p class="text-muted small mb-0">My Uploads</p>
-                </div>
+        <div class="col-md-3">
+            <div class="card stat-box border-top border-warning">
+                <em class="icon-pencil fa-2x text-warning"></em>
+                <h3 class="text-warning">{{ unread_received_count|default:"0" }}</h3>
+                <small class="text-muted">Pending Review</small>
             </div>
         </div>
-        <div class="col-xl-2-4 col-md-4 col-6">
-            <div class="stat-card">
-                <div class="circle-box green-ring">
-                    <i class="fas fa-inbox text-success"></i>
-                </div>
-                <div>
-                    <h3 class="fw-bold mb-0">{{ office_docs_count|default:"128" }}</h3>
-                    <p class="text-muted small mb-0">Incoming</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-2-4 col-md-4 col-6">
-            <div class="stat-card">
-                <div class="circle-box orange-ring">
-                    <i class="fas fa-pen-nib text-orange"></i>
-                </div>
-                <div>
-                    <h3 class="fw-bold mb-0">10</h3>
-                    <p class="text-muted small mb-0">Pending Sign</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-2-4 col-md-4 col-6">
-            <div class="stat-card">
-                <div class="circle-box purple-ring">
-                    <i class="fas fa-check-double text-purple"></i>
-                </div>
-                <div>
-                    <h3 class="fw-bold mb-0">3,458</h3>
-                    <p class="text-muted small mb-0">Processed</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-2-4 col-md-4 col-6">
-            <div class="stat-card">
-                <div class="circle-box red-ring">
-                    <i class="fas fa-exclamation-circle text-danger"></i>
-                </div>
-                <div>
-                    <h3 class="fw-bold mb-0">34</h3>
-                    <p class="text-muted small mb-0">Returned</p>
-                </div>
+
+        <div class="col-md-3">
+            <div class="card stat-box border-top border-danger">
+                <em class="icon-action-undo fa-2x text-danger"></em>
+                <h3 class="text-danger">0</h3>
+                <small class="text-muted">Returned</small>
             </div>
         </div>
     </div>
 
-    <div class="row g-4 mb-5">
-        <div class="col-lg-8">
-            <div class="glass-card p-4 h-100">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h5 class="fw-bold">Document Processing Trend</h5>
-                    <select class="form-select form-select-sm border-0 bg-light-gray" style="width: 120px;">
-                        <option>This Week</option>
-                        <option>Last Month</option>
-                    </select>
-                </div>
-                <div class="chart-container">
-                    <canvas id="areaChart"></canvas>
+    <div class="row">
+        <div class="col-xl-6 col-lg-12">
+            <div class="card">
+                <div class="card-header">Document Submission Trend</div>
+                <div class="card-body">
+                    <div id="morris-bar-chart" class="chart-container"></div>
                 </div>
             </div>
         </div>
-        <div class="col-lg-4">
-            <div class="glass-card p-4 h-100 text-center">
-                <h5 class="fw-bold mb-4">Overall Completion</h5>
-                <div class="position-relative">
-                    <canvas id="gaugeChart"></canvas>
-                    <div class="gauge-value">
-                        <h2 class="fw-bold mb-0">74%</h2>
-                        <span class="text-muted small">Target met</span>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card">
+                <div class="card-header">Overall Distribution</div>
+                <div class="card-body">
+                    <div id="morris-donut-chart" class="donut-container"></div>
+                </div>
+                <div class="card-footer text-center">
+                    <small class="text-muted"><em class="fa fa-circle text-primary"></em> Word</small>
+                    <small class="text-muted mx-1"><em class="fa fa-circle text-success"></em> Excel</small>
+                    <small class="text-muted mx-1"><em class="fa fa-circle text-warning"></em> PPT</small>
+                    <small class="text-muted"><em class="fa fa-circle text-danger"></em> PDF</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <span>Unread Documents</span>
+                    <a href="{% url 'received_documents' %}" class="btn btn-xs btn-link text-info p-0">View All</a>
+                </div>
+                <div class="list-group">
+                    {% for doc in unread_docs %}
+                    <a href="{{ doc.file.url }}" class="list-group-item list-group-item-action unread-item" target="_blank">
+                        <div class="media align-items-center">
+                            <div class="mr-2">
+                                <span class="fa-stack fa-sm">
+                                    <em class="fa fa-circle fa-stack-2x text-warning"></em>
+                                    <em class="far fa-file-alt fa-stack-1x fa-inverse"></em>
+                                </span>
+                            </div>
+                            <div class="media-body">
+                                <p class="text-sm font-weight-bold text-dark m-0">{{ doc.title|truncatechars:15 }}</p>
+                                <p class="text-muted m-0" style="font-size: 10px;">From: {{ doc.uploaded_by.username }}</p>
+                            </div>
+                            <div class="ml-auto text-right">
+                                <small class="text-muted" style="font-size: 9px;">{{ doc.uploaded_at|timesince }} ago</small>
+                            </div>
+                        </div>
+                    </a>
+                    {% empty %}
+                    <div class="p-4 text-center">
+                        <em class="icon-check fa-2x text-muted mb-2"></em>
+                        <p class="text-muted mb-0">All caught up!</p>
                     </div>
-                </div>
-                <div class="mt-4">
-                    <div class="progress rounded-pill mb-2" style="height: 8px;">
-                        <div class="progress-bar bg-orange" style="width: 74%"></div>
-                    </div>
-                    <p class="text-muted small">Success rate of processed documents</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="row g-4">
-        <div class="col-lg-5">
-            <div class="glass-card p-4 h-100">
-                <h5 class="fw-bold mb-4">Sent vs Received</h5>
-                <div class="chart-container" style="height: 250px;">
-                    <canvas id="barChart"></canvas>
-                </div>
-            </div>
-        </div>
-        <div class="col-lg-7">
-            <div class="glass-card p-4 h-100">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h5 class="fw-bold">Recent Uploads</h5>
-                    <a href="#" class="btn btn-sm btn-light rounded-pill px-3">View All</a>
-                </div>
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle custom-table">
-                        <thead>
-                            <tr>
-                                <th>Ref No.</th>
-                                <th>Title</th>
-                                <th>Status</th>
-                                <th class="text-end">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for doc in my_uploads|slice:":4" %}
-                            <tr>
-                                <td><span class="text-muted small">#{{ doc.id }}</span></td>
-                                <td><span class="fw-600">{{ doc.title }}</span></td>
-                                <td><span class="badge bg-soft-warning text-warning">Pending</span></td>
-                                <td class="text-end"><button class="btn btn-icon"><i class="fas fa-eye"></i></button></td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td><span class="text-muted small">#1024</span></td>
-                                <td><span class="fw-600">Travel_Order_Req.pdf</span></td>
-                                <td><span class="badge bg-soft-warning text-warning">Pending</span></td>
-                                <td class="text-end"><button class="btn btn-icon"><i class="fas fa-eye text-primary"></i></button></td>
-                            </tr>
-                            <tr>
-                                <td><span class="text-muted small">#1025</span></td>
-                                <td><span class="fw-600">Quarterly_Report_Q1.pdf</span></td>
-                                <td><span class="badge bg-soft-success text-success">Completed</span></td>
-                                <td class="text-end"><button class="btn btn-icon"><i class="fas fa-eye text-primary"></i></button></td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                    {% endfor %}
                 </div>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
 
-<style>
-    /* GLOBAL STYLES */
-    :root {
-        --orange-main: #ff793f;
-        --purple-main: #a29bfe;
-        --bg-gradient: linear-gradient(135deg, #fdf2f8 0%, #f3f4f6 50%, #eef2ff 100%);
-    }
-
-    body {
-        background: var(--bg-gradient);
-        font-family: 'Plus Jakarta Sans', sans-serif;
-    }
-
-    .dashboard-container { min-height: 100vh; }
-
-    /* GLASS CARDS */
-    .glass-card {
-        background: rgba(255, 255, 255, 0.7);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.8);
-        border-radius: 24px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.03);
-    }
-
-    /* STAT CARDS */
-    .stat-card {
-        background: white;
-        border-radius: 20px;
-        padding: 20px;
-        display: flex;
-        align-items: center;
-        gap: 15px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.02);
-        transition: transform 0.3s ease;
-    }
-    .stat-card:hover { transform: translateY(-5px); }
-
-    /* ICON RINGS (Inspired by Image 6ee383) */
-    .circle-box {
-        width: 50px;
-        height: 50px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.2rem;
-        border: 4px solid #f8f9fa;
-    }
-    .blue-ring { border-top-color: #348fe2; }
-    .green-ring { border-top-color: #28a745; }
-    .orange-ring { border-top-color: var(--orange-main); }
-    .purple-ring { border-top-color: var(--purple-main); }
-    .red-ring { border-top-color: #dc3545; }
-
-    /* 5-COLUMN GRID FIX */
-    @media (min-width: 1200px) {
-        .col-xl-2-4 { width: 20%; flex: 0 0 20%; }
-    }
-
-    /* SEARCH BAR */
-    .search-glass {
-        background: rgba(255, 255, 255, 0.6);
-        border-radius: 50px;
-        width: 300px;
-        border: 1px solid #fff;
-    }
-
-    /* BUTTONS */
-    .btn-orange {
-        background: var(--orange-main);
-        color: white;
-        border: none;
-    }
-    .shadow-orange { box-shadow: 0 8px 20px rgba(255, 121, 63, 0.3); }
-    .bg-orange { background-color: var(--orange-main) !important; }
-    .text-orange { color: var(--orange-main); }
-    .text-purple { color: var(--purple-main); }
-
-    /* BADGES */
-    .bg-soft-primary { background: #e3f2fd; }
-    .bg-soft-warning { background: #fff3e0; }
-    .bg-soft-success { background: #e8f5e9; }
-
-    /* TABLE */
-    .custom-table thead th {
-        font-size: 0.75rem;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        color: #adb5bd;
-        border: none;
-    }
-    .fw-600 { font-weight: 600; }
-    .btn-icon { color: #348fe2; background: #f0f7ff; border-radius: 10px; padding: 5px 10px; }
-
-    /* GAUGE CHART TEXT */
-    .gauge-value {
-        position: absolute;
-        top: 60%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-    }
-
-    .chart-container { position: relative; height: 300px; width: 100%; }
-</style>
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/raphael/2.3.0/raphael.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/morris.js/0.5.1/morris.min.js"></script>
 
 <script>
-    // 1. AREA CHART: Modern Gradient Line
-    const areaCtx = document.getElementById('areaChart').getContext('2d');
-    const blueGrad = areaCtx.createLinearGradient(0, 0, 0, 400);
-    blueGrad.addColorStop(0, 'rgba(52, 143, 226, 0.2)');
-    blueGrad.addColorStop(1, 'rgba(52, 143, 226, 0)');
+$(document).ready(function() {
+    // Dynamic data variables mula sa views.py
+    var wordCount = {{ word_count|default:0 }};
+    var excelCount = {{ excel_count|default:0 }};
+    var pptCount = {{ ppt_count|default:0 }};
+    var pdfCount = {{ pdf_count|default:0 }};
 
-    new Chart(areaCtx, {
-        type: 'line',
-        data: {
-            labels: ['2019', '2020', '2021', '2022', '2023', '2024'],
-            datasets: [{
-                data: [30, 55, 40, 75, 60, 90],
-                borderColor: '#348fe2',
-                backgroundColor: blueGrad,
-                fill: true,
-                tension: 0.4,
-                pointRadius: 0,
-                borderWidth: 3
-            }, {
-                data: [20, 35, 60, 45, 80, 65],
-                borderColor: '#ff793f',
-                fill: false,
-                tension: 0.4,
-                pointRadius: 0,
-                borderWidth: 3,
-                borderDash: [5, 5]
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: {
-                x: { grid: { display: false }, border: { display: false } },
-                y: { grid: { color: '#f0f0f0' }, border: { display: false }, ticks: { stepSize: 20 } }
-            }
-        }
+    // Bar Chart
+    new Morris.Bar({
+        element: 'morris-bar-chart',
+        data: [
+            { y: 'Word', a: wordCount },
+            { y: 'Excel', a: excelCount },
+            { y: 'PPT', a: pptCount },
+            { y: 'PDF', a: pdfCount }
+        ],
+        xkey: 'y',
+        ykeys: ['a'],
+        labels: ['Uploaded'],
+        barColors: ['#23b7e5'],
+        hideHover: 'auto',
+        resize: true,
+        gridTextSize: 11,
+        animate: false
     });
 
-    // 2. GAUGE CHART (Satisfaction/Completion)
-    new Chart(document.getElementById('gaugeChart'), {
-        type: 'doughnut',
-        data: {
-            datasets: [{
-                data: [74, 26],
-                backgroundColor: ['#ff793f', '#f0f0f0'],
-                borderWidth: 0,
-                circumference: 180,
-                rotation: 270,
-                cutout: '85%'
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { tooltip: { enabled: false } }
-        }
+    // Donut Chart
+    new Morris.Donut({
+        element: 'morris-donut-chart',
+        data: [
+            {label: "Word", value: wordCount },
+            {label: "Excel", value: excelCount },
+            {label: "PPT", value: pptCount },
+            {label: "PDF", value: pdfCount }
+        ],
+        colors: ['#23b7e5', '#27c24c', '#fad732', '#f05050'],
+        resize: true,
+        formatter: function (x) { return x + " files" }
     });
-
-    new Chart(document.getElementById('barChart'), {
-        type: 'bar',
-        data: {
-            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May'],
-            datasets: [
-                { label: 'Sent', data: [45, 60, 50, 80, 70], backgroundColor: '#348fe2', borderRadius: 10, barThickness: 12 },
-                { label: 'Received', data: [30, 40, 35, 60, 50], backgroundColor: '#e3f2fd', borderRadius: 10, barThickness: 12 }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { position: 'top', align: 'end', labels: { usePointStyle: true, boxWidth: 8 } } },
-            scales: {
-                x: { grid: { display: false }, border: { display: false } },
-                y: { display: false }
-            }
-        }
-    });
+});
 </script>
-
 {% endblock %}
