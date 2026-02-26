@@ -6,9 +6,11 @@ from django.core.paginator import Paginator
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required, user_passes_test
+from .choices import REGISTRATION_TYPES
 from django.views.decorators.cache import never_cache
+from django.utils import timezone
 from django.db.models import Q
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 import json
 from .choices import OFFICE_CHOICES
 
@@ -155,6 +157,12 @@ def admin_dashboard(request):
     # Kinukuha ang listahan para sa table at dropdowns
     offices = Office.objects.all()
     profiles = UserProfile.objects.select_related('user', 'office').all().order_by('-user__date_joined')
+    
+    # Show ALL approved AND active users (both admin-created and approved self-registered)
+    profiles = UserProfile.objects.filter(
+        is_approved=True,  # Must be approved
+        user__is_active=True  # Must be active
+    ).select_related('user', 'office').order_by('-user__date_joined')
 
     if request.method == "POST":
         email = request.POST.get('email')
@@ -180,7 +188,8 @@ def admin_dashboard(request):
                 email=email,
                 password=password,
                 first_name=first_name,
-                last_name=last_name
+                last_name=last_name,
+                is_active=True  # Admin-created users are active by default
             )
 
             # 4. Get Office Object safely
@@ -201,6 +210,12 @@ def admin_dashboard(request):
                     'office': office_obj,
                     'role': role
                 }
+                office=office_obj,
+                role=role,
+                is_approved=True,  # Admin-created are auto-approved
+                registration_type='ADMIN',  # Mark as admin-created
+                approved_by=request.user,  # Track who created them
+                approved_at=timezone.now()
             )
 
             messages.success(request, f"Successfully created {role} account for {full_name}!")
@@ -209,6 +224,32 @@ def admin_dashboard(request):
         except Exception as e:
             messages.error(request, f"System Error: {str(e)}")
             return redirect('admin_dashboard')
+            messages.error(request, f"Error: {e}")
+
+    # Count only approved AND active users for dashboard stats
+    governor_count = UserProfile.objects.filter(
+        role='GOVERNOR', 
+        is_approved=True,
+        user__is_active=True
+    ).count()
+    
+    heads_count = UserProfile.objects.filter(
+        role='HEAD', 
+        is_approved=True,
+        user__is_active=True
+    ).count()
+    
+    executive_count = UserProfile.objects.filter(
+        role='EXECUTIVE', 
+        is_approved=True,
+        user__is_active=True
+    ).count()
+    
+    staff_count = UserProfile.objects.filter(
+        role='STAFF', 
+        is_approved=True,
+        user__is_active=True
+    ).count()
 
     # Counting logic for the dashboard statistics
     context = {
@@ -289,13 +330,19 @@ def register(request):
         email = request.POST.get('username')
         password = request.POST.get('pwd')
         full_name = request.POST.get('full_name')
+<<<<<<< HEAD
         office_code = request.POST.get('office')
+=======
+        office_id = request.POST.get('office')
+        role = 'STAFF'  # Default role for self-registration
+>>>>>>> ad27ad9463108b44590432bb1e9c8f86ffeb4dca
 
         if User.objects.filter(username=email).exists():
             messages.error(request, "Email already registered.")
             return redirect('register')
 
         try:
+<<<<<<< HEAD
             # 1. Create User
             parts = full_name.strip().split()
             first_name = parts[0] if parts else ""
@@ -304,6 +351,24 @@ def register(request):
             new_user = User.objects.create_user(
                 username=email, email=email, password=password,
                 first_name=first_name, last_name=last_name
+=======
+            # Split full_name into first_name and last_name
+            first_name = full_name
+            last_name = ''
+            if ' ' in full_name:
+                parts = full_name.strip().split()
+                first_name = parts[0]
+                last_name = ' '.join(parts[1:])
+
+            # Create new User with is_active=False
+            new_user = User.objects.create_user(
+                username=email,
+                email=email,
+                password=password,
+                first_name=first_name,
+                last_name=last_name,
+                is_active=False  # Set to inactive until approved
+>>>>>>> ad27ad9463108b44590432bb1e9c8f86ffeb4dca
             )
 
             # 2. Setup Office
@@ -313,19 +378,19 @@ def register(request):
                 defaults={'office_name': office_display}
             )
 
-            # 3. Safe Profile Creation (Ito ang fix sa Duplicate Entry)
-            # Ginagamit ang update_or_create para kung ginawa na ng Signal ang profile, 
-            # ia-update na lang nito ang office at role imbes na gumawa ng bago.
-            UserProfile.objects.update_or_create(
+            # Create UserProfile with pending status
+            UserProfile.objects.create(
                 user=new_user,
-                defaults={
-                    'office': office_instance,
-                    'role': 'STAFF'
-                }
+                office=office_obj,
+                role=role,
+                is_approved=False,
+                registration_type='SELF',  # Mark as self-registered
+                # registered_at will be auto-set
             )
 
-            messages.success(request, "Account created! Please log in.")
-            return redirect('login')
+            messages.success(request, "Your registration request has been submitted successfully! An administrator will review and approve your account within 24-48 hours. You will receive an email notification once your account is activated.")
+            
+            return render(request, 'register.html', {'offices': offices})
 
         except Exception as e:
             messages.error(request, f"Registration failed: {e}")
@@ -346,14 +411,16 @@ def logout(request):
     return response
 
 @login_required
-@user_passes_test(lambda u: u.is_superuser)  # Only admins
+@user_passes_test(lambda u: u.is_superuser)
 def user_management(request):
     # Get filter parameters
     role_filter = request.GET.get('role', '')
     search_query = request.GET.get('search', '')
     
-    # Get all user profiles
-    userprofiles = UserProfile.objects.select_related('user', 'office').all().order_by('-user__date_joined')
+    # Get ALL approved user profiles (both admin-created AND approved self-registered)
+    userprofiles = UserProfile.objects.filter(
+        is_approved=True  # Only show approved users
+    ).select_related('user', 'office').order_by('-user__date_joined')
     
     # Apply filters
     if role_filter:
@@ -369,19 +436,23 @@ def user_management(request):
             Q(office__office_code__icontains=search_query)
         )
     
-    # Get counts by role
-    governor_count = UserProfile.objects.filter(role='GOVERNOR').count()
-    heads_count = UserProfile.objects.filter(role='HEAD').count()
-    executive_count = UserProfile.objects.filter(role='EXECUTIVE').count()
-    staff_count = UserProfile.objects.filter(role='STAFF').count()
+    # Get counts by role (only approved users)
+    governor_count = UserProfile.objects.filter(role='GOVERNOR', is_approved=True).count()
+    heads_count = UserProfile.objects.filter(role='HEAD', is_approved=True).count()
+    executive_count = UserProfile.objects.filter(role='EXECUTIVE', is_approved=True).count()
+    staff_count = UserProfile.objects.filter(role='STAFF', is_approved=True).count()
     
     # Pagination
-    paginator = Paginator(userprofiles, 10)  # Show 10 users per page
+    paginator = Paginator(userprofiles, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
     # Get all offices for dropdown
     offices = Office.objects.all().order_by('office_name')
+    
+    # You can remove this part or fix it by importing REGISTRATION_TYPES
+    # If you want to display registration type, import it from choices
+    # from .choices import REGISTRATION_TYPES
     
     context = {
         'userprofiles': page_obj,
@@ -436,11 +507,15 @@ def register_user(request):
             if office_id:
                 office = get_object_or_404(Office, id=office_id)
             
-            # Create user profile
+            # Create user profile with admin registration type
             UserProfile.objects.create(
                 user=user,
                 office=office,
-                role=role
+                role=role,
+                is_approved=True,  # Admin-created are approved
+                registration_type='ADMIN',  # Mark as admin-created
+                approved_by=request.user,
+                approved_at=timezone.now()
             )
             
             messages.success(request, f'User {username} created successfully!')
@@ -455,10 +530,18 @@ def register_user(request):
 def delete_user(request, user_id):
     if request.method == 'POST':
         try:
-            user = get_object_or_404(User, id=user_id)
+            # First get the UserProfile
+            user_profile = get_object_or_404(UserProfile, id=user_id)
+            user = user_profile.user
+            
+            # Prevent deleting yourself
+            if request.user.id == user.id:
+                return JsonResponse({'success': False, 'error': 'You cannot delete your own account!'}, status=400)
+            
             username = user.username
-            user.delete()
+            user.delete()  # This will also delete the UserProfile due to CASCADE
             return JsonResponse({'success': True, 'message': f'User {username} deleted successfully'})
+            
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)}, status=400)
     
@@ -510,13 +593,259 @@ def edit_user(request, user_id):
         userprofile.role = request.POST.get('role', userprofile.role)
         userprofile.save()
         
+        # Return JSON response for AJAX
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': True, 
+                'message': f'User {user.username} updated successfully!'
+            })
+        
         messages.success(request, f'User {user.username} updated successfully!')
         return redirect('user_management')
     
-    # GET request - show edit form
+    # GET request - return the form HTML
     offices = Office.objects.all()
+    
+    # If it's an AJAX request, return just the form HTML
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        html = f'''
+        <form method="POST" action="/edit-user/{user_id}/" id="editUserForm">
+            <input type="hidden" name="csrfmiddlewaretoken" value="{request.COOKIES.get('csrftoken', '')}">
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="username" class="fw-bold">Username <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="fas fa-user"></i></span>
+                                </div>
+                                <input type="text" class="form-control" id="username" name="username" value="{userprofile.user.username}" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="email" class="fw-bold">Email Address</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+                                </div>
+                                <input type="email" class="form-control" id="email" name="email" value="{userprofile.user.email or ''}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="first_name" class="fw-bold">First Name</label>
+                            <input type="text" class="form-control" id="first_name" name="first_name" value="{userprofile.user.first_name or ''}">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="last_name" class="fw-bold">Last Name</label>
+                            <input type="text" class="form-control" id="last_name" name="last_name" value="{userprofile.user.last_name or ''}">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="new_password" class="fw-bold">New Password</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                                </div>
+                                <input type="password" class="form-control" id="new_password" name="new_password" placeholder="Leave blank to keep current">
+                                <div class="input-group-append">
+                                    <span class="input-group-text" style="cursor: pointer;" id="editToggleIcon">
+                                        <i class="fas fa-eye"></i>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="confirm_password" class="fw-bold">Confirm Password</label>
+                            <input type="password" class="form-control" id="confirm_password" name="confirm_password" placeholder="Confirm new password">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="office" class="fw-bold">Office</label>
+                            <select class="form-control" id="office" name="office">
+                                <option value="">Select Office (Optional)</option>
+                                {''.join([f'<option value="{office.id}" {"selected" if userprofile.office and userprofile.office.id == office.id else ""}>{office.office_name} ({office.office_code})</option>' for office in offices])}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="role" class="fw-bold">Role <span class="text-danger">*</span></label>
+                            <select class="form-control" id="role" name="role" required>
+                                <option value="STAFF" {"selected" if userprofile.role == 'STAFF' else ""}>Staff</option>
+                                <option value="HEAD" {"selected" if userprofile.role == 'HEAD' else ""}>Office Head</option>
+                                <option value="EXECUTIVE" {"selected" if userprofile.role == 'EXECUTIVE' else ""}>Executive</option>
+                                <option value="GOVERNOR" {"selected" if userprofile.role == 'GOVERNOR' else ""}>Governor</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <div class="custom-control custom-switch">
+                        <input type="checkbox" class="custom-control-input" id="is_active" name="is_active" {"checked" if userprofile.user.is_active else ""}>
+                        <label class="custom-control-label" for="is_active">Active Account</label>
+                    </div>
+                    <small class="text-muted">If unchecked, user won't be able to log in</small>
+                </div>
+                
+                <div class="alert alert-info mt-3" id="editPasswordStrength" style="display: none;">
+                    <strong>Password Strength:</strong> <span id="editStrengthText">Weak</span>
+                    <div class="progress mt-2" style="height: 5px;">
+                        <div class="progress-bar" id="editStrengthBar" role="progressbar" style="width: 0%;"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Cancel
+                </button>
+                <button type="submit" class="btn btn-primary" id="editSubmitBtn">
+                    <i class="fas fa-save me-2"></i>Save Changes
+                </button>
+            </div>
+        </form>
+        '''
+        return HttpResponse(html)
+    
+    # For non-AJAX requests (fallback), redirect to management page
+    return redirect('user_management')
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def access_requests(request):
+    # Get only SELF-registered users pending approval
+    pending_requests = UserProfile.objects.filter(
+        registration_type='SELF',  # Only self-registered
+        is_approved=False,
+        user__is_active=False
+    ).select_related('user', 'office').order_by('-user__date_joined')
+    
+    # Get approved self-registered users (recent)
+    approved_users = UserProfile.objects.filter(
+        registration_type='SELF',  # Only self-registered
+        is_approved=True
+    ).select_related('user', 'office').order_by('-approved_at')[:20]
+    
+    # Get rejected self-registered users (optional)
+    rejected_users = UserProfile.objects.filter(
+        registration_type='SELF',  # Only self-registered
+        is_approved=False,
+        user__is_active=False
+    ).exclude(
+        user__date_joined=timezone.now()
+    )[:10]
+    
     context = {
-        'profile': userprofile,
-        'offices': offices,
+        'pending_requests': pending_requests,
+        'approved_users': approved_users,
+        'rejected_users': rejected_users,
+        'pending_count': pending_requests.count(),
     }
-    return render(request, 'edit_user.html', context)
+    
+    return render(request, 'access_requests.html', context)
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def approve_user(request, profile_id):
+    if request.method == 'POST':
+        try:
+            profile = get_object_or_404(UserProfile, id=profile_id)
+            user = profile.user
+            
+            # Approve the user
+            user.is_active = True
+            user.save()
+            
+            profile.is_approved = True
+            profile.approved_at = timezone.now()
+            profile.approved_by = request.user
+            # registration_type remains 'SELF' (no change needed)
+            profile.save()
+            
+            return JsonResponse({
+                'success': True, 
+                'message': f'User {user.username} has been approved successfully!'
+            })
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=400)
+    
+    return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def reject_user(request, profile_id):
+    if request.method == 'POST':
+        try:
+            profile = get_object_or_404(UserProfile, id=profile_id)
+            username = profile.user.username
+            
+            # Delete the user (or you can mark as rejected instead)
+            profile.user.delete()
+            
+            return JsonResponse({
+                'success': True, 
+                'message': f'User {username} has been rejected and removed.'
+            })
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=400)
+    
+    return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def bulk_approve_users(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            profile_ids = data.get('profile_ids', [])
+            
+            if not profile_ids:
+                return JsonResponse({'success': False, 'error': 'No users selected'}, status=400)
+            
+            profiles = UserProfile.objects.filter(id__in=profile_ids, is_approved=False)
+            approved_count = 0
+            
+            for profile in profiles:
+                user = profile.user
+                user.is_active = True
+                user.save()
+                
+                profile.is_approved = True
+                profile.approved_at = timezone.now()
+                profile.approved_by = request.user
+                profile.save()
+                approved_count += 1
+            
+            return JsonResponse({
+                'success': True, 
+                'message': f'{approved_count} user(s) have been approved successfully!'
+            })
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=400)
+    
+    return JsonResponse({'error': 'Method not allowed'}, status=405)

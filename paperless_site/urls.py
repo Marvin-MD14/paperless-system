@@ -20,6 +20,10 @@ from tracking.views import (
     delete_user, 
     edit_user, 
     user_details,
+    access_requests,
+    approve_user,
+    reject_user,
+    bulk_approve_users,
 )
 
 # Dito nanggagaling ang lahat ng logic para sa documents
@@ -106,8 +110,18 @@ urlpatterns = [
     # Received Documents List (View All link from Dashboard)
     path('received/', documentview.received_docs_view, name='received_documents'),
     path('mark-as-read/<int:doc_id>/', documentview.mark_as_read, name='mark_as_read'),
+
+    path('access-requests/', access_requests, name='access_requests'),
+    path('approve-user/<int:profile_id>/', approve_user, name='approve_user'),
+    path('reject-user/<int:profile_id>/', reject_user, name='reject_user'),
+    path('bulk-approve-users/', bulk_approve_users, name='bulk_approve_users'),
+
+    path('upload-document/', user_dashboard, name='upload_document'), 
+    path('document-list/', user_dashboard, name='document_list'),
 ]
 
 # Media files serving (Importante para ma-view/download ang uploaded files)
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    # Access Requests
+    

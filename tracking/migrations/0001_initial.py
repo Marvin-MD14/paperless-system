@@ -56,6 +56,11 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('role', models.CharField(choices=[('HEAD', 'Office Head'), ('STAFF', 'Staff'), ('GOVERNOR', 'Governor'), ('EXECUTIVE', 'Executive'), ('ADMIN', 'Administrator')], default='STAFF', max_length=20)),
+                ('is_approved', models.BooleanField(default=False)),
+                ('approved_at', models.DateTimeField(blank=True, null=True)),
+                ('registration_type', models.CharField(choices=[('ADMIN', 'Created by Admin'), ('SELF', 'Self-Registered')], default='ADMIN', help_text='How was this user account created?', max_length=20)),
+                ('registered_at', models.DateTimeField(auto_now_add=True)),
+                ('approved_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='approved_users', to=settings.AUTH_USER_MODEL)),
                 ('office', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='tracking.office')),
                 ('user', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='userprofile', to=settings.AUTH_USER_MODEL)),
             ],

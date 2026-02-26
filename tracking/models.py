@@ -3,8 +3,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save # Idinagdag ito
 from django.dispatch import receiver          # Idinagdag ito
-from .choices import OFFICE_CHOICES, OFFICE_DICT, ROLE_CHOICES
-from .choices import STATUS_CHOICES
+from .choices import OFFICE_CHOICES, OFFICE_DICT, STATUS_CHOICES, ROLE_CHOICES, REGISTRATION_TYPES
 
 # --- OFFICE MODEL ---
 class Office(models.Model):
@@ -22,6 +21,20 @@ class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='userprofile')
     office = models.ForeignKey(Office, on_delete=models.SET_NULL, null=True, blank=True)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='STAFF')
+    is_approved = models.BooleanField(default=False)
+    approved_at = models.DateTimeField(null=True, blank=True)
+    approved_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='approved_users')
+    
+    # NEW FIELD: Track how the user was created
+    registration_type = models.CharField(
+        max_length=20,
+        choices=REGISTRATION_TYPES,
+        default='ADMIN',  # Default to ADMIN for backward compatibility
+        help_text="How was this user account created?"
+    )
+    
+    # Optional but useful: Track when they registered
+    registered_at = models.DateTimeField(auto_now_add=True)
     
     def __str__(self):
         return f"{self.user.username} - {self.role}"

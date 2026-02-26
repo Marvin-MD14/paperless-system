@@ -425,7 +425,6 @@ $(document).ready(function() {
         }
     });
 
-    // Form Loading States
     $('#uploadForm').on('submit', function () {
         $('#btnUpload').prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Processing...');
     });
@@ -435,12 +434,10 @@ $(document).ready(function() {
     });
 });
 
-// Global Function for opening modal
 function openSendModal(docId, title, category) {
     $('#modal_doc_id').val(docId);
     $('#modal_doc_display_title').text(title);
 
-    // Update icon based on category
     const iconEl = $('#modal_icon').removeClass().addClass('fas fs-3 mb-2');
     if (category === 'pdf') iconEl.addClass('fa-file-pdf text-danger');
     else if (category === 'word') iconEl.addClass('fa-file-word text-primary');

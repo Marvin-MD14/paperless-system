@@ -4,8 +4,6 @@
 {% block title %}Register | EDMS{% endblock %}
 
 {% block extra_css %}
-<link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet" />
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <style>
     :root {
         --primary-blue: #348fe2;
@@ -258,73 +256,105 @@
         </div>
     </div>
 </div>
+{% endblock %}
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
+{% block extra_js %}
 <script>
-    $(document).ready(function () {
-        // Prevent form resubmission on refresh
-        if (window.history.replaceState) {
-            window.history.replaceState(null, null, window.location.href);
+    (function() {
+        // Function to initialize everything when DOM is ready
+        function initRegistration() {
+            if (typeof jQuery === 'undefined') {
+                console.error('jQuery not loaded yet');
+                return;
+            }
+
+            $(document).ready(function() {
+                // Initialize Select2
+                if ($.fn.select2) {
+                    $('#office-select').select2({
+                        width: '100%',
+                        placeholder: "Search your office...",
+                        allowClear: true,
+                        dropdownParent: $('.login-box')
+                    });
+                } else {
+                    console.error('Select2 not loaded');
+                }
+
+                // Check for messages from Django
+                var messageElements = $('[data-message]');
+                if (messageElements.length > 0) {
+                    messageElements.each(function() {
+                        var message = $(this).data('message');
+                        var tags = $(this).data('tags');
+                        var loginUrl = $(this).data('login-url');
+                        
+                        if (typeof swal !== 'undefined') {
+                            if (tags === 'success') {
+                                swal({
+                                    title: 'Registration Successful!',
+                                    text: message,
+                                    type: 'success',
+                                    confirmButtonColor: '#348fe2',
+                                    confirmButtonText: 'PROCEED TO LOGIN',
+                                    closeOnConfirm: false
+                                }, function() {
+                                    window.location.href = loginUrl;
+                                });
+                            } else {
+                                swal({
+                                    title: 'Registration Rejected',
+                                    text: message,
+                                    type: 'error',
+                                    confirmButtonColor: '#1a4a7c'
+                                });
+                            }
+                        }
+                    });
+                }
+
+                // Form submission with validation
+                $('#registerForm').on('submit', function(e) {
+                    const pwd = $('#pwd').val();
+                    const cpwd = $('#cpwd').val();
+
+                    if (pwd !== cpwd) {
+                        e.preventDefault();
+                        if (typeof swal !== 'undefined') {
+                            swal({
+                                title: 'Mismatch!',
+                                text: 'Passwords do not match. Please try again.',
+                                type: 'error',
+                                confirmButtonColor: '#348fe2'
+                            });
+                        }
+                        return false;
+                    }
+                    
+                    const btn = $('#signupBtn');
+                    btn.html('<span class="spinner-border spinner-border-sm me-2"></span> CREATING ACCOUNT...');
+                    btn.prop('disabled', true);
+                });
+            });
         }
 
-        // Initialize Select2
-        $('#office-select').select2({
-            width: '100%',
-            placeholder: "Search your office...",
-            allowClear: true,
-            dropdownParent: $('.login-box')
-        });
-
-        // Password Visibility Toggle
-        $('.toggle-pwd').on('click', function() {
-            const targetId = $(this).data('target');
-            const passwordField = $(targetId);
-            const icon = $(this).find('i');
-            
-            if (passwordField.attr('type') === 'password') {
-                passwordField.attr('type', 'text');
-                icon.removeClass('fa-eye').addClass('fa-eye-slash');
-            } else {
-                passwordField.attr('type', 'password');
-                icon.removeClass('fa-eye-slash').addClass('fa-eye');
-            }
-        });
-
-        // Form Validation and Submission
-        $('#registerForm').on('submit', function (e) {
-            const pwd = $('#pwd').val();
-            const cpwd = $('#cpwd').val();
-            const btn = $('#signupBtn');
-
-            // 1. Password Match Validation
-            if (pwd !== cpwd) {
-                e.preventDefault();
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Mismatch!',
-                    text: 'Passwords do not match. Please try again.',
-                    confirmButtonColor: '#348fe2'
-                });
-                return false;
-            }
-
-            // 2. Loading State
-            btn.prop('disabled', true);
-            btn.html('<span class="spinner-border spinner-border-sm me-2"></span> CREATING ACCOUNT...');
-
-            // 3. Optional: Show a SweetAlert loading overlay
-            Swal.fire({
-                title: 'Processing...',
-                text: 'Creating your account, please wait.',
-                allowOutsideClick: false,
-                didOpen: () => {
-                    Swal.showLoading();
+        // Check if jQuery is already loaded
+        if (typeof jQuery !== 'undefined') {
+            initRegistration();
+        } else {
+            // If not, wait for it
+            var checkInterval = setInterval(function() {
+                if (typeof jQuery !== 'undefined') {
+                    clearInterval(checkInterval);
+                    initRegistration();
                 }
-            });
-        });
-    });
+            }, 50);
+            
+            // Timeout after 5 seconds
+            setTimeout(function() {
+                clearInterval(checkInterval);
+            }, 5000);
+        }
+    })();
 </script>
 {% endblock %}

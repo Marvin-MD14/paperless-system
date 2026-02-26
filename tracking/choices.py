@@ -56,3 +56,8 @@ ROLE_CHOICES = (
 OFFICE_DICT = dict(OFFICE_CHOICES)
 STATUS_DICT = dict(STATUS_CHOICES)
 ROLE_DICT = dict(ROLE_CHOICES)
+
+REGISTRATION_TYPES = (
+    ('ADMIN', 'Created by Admin'),
+    ('SELF', 'Self-Registered'),    
+)

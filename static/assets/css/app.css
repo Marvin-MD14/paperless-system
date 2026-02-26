@@ -94,8 +94,7 @@ body {
     margin-bottom: 20px;
     padding: 15px;
     font-weight: normal;
-    background-color: #fafbfc;
-    border-bottom: 1px solid #cfdbe2; }
+    background-color: #fafbfc; }
     .content-wrapper .content-heading small {
       display: block;
       font-size: 12px;
@@ -1138,7 +1137,6 @@ hr {
     padding: 0.625rem 0.9375rem; }
 
 .card-default {
-  border-top-width: 3px;
   border-color: #cfdbe2; }
   .card-default .card-header {
     background-color: #fff; }
