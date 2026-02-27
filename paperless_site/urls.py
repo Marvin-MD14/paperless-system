@@ -116,8 +116,8 @@ urlpatterns = [
     path('reject-user/<int:profile_id>/', reject_user, name='reject_user'),
     path('bulk-approve-users/', bulk_approve_users, name='bulk_approve_users'),
 
-    path('upload-document/', user_dashboard, name='upload_document'), 
-    path('document-list/', user_dashboard, name='document_list'),
+    # path('upload-document/', user_dashboard, name='upload_document'), 
+    # path('document-list/', user_dashboard, name='document_list'),
 ]
 
 # Media files serving (Importante para ma-view/download ang uploaded files)

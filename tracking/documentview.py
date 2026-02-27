@@ -225,3 +225,34 @@ def mark_as_read(request, doc_id):
         document.is_read = True
         document.save()
     return redirect(document.file.url)
+@login_required
+def employee_dashboard(request):
+    """
+    View para sa Dashboard. Kinukuha ang data base sa uploads at 
+    received documents ng user para mag-match sa charts at cards.
+    """
+    # 1. Kunin ang lahat ng inupload ng current user (para sa charts at Total Uploads)
+    my_uploads = Document.objects.filter(uploaded_by=request.user)
+    
+    # 2. Kunin ang lahat ng natanggap ng user (para sa Pending Review/Inbox)
+    received_all = Document.objects.filter(recipient=request.user)
+    
+    # 3. Data para sa charts (Dapat kapareho ng logic sa upload_document view)
+    context = {
+        # Para sa Top Cards (Metric Boxes)
+        'recent_logs': my_uploads, # Ginagamit ang .count sa template para sa 'Total Uploads'
+        'processed_count': my_uploads.filter(status='PROCESSED').count(), # O kung ano man ang status mo para sa tapos na
+        'unread_received_count': received_all.filter(is_read=False).count(),
+        # 'returned_count' ay 0 muna gaya ng nasa template mo
+        
+        # Para sa Morris Charts (Dapat 'word', 'excel', 'ppt', 'pdf' ang values sa DB)
+        'word_count': my_uploads.filter(category='word').count(),
+        'excel_count': my_uploads.filter(category='excel').count(),
+        'ppt_count': my_uploads.filter(category='ppt').count(),
+        'pdf_count': my_uploads.filter(category='pdf').count(),
+        
+        # Para sa "Unread Documents" list sa gilid ng dashboard
+        'unread_docs': received_all.filter(is_read=False).order_by('-uploaded_at')[:5],
+    }
+    
+    return render(request, 'employee_dashboard.html', context)

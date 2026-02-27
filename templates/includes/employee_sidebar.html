@@ -7,7 +7,7 @@
                <div class="item user-block">
                   <div class="user-block-picture">
                      <div class="user-block-status">
-                        <img class="img-thumbnail rounded-circle" src="{% static 'assets/img/user/default.png' %}"
+                        <img class="img-thumbnail rounded-circle" src="{% if user.userprofile.profile_picture %}{{ user.userprofile.profile_picture.url }}{% else %}{% static 'assets/img/user/default.png' %}{% endif %}"
                            alt="Avatar" width="60" height="60">
                         <div class="circle bg-success circle-lg"></div>
                      </div>
@@ -33,22 +33,22 @@
             </a>
          </li>
 
-         <li class="{% if request.resolver_match.url_name == 'received_docs_page' %}active{% endif %}">
-            <a href="#" title="Received Documents">
+         <li class="{% if request.resolver_match.url_name == 'received_documents' %}active{% endif %}">
+            <a href="{% url 'received_documents' %}" title="Received Documents">
                {% if unread_received_count > 0 %}
                <div class="badge badge-danger float-right">{{ unread_received_count }}</div>
                {% endif %}
                <em class="icon-envelope-letter"></em>
-               <span>Received Documents</span>
+               <span>Received Docx</span>
             </a>
          </li>
 
          <li class="{% if 'document' in request.path %}active{% endif %}">
-            <a href="#docs-submenu" title="Documents" data-toggle="collapse" class="collapsed">
+            <a href="#docs-submenu" title="Documents" data-toggle="collapse" class="{% if 'document' in request.path %}{% else %}collapsed{% endif %}">
                <em class="icon-doc"></em>
                <span>My Documents</span>
             </a>
-            <ul class="sidebar-nav sidebar-subnav collapse" id="docs-submenu">
+            <ul class="sidebar-nav sidebar-subnav collapse {% if 'document' in request.path %}show{% endif %}" id="docs-submenu">
                <li class="sidebar-subnav-header">My Documents</li>
                <li>
                   <a href="{% url 'upload_document' %}" title="Upload New">
@@ -60,7 +60,6 @@
                      <span>Recent Uploads</span>
                   </a>
                </li>
-
                <li>
                   <a href="{% url 'sent_status' %}" title="Sent Tracking">
                      <span class="d-flex align-items-center">
@@ -73,14 +72,14 @@
          </li>
 
          <li>
-            <a href="#tracking-submenu" title="Tracking" data-toggle="collapse">
+            <a href="#tracking-submenu" title="Tracking" data-toggle="collapse" class="collapsed">
                <em class="icon-map"></em>
                <span>Document Tracking</span>
             </a>
             <ul class="sidebar-nav sidebar-subnav collapse" id="tracking-submenu">
                <li class="sidebar-subnav-header">Document Tracking</li>
                <li>
-                  <a href="#">
+                  <a href="{% url 'received_documents' %}">
                      <span>Incoming Docs</span>
                      {% if unread_received_count > 0 %}
                      <span class="label label-danger float-right">{{ unread_received_count }}</span>
@@ -92,6 +91,19 @@
          </li>
 
          <li class="nav-heading"><span>Account</span></li>
+         
+         {% if user.is_superuser %}
+         <li class="{% if request.resolver_match.url_name == 'access_requests' %}active{% endif %}">
+            <a href="{% url 'access_requests' %}" title="Access Requests">
+               {% if pending_requests_count > 0 %}
+               <div class="badge badge-warning float-right">{{ pending_requests_count }}</div>
+               {% endif %}
+               <em class="icon-user-follow"></em>
+               <span>Registration Requests</span>
+            </a>
+         </li>
+         {% endif %}
+
          <li>
             <a href="{% url 'logout' %}" title="Logout">
                <em class="icon-logout text-danger"></em>

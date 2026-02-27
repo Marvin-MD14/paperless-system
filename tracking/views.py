@@ -240,35 +240,43 @@ def head_dashboard(request):
 @login_required
 @never_cache
 def user_dashboard(request):
-  
+    # Siguraduhing may profile ang user
     profile, created = UserProfile.objects.get_or_create(
         user=request.user,
         defaults={'role': 'STAFF'} 
     )
 
+    # Role Redirection
     if profile.role == 'HEAD':
         return redirect('head_dashboard')
     elif profile.role in ['GOVERNOR', 'EXECUTIVE']:
         return redirect('executive_dashboard')
-    elif profile.role != 'STAFF':
-        messages.error(request, "Unauthorized access.")
-        return redirect('login')
 
-    my_uploads = Document.objects.filter(uploaded_by=request.user).order_by('-uploaded_at')[:5] 
+    # DATA FETCHING
+    # Lahat ng uploads ng user para sa counts at charts
+    all_uploads = Document.objects.filter(uploaded_by=request.user)
     
-    office_docs_count = 0
-    if profile.office:
-        office_docs_count = Document.objects.filter(
-            routings__to_office=profile.office,
-            status='PENDING'
-        ).distinct().count()
+    # Lahat ng received documents (Inbox)
+    received_all = Document.objects.filter(recipient=request.user)
 
     context = {
         'profile': profile,
-        'my_uploads': my_uploads,
-        'office_docs_count': office_docs_count,
-        'my_uploads_count': Document.objects.filter(uploaded_by=request.user).count(),
+        
+        # 1. PARA SA METRIC CARDS (Top row)
+        'recent_logs': all_uploads, # Para sa {{ recent_logs.count }}
+        'processed_count': all_uploads.filter(status='PROCESSED').count(),
+        'unread_received_count': received_all.filter(is_read=False).count(),
+        
+        # 2. PARA SA MORRIS CHARTS (Script section)
+        'word_count': all_uploads.filter(category='word').count(),
+        'excel_count': all_uploads.filter(category='excel').count(),
+        'ppt_count': all_uploads.filter(category='ppt').count(),
+        'pdf_count': all_uploads.filter(category='pdf').count(),
+        
+        # 3. PARA SA UNREAD DOCUMENTS LIST (Sidebar)
+        'unread_docs': received_all.filter(is_read=False).order_by('-uploaded_at')[:5],
     }
+
     return render(request, 'employee_dashboard.html', context)
 def register(request):
 
@@ -349,16 +357,14 @@ def logout(request):
 @login_required
 @user_passes_test(lambda u: u.is_superuser)
 def user_management(request):
-    # Get filter parameters
     role_filter = request.GET.get('role', '')
     search_query = request.GET.get('search', '')
     
-    # Get ALL approved user profiles (both admin-created AND approved self-registered)
     userprofiles = UserProfile.objects.filter(
-        is_approved=True  # Only show approved users
+        is_approved=True  
     ).select_related('user', 'office').order_by('-user__date_joined')
     
-    # Apply filters
+
     if role_filter:
         userprofiles = userprofiles.filter(role=role_filter)
     
@@ -372,13 +378,11 @@ def user_management(request):
             Q(office__office_code__icontains=search_query)
         )
     
-    # Get counts by role (only approved users)
     governor_count = UserProfile.objects.filter(role='GOVERNOR', is_approved=True).count()
     heads_count = UserProfile.objects.filter(role='HEAD', is_approved=True).count()
     executive_count = UserProfile.objects.filter(role='EXECUTIVE', is_approved=True).count()
     staff_count = UserProfile.objects.filter(role='STAFF', is_approved=True).count()
     
-    # Pagination
     paginator = Paginator(userprofiles, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
@@ -417,18 +421,15 @@ def register_user(request):
         role = request.POST.get('role')
         is_active = request.POST.get('is_active') == 'on'
         
-        # Validate required fields
         if not username or not password:
             messages.error(request, 'Username and password are required.')
             return redirect('user_management')
         
-        # Check if username already exists
         if User.objects.filter(username=username).exists():
             messages.error(request, f'Username "{username}" is already taken.')
             return redirect('user_management')
         
         try:
-            # Create user
             user = User.objects.create_user(
                 username=username,
                 password=password,
@@ -438,18 +439,16 @@ def register_user(request):
                 is_active=is_active
             )
             
-            # Get office if selected
             office = None
             if office_id:
                 office = get_object_or_404(Office, id=office_id)
             
-            # Create user profile with admin registration type
             UserProfile.objects.create(
                 user=user,
                 office=office,
                 role=role,
-                is_approved=True,  # Admin-created are approved
-                registration_type='ADMIN',  # Mark as admin-created
+                is_approved=True,  
+                registration_type='ADMIN', 
                 approved_by=request.user,
                 approved_at=timezone.now()
             )
@@ -466,16 +465,14 @@ def register_user(request):
 def delete_user(request, user_id):
     if request.method == 'POST':
         try:
-            # First get the UserProfile
             user_profile = get_object_or_404(UserProfile, id=user_id)
             user = user_profile.user
             
-            # Prevent deleting yourself
             if request.user.id == user.id:
                 return JsonResponse({'success': False, 'error': 'You cannot delete your own account!'}, status=400)
             
             username = user.username
-            user.delete()  # This will also delete the UserProfile due to CASCADE
+            user.delete()  
             return JsonResponse({'success': True, 'message': f'User {username} deleted successfully'})
             
         except Exception as e:
@@ -488,7 +485,6 @@ def delete_user(request, user_id):
 def user_details(request, user_id):
     userprofile = get_object_or_404(UserProfile.objects.select_related('user', 'office'), id=user_id)
     
-    # Get additional stats
     documents_created = userprofile.user.uploaded_documents.count() if hasattr(userprofile.user, 'uploaded_documents') else 0
     
     context = {
@@ -519,7 +515,6 @@ def edit_user(request, user_id):
         
         user.save()
         
-        # Update profile
         office_id = request.POST.get('office')
         if office_id:
             userprofile.office = get_object_or_404(Office, id=office_id)
@@ -529,7 +524,6 @@ def edit_user(request, user_id):
         userprofile.role = request.POST.get('role', userprofile.role)
         userprofile.save()
         
-        # Return JSON response for AJAX
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return JsonResponse({
                 'success': True, 
@@ -539,10 +533,8 @@ def edit_user(request, user_id):
         messages.success(request, f'User {user.username} updated successfully!')
         return redirect('user_management')
     
-    # GET request - return the form HTML
     offices = Office.objects.all()
     
-    # If it's an AJAX request, return just the form HTML
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         html = f'''
         <form method="POST" action="/edit-user/{user_id}/" id="editUserForm">
@@ -663,28 +655,24 @@ def edit_user(request, user_id):
         '''
         return HttpResponse(html)
     
-    # For non-AJAX requests (fallback), redirect to management page
     return redirect('user_management')
 
 @login_required
 @user_passes_test(lambda u: u.is_superuser)
 def access_requests(request):
-    # Get only SELF-registered users pending approval
     pending_requests = UserProfile.objects.filter(
-        registration_type='SELF',  # Only self-registered
+        registration_type='SELF',  
         is_approved=False,
         user__is_active=False
     ).select_related('user', 'office').order_by('-user__date_joined')
     
-    # Get approved self-registered users (recent)
     approved_users = UserProfile.objects.filter(
-        registration_type='SELF',  # Only self-registered
+        registration_type='SELF',  
         is_approved=True
     ).select_related('user', 'office').order_by('-approved_at')[:20]
     
-    # Get rejected self-registered users (optional)
     rejected_users = UserProfile.objects.filter(
-        registration_type='SELF',  # Only self-registered
+        registration_type='SELF',  
         is_approved=False,
         user__is_active=False
     ).exclude(
@@ -715,7 +703,6 @@ def approve_user(request, profile_id):
             profile.is_approved = True
             profile.approved_at = timezone.now()
             profile.approved_by = request.user
-            # registration_type remains 'SELF' (no change needed)
             profile.save()
             
             return JsonResponse({
@@ -737,7 +724,6 @@ def reject_user(request, profile_id):
             profile = get_object_or_404(UserProfile, id=profile_id)
             username = profile.user.username
             
-            # Delete the user (or you can mark as rejected instead)
             profile.user.delete()
             
             return JsonResponse({
