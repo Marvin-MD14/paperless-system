@@ -3,7 +3,8 @@ from .models import UserProfile, Document
 def global_counts(request):
     counts = {
         'pending_requests_count': 0,
-        'unread_received_count': 0
+        'unread_received_count': 0,
+        'unread_notifications': [] # Idagdag ito
     }
     
     if request.user.is_authenticated:
@@ -15,10 +16,12 @@ def global_counts(request):
             ).count()
         
         # 2. Received Documents (All users)
-        # Gagamit ng is_read=False para sa real-time notification badge
-        counts['unread_received_count'] = Document.objects.filter(
+        unread_docs = Document.objects.filter(
             recipient=request.user,
             is_read=False
-        ).count()
+        ).order_by('-uploaded_at') # Pinakabago ang nasa taas
+        
+        counts['unread_received_count'] = unread_docs.count()
+        counts['unread_notifications'] = unread_docs[:5] # Kunin lang ang top 5 para sa dropdown
         
     return counts

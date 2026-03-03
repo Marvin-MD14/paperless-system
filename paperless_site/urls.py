@@ -118,6 +118,10 @@ urlpatterns = [
 
     # path('upload-document/', user_dashboard, name='upload_document'), 
     # path('document-list/', user_dashboard, name='document_list'),
+
+   # Notification API
+    path('api/notifications/', documentview.get_notifications_api, name='notifications_api'),
+    path('api/notifications/mark-read/<int:ntf_id>/', documentview.mark_as_read_api, name='mark_as_read_api'),
 ]
 
 # Media files serving (Importante para ma-view/download ang uploaded files)

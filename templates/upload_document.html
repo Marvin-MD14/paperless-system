@@ -79,17 +79,44 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        transition: 0.2s;
-        background: #f1f5f9;
-        color: #64748b;
+        transition: 0.3s;
         font-size: 0.85rem;
         cursor: pointer;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
 
-    .btn-send:hover { background: #4361ee !important; color: white !important; }
-    .btn-download:hover { background: #10b981 !important; color: white !important; }
-    .btn-delete:hover { background: #ef4444 !important; color: white !important; }
+    /* Send/Forward Button - Blue */
+    .btn-send { 
+        background: #eef2ff; 
+        color: #4361ee; 
+    }
+    .btn-send:hover { 
+        background: #4361ee !important; 
+        color: white !important; 
+        transform: translateY(-2px);
+    }
 
+    /* Download Button - Green */
+    .btn-download { 
+        background: #ecfdf5; 
+        color: #10b981; 
+    }
+    .btn-download:hover { 
+        background: #10b981 !important; 
+        color: white !important; 
+        transform: translateY(-2px);
+    }
+
+    /* Delete Button - Red */
+    .btn-delete { 
+        background: #fef2f2; 
+        color: #ef4444; 
+    }
+    .btn-delete:hover { 
+        background: #ef4444 !important; 
+        color: white !important; 
+        transform: translateY(-2px);
+    }
     /* Forms */
     .drop-zone {
         border: 2px dashed #e2e8f0;
@@ -300,19 +327,31 @@
                                     <span class="badge rounded-pill bg-light text-dark border x-small">{{ doc.category|upper }}</span>
                                 </td>
                                 <td class="text-center">
-                                    <div class="d-flex justify-content-center gap-1">
-                                        <button type="button" class="btn-action btn-send" 
-                                                onclick="openSendModal('{{ doc.id }}', '{{ doc.title|escapejs }}', '{{ doc.category }}')" 
-                                                title="Forward">
-                                            <i class="fas fa-paper-plane"></i>
-                                        </button>
-                                        <a href="{{ doc.file.url }}" class="btn-action btn-download" download title="Download">
-                                            <i class="fas fa-download"></i>
-                                        </a>
-                                        <button type="button" class="btn-action btn-delete" onclick="handleDelete('{{ doc.id }}', '{{ doc.title|escapejs }}')" title="Delete">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </div>
+                                   <div class="d-flex justify-content-center gap-1">
+    <button type="button" class="btn-action btn-send" 
+            onclick="openSendModal('{{ doc.id }}', '{{ doc.title|escapejs }}', '{{ doc.category }}')" 
+            data-bs-toggle="tooltip" 
+            data-bs-placement="top" 
+            title="Send">
+        <i class="fas fa-paper-plane"></i>
+    </button>
+
+    <a href="{{ doc.file.url }}" class="btn-action btn-download" 
+       download 
+       data-bs-toggle="tooltip" 
+       data-bs-placement="top" 
+       title="Download File">
+        <i class="fas fa-download"></i>
+    </a>
+
+    <button type="button" class="btn-action btn-delete" 
+            onclick="handleDelete('{{ doc.id }}', '{{ doc.title|escapejs }}')" 
+            data-bs-toggle="tooltip" 
+            data-bs-placement="top" 
+            title="Delete">
+        <i class="fas fa-trash"></i>
+    </button>
+</div>
                                 </td>
                             </tr>
                             {% empty %}
@@ -328,7 +367,7 @@
             <div class="card border-0 shadow-sm rounded-4 h-100">
                 <div class="card-header bg-transparent border-0 pt-4 px-4 pb-2 d-flex justify-content-between align-items-center">
                     <h6 class="fw-bold text-dark mb-0">Inbox</h6>
-                    <a href="#" class="view-all-link">View All</a>
+                    <a href="{% url 'received_documents' %}" class="view-all-link">View All</a>
                 </div>
                 <div class="card-body p-0">
                     <div class="list-group list-group-flush">
@@ -358,7 +397,7 @@
             <div class="modal-header border-0 pt-4 px-4 pb-0 d-flex justify-content-between align-items-center">
                 <div class="modal-header-custom">
                     <i class="fa-brands fa-telegram"></i> 
-                    <h6 class="fw-bold mb-0" id="sendModalLabel">Forward Document</h6>
+                    <h6 class="fw-bold mb-0" id="sendModalLabel">Send Document</h6>
                 </div>
                 <button type="button" class="close-custom" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
@@ -401,6 +440,11 @@
 {% block extra_js %}
 <script>
 $(document).ready(function() {
+
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    });
     // Append modal to body to ensure it's not hidden behind other elements
     $('#sendModal').appendTo('body');
 

@@ -136,4 +136,4 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'marvindelluza99@gmail.com'  
 EMAIL_HOST_PASSWORD = 'fsyevtvhhksiqwrd' 
-DEFAULT_FROM_EMAIL = 'ERDMS Paperless System <marvindelluza99@gmail.com>'
+DEFAULT_FROM_EMAIL = 'ERDM System <marvindelluza99@gmail.com>'

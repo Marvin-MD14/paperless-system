@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>{% block title %}ERDMS{% endblock title %}</title>
     
     <link rel="icon" type="image/png" href="{% static 'assets/img/capitol_logo.png' %}">
@@ -15,37 +15,25 @@
     <link href="{% static 'assets/vendor/datatables.net-keytable-bs/css/keyTable.bootstrap.css' %}" rel="stylesheet">
     <link href="{% static 'assets/vendor/datatables.net-responsive-bs/css/responsive.bootstrap.css' %}" rel="stylesheet">
 
-    <!-- Icon Libraries -->
     <link rel="stylesheet" href="{% static 'assets/vendor/simple-line-icons/css/simple-line-icons.css' %}">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'assets/vendor/@fortawesome/fontawesome-free/css/brands.css' %}">
     <link rel="stylesheet" href="{% static 'assets/vendor/@fortawesome/fontawesome-free/css/regular.css' %}">
     <link rel="stylesheet" href="{% static 'assets/vendor/@fortawesome/fontawesome-free/css/solid.css' %}">
     <link rel="stylesheet" href="{% static 'assets/vendor/@fortawesome/fontawesome-free/css/fontawesome.css' %}">
-    <link rel="stylesheet" href="{% static 'assets/vendor/simple-line-icons/css/simple-line-icons.css' %}">
     <link rel="stylesheet" href="{% static 'assets/vendor/select2/dist/css/select2.css' %}">
 
     <link rel="stylesheet" href="{% static 'assets/vendor/animate.css/animate.css' %}">
     <link rel="stylesheet" href="{% static 'assets/vendor/whirl/dist/whirl.css' %}">
    
-   <!-- =============== BOOTSTRAP STYLES ===============-->
-   <link rel="stylesheet" href="{% static 'assets/css/bootstrap.css' %}" id="bscss">
-   <link rel="stylesheet" href="{% static 'assets/css/app.css' %}" id="maincss">
+    <link rel="stylesheet" href="{% static 'assets/css/bootstrap.css' %}" id="bscss">
+    <link rel="stylesheet" href="{% static 'assets/css/app.css' %}" id="maincss">
     
-    <link rel="stylesheet" href="{% static 'assets/vendor/animate.css/animate.css' %}">
-    <link rel="stylesheet" href="{% static 'assets/vendor/whirl/dist/whirl.css' %}">
     <link rel="stylesheet" href="{% static 'assets/vendor/spinkit/css/spinkit.css' %}">
-    
-    <link href="{% static 'assets/css/bootstrap.css' %}" rel="stylesheet" id="bscss">
-    
-    <link href="{% static 'assets/css/app.css' %}" rel="stylesheet" id="maincss">
     <link href="{% static 'assets/css/themes/theme-a.css' %}" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     
 <style>
-    * { 
-        box-sizing: border-box; 
-    }
+    * { box-sizing: border-box; }
 
     html, body { 
         margin: 0 !important; 
@@ -54,13 +42,6 @@
         height: 100%;
         background-color: #f8f9fa; 
     }
-
-    /* .wrapper, .topnavbar-wrapper { 
-        margin-top: 0 !important; 
-        padding-top: 0 !important; 
-        border: none !important;
-        background-color: #0062cc !important; 
-    } */
 
     .topnavbar { 
         min-height: 50px; 
@@ -151,28 +132,66 @@
         border-top: 1px solid #eee; 
     }
 
-    /* Custom Style para bumagay ang Select2 sa modern design mo */
-    .select2-container--default .select2-selection--single {
-        height: 48px !important;
-        border: 1px solid #e2e8f0 !important;
-        border-radius: 10px !important;
-        padding-top: 10px !important;
+    /* --- NOTIFICATION & MODAL UPDATES --- */
+    .dropdown-list .dropdown-menu {
+        width: 320px;
+        padding: 0;
+        border: none;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
     }
-    .select2-container--default .select2-selection--single .select2-selection__arrow {
-        height: 46px !important;
+
+    .ntf-clickable {
+        cursor: pointer;
+        transition: background 0.2s;
+        position: relative;
     }
-    /* Ito ang maglalagay ng scrollbar sa dropdown list */
-    .select2-results__options {
-        max-height: 200px !important; /* Limit ng haba ng listahan */
-        overflow-y: auto !important;
+
+    .ntf-clickable:hover {
+        background-color: #f0f7ff !important;
     }
-    /* Scrollbar Design */
-    .select2-results__options::-webkit-scrollbar {
-        width: 6px;
+
+    .unread-dot {
+        width: 8px;
+        height: 8px;
+        background-color: #0066cc;
+        border-radius: 50%;
+        position: absolute;
+        right: 15px;
+        top: 50%;
+        transform: translateY(-50%);
     }
-    .select2-results__options::-webkit-scrollbar-thumb {
-        background: #cbd5e1;
-        border-radius: 10px;
+
+    .is-read {
+        opacity: 0.6;
+    }
+
+    #doc-preview-frame {
+        width: 100%;
+        height: 500px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+    }
+
+    .modal-header-custom {
+        background-color: #0062cc;
+        color: white;
+    }
+
+    @media (max-width: 576px) {
+        .dropdown-list .dropdown-menu {
+            position: fixed !important;
+            top: 55px !important;
+            left: 5% !important;
+            right: 5% !important;
+            width: 90% !important;
+            margin: 0 auto;
+            transform: none !important;
+        }
+    }
+
+    #ntf-items-container {
+        max-height: 320px; 
+        overflow-y: auto;
     }
 </style>
 
@@ -186,12 +205,9 @@
         <header class="topnavbar-wrapper">
             <nav class="navbar topnavbar">
                 <div class="navbar-header">
-                    <a class="navbar-brand" href="#/">
+                    <a class="navbar-brand" href="/">
                         <div class="brand-logo">
                             <img class="img-fluid" src="{% static 'assets/img/capitol_logo.png' %}" alt="App Logo"> ERDM System
-                        </div>
-                        <div class="brand-logo-collapsed">
-                            <img class="img-fluid" src="{% static 'assets/img/capitol_logo.png' %}" alt="App Logo">
                         </div>
                     </a>
                 </div>
@@ -201,7 +217,7 @@
                         <a class="nav-link d-none d-md-block" href="#" data-trigger-resize="" data-toggle-state="aside-collapsed">
                             <em class="fas fa-bars"></em>
                         </a>
-                        <a class="nav-link sidebar-toggle d-md-none" href="#" data-toggle-state="aside-toggled" data-no-persist="true">
+                        <a class="nav-link sidebar-toggle d-md-none" href="#" data-toggle-state="aside-toggled">
                             <em class="fas fa-bars"></em>
                         </a>
                     </li>
@@ -209,49 +225,58 @@
 
                 <ul class="navbar-nav flex-row ms-auto align-items-center">
                     <li class="nav-item dropdown dropdown-list">
-                        <a class="nav-link dropdown-toggle dropdown-toggle-nocaret" href="#" data-toggle="dropdown">
+                        <a class="nav-link dropdown-toggle dropdown-toggle-nocaret" href="#" data-toggle="dropdown" id="bell-icon-link">
                             <em class="icon-bell"></em>
-                            <span class="badge badge-danger">11</span>
+                            {% if unread_received_count > 0 %}
+                                <span class="badge badge-danger" id="ntf-badge">{{ unread_received_count }}</span>
+                            {% endif %}
                         </a>
                         <div class="dropdown-menu dropdown-menu-right animated flipInX">
-                            <div class="dropdown-item">
-                                <div class="list-group">
-                                    <div class="list-group-item list-group-item-action">
-                                        <div class="media">
-                                            <div class="align-self-start mr-2"><em class="fas fa-envelope fa-2x text-warning"></em></div>
-                                            <div class="media-body">
-                                                <p class="m-0">New Documents</p>
-                                                <p class="m-0 text-muted text-sm">You have 10 new documents</p>
-                                            </div>
+                            <div class="dropdown-header text-center font-weight-bold border-bottom pb-2">
+                                Recent Notifications
+                            </div>
+                            
+                            <div id="ntf-items-container"> 
+                                {% for ntf in unread_notifications|slice:":5" %}
+                                <div class="list-group-item list-group-item-action border-0 py-2 ntf-clickable {% if ntf.is_read %}is-read{% endif %}" 
+                                     id="ntf-row-{{ ntf.id }}"
+                                     onclick="viewDocument(this, '{{ ntf.id }}', '{{ ntf.title }}', '{{ ntf.file.url }}')">
+                                    <div class="media">
+                                        <div class="align-self-start mr-3">
+                                            <em class="fas fa-envelope fa-2x text-warning"></em>
                                         </div>
-                                    </div>
-                                    <div class="list-group-item list-group-item-action text-center">
-                                        <span class="text-sm">More notifications</span>
+                                        <div class="media-body pr-3">
+                                            <p class="m-0 font-weight-bold" style="font-size: 13px;">New Document</p>
+                                            <p class="m-0 text-muted" style="font-size: 12px;">
+                                                <strong>{{ ntf.uploaded_by.username }}</strong> sent you "{{ ntf.title|truncatechars:20 }}"
+                                            </p>
+                                            <small class="text-muted" style="font-size: 10px;">{{ ntf.uploaded_at|timesince }} ago</small>
+                                        </div>
+                                        {% if not ntf.is_read %}
+                                        <div class="unread-dot"></div>
+                                        {% endif %}
                                     </div>
                                 </div>
+                                {% empty %}
+                                <div class="list-group-item text-center border-0 py-4" id="ntf-empty">
+                                    <p class="m-0 text-muted text-sm">No new documents</p>
+                                </div>
+                                {% endfor %}
                             </div>
+
+                            <a href="{% url 'received_documents' %}" class="list-group-item list-group-item-action text-center border-top p-2 bg-light">
+                                <span class="text-sm font-weight-bold text-primary">View All Received Files</span>
+                            </a>
                         </div>
                     </li>
 
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle dropdown-toggle-nocaret d-flex align-items-center" href="#" data-toggle="dropdown">
-                            <span class="d-none d-md-block me-2 small">{{ user.username }}</span>
-                            <img src="{% if user.userprofile.profile_picture %}{{ user.userprofile.profile_picture.url }}{% else %}{% static 'assets/img/dummy.png' %}{% endif %}" alt="User Profile" class="user-nav-img">
+                            <span class="d-none d-md-block me-2 small mr-2 text-white">{{ user.username }}</span>
+                            <img src="{% if user.userprofile.profile_picture %}{{ user.userprofile.profile_picture.url }}{% else %}{% static 'assets/img/dummy.png' %}{% endif %}" class="user-nav-img">
                         </a>
-                        <div class="dropdown-menu dropdown-menu-right animated fadeInUp">
-                            <div class="dropdown-header text-center">
-                                <strong>Account Settings</strong>
-                            </div>
-                            <a class="dropdown-item" href="#">
-                                <em class="icon-user me-2 text-primary"></em> Edit Profile
-                            </a>
-                            <a class="dropdown-item" href="#">
-                                <em class="icon-settings me-2 text-info"></em> Settings
-                            </a>
-                            <div class="dropdown-divider"></div>
-                            <a class="dropdown-item text-danger" href="{% url 'logout' %}">
-                                <em class="icon-logout me-2"></em> Logout
-                            </a>
+                        <div class="dropdown-menu dropdown-menu-right">
+                            <a class="dropdown-item text-danger" href="{% url 'logout' %}">Logout</a>
                         </div>
                     </li>
                 </ul>
@@ -280,48 +305,163 @@
             <span>&copy; 2026 - Provincial Government of Catanduanes | GO-IT Dept.</span>
         </footer>
     </div>
-    {% else %}
-    <div style="min-height: 100vh; width: 100vw; overflow-x: hidden;">
-        {% block auth_content %}{% endblock auth_content %}
+
+    <div class="modal fade" id="ntfViewModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header modal-header-custom">
+                    <h5 class="modal-title" id="modalDocTitle">Document Details</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div id="preview-loader" class="text-center py-5">
+                        <div class="whirl standard"></div>
+                    </div>
+                    <iframe id="doc-preview-frame" src="" frameborder="0" style="display:none;"></iframe>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <a id="download-doc-btn" href="#" class="btn btn-primary" download>Download</a>
+                </div>
+            </div>
+        </div>
     </div>
+
+    {% else %}
+    {% block auth_content %}{% endblock auth_content %}
     {% endif %}
     {% endblock main_container %}
 
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    
+   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
 
     <script src="{% static 'assets/vendor/jquery-slimscroll/jquery.slimscroll.js' %}"></script>
     <script src="{% static 'assets/vendor/js-storage/js.storage.js' %}"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/parsley.js/2.9.2/parsley.min.js"></script>
-
     <script src="{% static 'assets/vendor/datatables.net/js/jquery.dataTables.js' %}"></script>
     <script src="{% static 'assets/vendor/datatables.net-bs4/js/dataTables.bootstrap4.js' %}"></script>
-    
-    <script src="{% static 'assets/vendor/jszip/dist/jszip.js' %}"></script>
-    <script src="{% static 'assets/vendor/pdfmake/build/pdfmake.js' %}"></script>
-    <script src="{% static 'assets/vendor/pdfmake/build/vfs_fonts.js' %}"></script>
     <script src="{% static 'assets/vendor/select2/dist/js/select2.full.js' %}"></script>
-    <script src="{% static 'assets/vendor/sweetalert/dist/sweetalert.min.js' %}"></script>
-    <script src="{% static 'assets/js/custom/custom.js' %}"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
     <script src="{% static 'assets/js/app.js' %}"></script>
+    <script src="{% static 'assets/js/custom/custom.js' %}"></script>
+
+    {% block extra_js %}{% endblock extra_js %}
 
     <script>
-        $(document).ready(function() {
-            // User block toggle
-            $('#user-block-toggle').on('click', function() {
-                $('#user-block').collapse('toggle');
-            });
+    // VIEW DOCUMENT FUNCTION
+    function viewDocument(element, id, title, fileUrl) {
+        // UI updates
+        $(element).find('.unread-dot').fadeOut();
+        $(element).addClass('is-read');
 
-            // Global modal cleanup (Fixes backdrop freezing)
-            $(document).on('hidden.bs.modal', '.modal', function () {
-                $('.modal-backdrop').remove();
-                $('body').removeClass('modal-open');
-            });
+        $('#modalDocTitle').text(title);
+        $('#download-doc-btn').attr('href', fileUrl);
+        $('#ntfViewModal').modal('show');
+        $('#doc-preview-frame').hide();
+        $('#preview-loader').show();
+
+        let previewUrl = fileUrl;
+        if (fileUrl.toLowerCase().match(/\.(docx|xlsx|pptx)$/)) {
+            previewUrl = "https://docs.google.com/gview?url=" + window.location.origin + fileUrl + "&embedded=true";
+        }
+
+        $('#doc-preview-frame').attr('src', previewUrl).on('load', function() {
+            $('#preview-loader').hide();
+            $(this).show();
         });
-    </script>
-    
-    {% block extra_js %}{% endblock extra_js %}
-</body>
+
+        // AJAX para i-mark as read sa database
+        $.ajax({
+            // Tiyaking tumutugma ito sa path sa urls.py: 'api/notifications/mark-read/<int:ntf_id>/'
+            url: "/api/notifications/mark-read/" + id + "/", 
+            type: "POST",
+            headers: { "X-CSRFToken": "{{ csrf_token }}" }, // Mas ligtas na paraan ng pagpasa ng token
+            data: { "csrfmiddlewaretoken": "{{ csrf_token }}" },
+            success: function(response) {
+                console.log("Database updated: Document marked as read.");
+            },
+            error: function(xhr) {
+                console.log("Error updating read status: " + xhr.status);
+            }
+        });
+    }
+
+    $(document).ready(function() {
+        // Fix for Modal backdrop issues
+        $(document).on('hidden.bs.modal', '.modal', function () {
+            $('.modal-backdrop').remove();
+            $('body').removeClass('modal-open');
+        });
+
+        // Notification Bell Click
+        $('.dropdown-list').on('show.bs.dropdown', function () {
+            $('#ntf-badge').fadeOut(300);
+        });
+
+        // UPDATE NOTIFICATIONS
+        function updateNotifications() {
+            // Huwag mag-refresh kung nakabukas ang menu para 'di mag-flicker
+            if ($('.dropdown-list').hasClass('show')) return;
+
+            $.ajax({
+                url: "/api/notifications/", // Dapat tumutugma sa path('api/notifications/', ...)
+                type: "GET",
+                success: function(data) {
+                    // Update Badge
+                    if (data.unread_count > 0) {
+                        if ($('#ntf-badge').length) {
+                            $('#ntf-badge').text(data.unread_count).show();
+                        } else {
+                            $('.icon-bell').after('<span class="badge badge-danger" id="ntf-badge">' + data.unread_count + '</span>');
+                        }
+                    } else {
+                        $('#ntf-badge').hide();
+                    }
+
+                    // Build Notification List
+                    if (data.notifications && data.notifications.length > 0) {
+                        let html = '';
+                        data.notifications.slice(0, 5).forEach(function(item) {
+                            // Dito nanggagaling ang permanenteng status
+                            let dot = item.is_read ? '' : '<div class="unread-dot"></div>';
+                            let readClass = item.is_read ? 'is-read' : '';
+                            
+                            html += `
+                            <div class="list-group-item list-group-item-action border-0 py-2 ntf-clickable ${readClass}" 
+                                 onclick="viewDocument(this, '${item.id}', '${item.title}', '${item.file_url}')">
+                                <div class="media">
+                                    <div class="align-self-start mr-3">
+                                        <em class="fas fa-envelope fa-2x text-warning"></em>
+                                    </div>
+                                    <div class="media-body pr-3">
+                                        <p class="m-0 font-weight-bold" style="font-size: 13px;">New Document</p>
+                                        <p class="m-0 text-muted" style="font-size: 12px;">
+                                            <strong>${item.sender}</strong> sent you "${item.title}"
+                                        </p>
+                                        <small class="text-muted" style="font-size: 10px;">${item.time_ago}</small>
+                                    </div>
+                                    ${dot}
+                                </div>
+                            </div>`;
+                        });
+                        $('#ntf-items-container').html(html);
+                    }
+                },
+                error: function(xhr) {
+                    if(xhr.status === 404) {
+                        console.log("Notification API endpoint not found. Check your urls.py.");
+                        // Optional: clearInterval(ntfInterval); 
+                    }
+                }
+            });
+        }
+
+        // Start polling (20 seconds)
+        let ntfInterval = setInterval(updateNotifications, 20000); 
+        
+        // Initial call pagka-load ng page
+        updateNotifications();
+    });
+</script>
+</body> 
 </html>

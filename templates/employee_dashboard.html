@@ -13,11 +13,9 @@
     .card-header { padding: 12px 15px; border-bottom: 1px solid #eee; font-weight: 600; color: #333; display: flex; justify-content: space-between; align-items: center; }
     .card-body { padding: 15px; }
     
-    /* Chart sizes */
     .chart-container { height: 280px; width: 100%; }
     .donut-container { height: 200px; width: 100%; }
     
-    /* Flexbox Stat Cards Design */
     .stat-container { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 25px; width: 100%; }
     
     .stat-card-flex { 
@@ -31,19 +29,21 @@
     
     .stat-icon-bg { position: absolute; right: -5px; bottom: -5px; font-size: 3.5rem; opacity: 0.2; transform: rotate(-10deg); z-index: 1; }
 
-    /* Gradients */
     .bg-blue { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
     .bg-green { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
     .bg-orange { background: linear-gradient(135deg, #f9d423 0%, #ff4e50 100%); }
     .bg-red { background: linear-gradient(135deg, #f85032 0%, #e73827 100%); }
     .bg-purple { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
     
-    /* Storage Progress Bar */
     .storage-progress { height: 8px; border-radius: 10px; background: #eee; margin-top: 10px; overflow: hidden; }
-    .storage-bar { height: 100%; background: #667eea; border-radius: 10px; }
+    .storage-bar { height: 100%; border-radius: 10px; transition: width 0.5s ease-in-out; }
 
-    .list-group-item { border: none; border-bottom: 1px solid #f4f4f4; padding: 10px 15px; }
+    .list-group-item { border: none; border-bottom: 1px solid #f4f4f4; padding: 10px 15px; cursor: pointer; }
     .unread-item { background-color: #fff9f0; border-left: 3px solid #ff902b; }
+
+    /* Modal Styling para sa Full Screen Preview */
+    .modal-xl { max-width: 90%; }
+    #previewFrame { background: #f4f4f4; min-height: 75vh; }
 </style>
 {% endblock %}
 
@@ -55,25 +55,21 @@
             <p>Total Uploads</p>
             <i class="icon-cloud-upload stat-icon-bg"></i>
         </div>
-
         <div class="stat-card-flex bg-purple">
             <h3>{{ total_size_mb|default:"0" }} MB</h3>
             <p>Storage Used</p>
             <i class="icon-layers stat-icon-bg"></i>
         </div>
-
         <div class="stat-card-flex bg-green">
             <h3>{{ processed_count|default:"0" }}</h3>
             <p>Processed</p>
             <i class="icon-check stat-icon-bg"></i>
         </div>
-
         <div class="stat-card-flex bg-orange">
             <h3>{{ unread_received_count|default:"0" }}</h3>
             <p>Pending Review</p>
             <i class="icon-pencil stat-icon-bg"></i>
         </div>
-
         <div class="stat-card-flex bg-red">
             <h3>0</h3>
             <p>Returned</p>
@@ -107,13 +103,14 @@
             
             <div class="card">
                 <div class="card-body p-3">
-                    <p class="text-bold mb-1" style="font-size: 12px;">Storage Status</p>
+                    <p class="text-bold mb-1" style="font-size: 12px; font-weight: 600;">Storage Status</p>
                     <div class="d-flex justify-content-between">
-                        <small class="text-muted">{{ total_size_mb }} MB Used</small>
-                        <small class="text-muted">Limit: 100 MB</small>
+                        <small class="text-primary font-weight-bold">{{ total_size_mb }} MB Used</small>
+                        <small class="text-muted">Limit: {{ storage_limit }} MB</small>
                     </div>
                     <div class="storage-progress">
-                        <div class="storage-bar" style="width: {{ total_size_mb }}%;"></div>
+                        <div class="storage-bar {% if storage_percentage > 90 %}bg-danger{% else %}bg-purple{% endif %}" 
+                             style="width: {{ storage_percentage }}%; background-color: #764ba2;"></div>
                     </div>
                 </div>
             </div>
@@ -127,7 +124,12 @@
                 </div>
                 <div class="list-group">
                     {% for doc in unread_docs %}
-                    <a href="{{ doc.file.url }}" class="list-group-item list-group-item-action unread-item" target="_blank">
+                    {% with full_url=request.build_absolute_uri|slice:":-1"|add:doc.file.url %}
+                    <a href="javascript:void(0);" 
+                       class="list-group-item list-group-item-action unread-item btn-preview"
+                       data-url="{{ doc.file.url }}"
+                       data-full-url="{{ full_url }}"
+                       data-title="{{ doc.title }}">
                         <div class="media align-items-center">
                             <div class="mr-2">
                                 <span class="fa-stack fa-sm">
@@ -139,11 +141,9 @@
                                 <p class="text-sm font-weight-bold text-dark m-0">{{ doc.title|truncatechars:15 }}</p>
                                 <p class="text-muted m-0" style="font-size: 10px;">From: {{ doc.uploaded_by.username }}</p>
                             </div>
-                            <div class="ml-auto text-right">
-                                <small class="text-muted" style="font-size: 9px;">{{ doc.uploaded_at|timesince }} ago</small>
-                            </div>
                         </div>
                     </a>
+                    {% endwith %}
                     {% empty %}
                     <div class="p-4 text-center">
                         <em class="icon-check fa-2x text-muted mb-2"></em>
@@ -155,6 +155,23 @@
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="docPreviewModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="previewTitle">Document Preview</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body p-0">
+                <iframe id="previewFrame" src="" width="100%" height="600px" frameborder="0"></iframe>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
@@ -163,6 +180,7 @@
 
 <script>
 $(document).ready(function() {
+    // --- 1. Charts Initialization ---
     var wordCount = {{ word_count|default:0 }};
     var excelCount = {{ excel_count|default:0 }};
     var pptCount = {{ ppt_count|default:0 }};
@@ -176,9 +194,7 @@ $(document).ready(function() {
             { y: 'PPT', a: pptCount },
             { y: 'PDF', a: pdfCount }
         ],
-        xkey: 'y',
-        ykeys: ['a'],
-        labels: ['Uploaded'],
+        xkey: 'y', ykeys: ['a'], labels: ['Uploaded'],
         barColors: function (row, series, type) {
             if (row.label == "Word") return "#23b7e5";
             else if (row.label == "Excel") return "#27c24c";
@@ -186,10 +202,7 @@ $(document).ready(function() {
             else if (row.label == "PDF") return "#f05050";
             return "#23b7e5";
         },
-        hideHover: 'auto',
-        resize: true,
-        gridTextSize: 11,
-        animate: false
+        hideHover: 'auto', resize: true, gridTextSize: 11
     });
 
     new Morris.Donut({
@@ -203,6 +216,34 @@ $(document).ready(function() {
         colors: ['#23b7e5', '#27c24c', '#fad732', '#f05050'],
         resize: true,
         formatter: function (x) { return x + " files" }
+    });
+
+    // --- 2. Document Preview Logic ---
+    $('.btn-preview').on('click', function() {
+        var fileUrl = $(this).data('url');
+        var fullUrl = $(this).data('full-url'); // Kailangan ito para sa Office Viewer (Ngrok URL)
+        var title = $(this).data('title');
+        var viewerUrl = "";
+
+        // Check if file is Office (Word, Excel, PPT)
+        var isOffice = fileUrl.toLowerCase().match(/\.(docx|doc|xlsx|xls|pptx|ppt)$/);
+
+        if (isOffice) {
+            // Gamit ang Microsoft Online Viewer
+            viewerUrl = "https://view.officeapps.live.com/op/view.aspx?src=" + encodeURIComponent(fullUrl);
+        } else {
+            // Direct sa file (para sa PDF)
+            viewerUrl = fileUrl;
+        }
+
+        $('#previewTitle').text(title);
+        $('#previewFrame').attr('src', viewerUrl);
+        $('#docPreviewModal').modal('show');
+    });
+
+    // Linisin ang iframe kapag sinarado ang modal para tumigil ang loading
+    $('#docPreviewModal').on('hidden.bs.modal', function () {
+        $('#previewFrame').attr('src', '');
     });
 });
 </script>

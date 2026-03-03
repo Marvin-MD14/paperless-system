@@ -13,6 +13,8 @@ from django.db.models import Q
 from django.http import HttpResponse, JsonResponse
 import json
 from .choices import OFFICE_CHOICES
+from django.db.models import Sum
+import os
 
 def authenticate_by_email(email, password):
     """Authenticate user using email instead of username."""
@@ -253,31 +255,52 @@ def user_dashboard(request):
         return redirect('executive_dashboard')
 
     # DATA FETCHING
-    # Lahat ng uploads ng user para sa counts at charts
     all_uploads = Document.objects.filter(uploaded_by=request.user)
-    
-    # Lahat ng received documents (Inbox)
     received_all = Document.objects.filter(recipient=request.user)
+
+    # STORAGE CALCULATION (Manual calculation dahil walang file_size field)
+    total_bytes = 0
+    for doc in all_uploads:
+        try:
+            if doc.file and os.path.exists(doc.file.path):
+                total_bytes += doc.file.size
+        except (ValueError, FileNotFoundError):
+            continue
+            
+    total_size_mb = round(total_bytes / (1024 * 1024), 2)
+
+    # --- DYNAMIC STORAGE LOGIC (Unlimited 100MB Blocks) ---
+    storage_limit = 100
+    # Habang ang total size ay mas malaki sa limit, dagdag lang ng 100MB
+    while total_size_mb >= storage_limit:
+        storage_limit += 100
+    
+    # Kalkulahin ang percentage para sa bar (e.g., 50MB / 100MB = 50%)
+    storage_percentage = (total_size_mb / storage_limit) * 100
 
     context = {
         'profile': profile,
         
-        # 1. PARA SA METRIC CARDS (Top row)
-        'recent_logs': all_uploads, # Para sa {{ recent_logs.count }}
+        # 1. PARA SA METRIC CARDS
+        'recent_logs': all_uploads, 
         'processed_count': all_uploads.filter(status='PROCESSED').count(),
         'unread_received_count': received_all.filter(is_read=False).count(),
+        'total_size_mb': total_size_mb, 
+        'storage_limit': storage_limit,
+        'storage_percentage': storage_percentage,
         
-        # 2. PARA SA MORRIS CHARTS (Script section)
+        # 2. PARA SA MORRIS CHARTS
         'word_count': all_uploads.filter(category='word').count(),
         'excel_count': all_uploads.filter(category='excel').count(),
         'ppt_count': all_uploads.filter(category='ppt').count(),
         'pdf_count': all_uploads.filter(category='pdf').count(),
         
-        # 3. PARA SA UNREAD DOCUMENTS LIST (Sidebar)
+        # 3. PARA SA UNREAD DOCUMENTS LIST
         'unread_docs': received_all.filter(is_read=False).order_by('-uploaded_at')[:5],
     }
 
     return render(request, 'employee_dashboard.html', context)
+
 def register(request):
 
     

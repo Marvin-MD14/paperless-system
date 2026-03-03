@@ -1,0 +1,274 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}All Received Documents{% endblock %}
+
+{% block content %}
+<style>
+    /* 1. Layout Fix for Controls */
+    .dataTables_wrapper .top-controls {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding: 0 5px;
+    }
+
+    /* 2. Search Bar Alignment & Icon */
+    .dataTables_filter {
+        margin: 0 !important;
+        position: relative;
+        text-align: left !important;
+    }
+
+    .dataTables_filter label {
+        margin-bottom: 0;
+        display: block;
+    }
+
+    .dataTables_filter input {
+        width: 320px !important;
+        height: 42px;
+        border-radius: 12px !important;
+        padding: 10px 15px 10px 40px !important;
+        border: 1px solid #e2e8f0 !important;
+        background-color: #f8fafc !important;
+        margin-left: 0 !important;
+    }
+
+    .dataTables_filter::before {
+        content: "\f002";
+        font-family: "Font Awesome 6 Free", "Font Awesome 5 Free";
+        font-weight: 900;
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #94a3b8;
+        z-index: 5;
+    }
+
+    /* 3. Filter Container Alignment */
+    .custom-filter-placeholder {
+        display: flex;
+        align-items: center;
+    }
+
+    .filter-container {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .custom-filter-select {
+        height: 42px;
+        padding: 0 15px;
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+        background-color: #fff;
+        color: #475569;
+        font-weight: 600;
+        cursor: pointer;
+        outline: none;
+    }
+
+    /* 4. Table Alignment & Spacing */
+    #receivedDataTable {
+        border-collapse: collapse !important;
+        margin-top: 1rem !important;
+    }
+
+    #receivedDataTable thead th {
+        padding: 15px 12px !important;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 2px solid #f1f5f9 !important;
+        background-color: #f8fafc;
+    }
+
+    #receivedDataTable tbody td {
+        padding: 15px 12px !important;
+        vertical-align: middle;
+    }
+
+    /* 5. Pagination Buttons Styling */
+    .dataTables_paginate {
+        margin-top: 1.5rem !important;
+        padding-top: 1rem;
+        border-top: 1px solid #f1f5f9;
+    }
+
+    /* .dataTables_paginate .paginate_button {
+        padding: 8px 16px !important;
+        margin: 0 3px !important;
+        border-radius: 10px !important;
+        border: 1px solid #e2e8f0 !important;
+        background: white !important;
+        color: #475569 !important;
+        font-weight: 600 !important;
+        transition: all 0.2s ease;
+    } */
+
+    .dataTables_paginate .paginate_button.current {
+        background: #4361ee !important;
+        color: white !important;
+        border-color: #4361ee !important;
+        box-shadow: 0 4px 10px rgba(67, 97, 238, 0.3);
+    }
+
+    .dataTables_paginate .paginate_button:hover:not(.current):not(.disabled) {
+        background: #f8fafc !important;
+        border-color: #cbd5e1 !important;
+        color: #4361ee !important;
+    }
+
+    /* Badge styles */
+    .badge-read { background-color: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; font-weight: 600; }
+    .badge-unread { background-color: #fef9c3; color: #a16207; border: 1px solid #fef08a; font-weight: 600; }
+
+    .btn-action {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        text-decoration: none;
+    }
+    .btn-view { background-color: #eef2ff !important; color: #4361ee !important; border: none; }
+    .btn-download { background-color: #ecfdf5 !important; color: #10b981 !important; }
+</style>
+
+<div class="container-fluid py-4">
+    <div class="card card-default shadow-sm border-0 rounded-4">
+        <div class="card-header bg-white border-0 pt-4 px-4">
+            <h4 class="m-0 fw-bold text-primary">
+                <i class="fas fa-inbox me-2"></i> All Received Documents
+            </h4>
+            <p class="text-muted small mb-0">Manage and filter all documents sent to your account.</p>
+        </div>
+        
+        <div class="card-body p-4">
+            <div class="table-responsive">
+                <table class="table table-hover w-100" id="receivedDataTable">
+                    <thead>
+                        <tr>
+                            <th>Document Title</th>
+                            <th>Sender</th>
+                            <th>Date Received</th>
+                            <th>Status</th>
+                            <th class="text-center">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for doc in received_documents %}
+                        <tr id="doc-row-{{ doc.id }}">
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <i class="far fa-file-alt fa-lg text-info me-3"></i>
+                                    <span class="fw-bold text-dark">{{ doc.title }}</span>
+                                </div>
+                            </td>
+                            <td><span class="text-muted">@{{ doc.uploaded_by.username }}</span></td>
+                            <td data-order="{{ doc.uploaded_at|date:'YmdHis' }}">
+                                <span class="small">{{ doc.uploaded_at|date:"M d, Y h:i A" }}</span>
+                            </td>
+                            <td class="status-cell">
+                                {% if doc.is_read %}
+                                    <span class="badge badge-read p-2 px-3 rounded-pill">Read</span>
+                                {% else %}
+                                    <span class="badge badge-unread p-2 px-3 rounded-pill">Unread</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="d-flex justify-content-center gap-2">
+                                    <button class="btn-action btn-view" 
+                                            onclick="viewAndRefresh(this, '{{ doc.id }}', '{{ doc.title|escapejs }}', '{{ doc.file.url }}')"
+                                            data-bs-toggle="tooltip" title="View">
+                                        <i class="fa fa-eye"></i>
+                                    </button>
+                                    <a href="{{ doc.file.url }}" class="btn-action btn-download" 
+                                       download data-bs-toggle="tooltip" title="Download">
+                                        <i class="fa fa-download"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="filterWrapper" class="d-none">
+    <div class="filter-container">
+        <span class="small fw-bold text-muted">SHOW:</span>
+        <select id="statusFilter" class="custom-filter-select">
+            <option value="">All Documents</option>
+            <option value="Read">Read Only</option>
+            <option value="Unread">Unread Only</option>
+        </select>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function viewAndRefresh(element, id, title, url) {
+        if (typeof viewDocument === "function") {
+            viewDocument(element, id, title, url);
+        } else {
+            window.open(url, '_blank');
+        }
+        
+        let row = $(element).closest('tr');
+        let statusCell = row.find('.status-cell');
+        statusCell.html('<span class="badge badge-read p-2 px-3 rounded-pill">Read</span>');
+        
+        if ($.fn.DataTable.isDataTable('#receivedDataTable')) {
+            let table = $('#receivedDataTable').DataTable();
+            table.cell(statusCell).invalidate().draw(false);
+        }
+    }
+
+    $(document).ready(function() {
+        if ($.fn.DataTable) {
+            let table = $('#receivedDataTable').DataTable({
+                "pageLength": 8,  // <--- ITO ANG MAGPAPALABAS NG PAGE 2 PAG LAGPAS 10
+                "order": [[ 2, "desc" ]],
+                "responsive": true,
+                "autoWidth": false,
+                "dom": '<"top-controls"f <"custom-filter-placeholder">>rtip',
+                "language": {
+                    "search": "",
+                    "searchPlaceholder": "Search by title or sender...",
+                    "paginate": {
+                        "previous": "Previous",
+                        "next": "Next"
+                    }
+                }
+            });
+
+            $(".custom-filter-placeholder").html($("#filterWrapper").html());
+
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+            tooltipTriggerList.map(function (el) {
+                return new bootstrap.Tooltip(el)
+            });
+
+            $(document).on('change', '#statusFilter', function() {
+                let val = $(this).val();
+                table.column(3).search(val ? '^' + val + '$' : '', true, false).draw();
+            });
+
+            $(window).on('resize', function () {
+                table.columns.adjust();
+            });
+        }
+    });
+</script>
+{% endblock %}

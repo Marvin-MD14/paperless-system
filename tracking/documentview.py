@@ -7,22 +7,65 @@ from django.core.mail import send_mail
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.http import JsonResponse
-
+from django.utils.timesince import timesince 
 from .models import Document, UserProfile, Routing 
 from .choices import OFFICE_CHOICES
+
+@login_required
+def get_notifications_api(request):
+    """
+    API endpoint para sa notification bell.
+    Kinukuha ang mga documents kung saan ang user ang recipient.
+    """
+    # Kunin ang lahat ng documents na ipinadala sa user
+    received_all = Document.objects.filter(recipient=request.user).order_by('-uploaded_at')
+    
+    # Bilangin ang unread para sa badge
+    unread_count = received_all.filter(is_read=False).count()
+    
+    # Kunin ang huling 5 para sa dropdown list
+    recent_notifications = received_all[:5]
+    
+    notifications_data = []
+    for ntf in recent_notifications:
+        notifications_data.append({
+            'id': ntf.id,
+            'title': ntf.title,
+            'sender': ntf.uploaded_by.get_full_name() or ntf.uploaded_by.username,
+            'file_url': ntf.file.url,
+            'is_read': ntf.is_read,
+            'time_ago': timesince(ntf.uploaded_at) + " ago"
+        })
+        
+    return JsonResponse({
+        'unread_count': unread_count,
+        'notifications': notifications_data
+    })
+
+@login_required
+def mark_as_read_api(request, ntf_id):
+    """
+    API endpoint para i-update ang is_read status sa database.
+    """
+    if request.method == 'POST':
+        document = get_object_or_404(Document, id=ntf_id, recipient=request.user)
+        if not document.is_read:
+            document.is_read = True
+            document.save()
+        return JsonResponse({'status': 'success'})
+    return JsonResponse({'status': 'error'}, status=400)
 
 @login_required
 def received_docs_view(request):
     """
     View para sa full list ng lahat ng natanggap na dokumento.
-    Ito ang target ng 'View All' link sa dashboard.
     """
     received_docs = Document.objects.filter(recipient=request.user).order_by('-uploaded_at')
-    return render(request, 'all_documents.html', {
-        'received_docs': received_docs,
+  
+    return render(request, 'all_documents.html', { 
+        'received_documents': received_docs, 
         'title': 'Received Documents'
     })
-
 @login_required
 def send_document(request):
     """
