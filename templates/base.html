@@ -307,25 +307,40 @@
     </div>
 
     <div class="modal fade" id="ntfViewModal" tabindex="-1" role="dialog" aria-hidden="true">
-        <div class="modal-dialog modal-lg" role="document">
-            <div class="modal-content">
-                <div class="modal-header modal-header-custom">
-                    <h5 class="modal-title" id="modalDocTitle">Document Details</h5>
-                    <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header modal-header-custom">
+                <h5 class="modal-title" id="modalDocTitle">Document Details</h5>
+                <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <div id="preview-loader" class="text-center py-5">
+                    <div class="whirl standard"></div>
                 </div>
-                <div class="modal-body">
-                    <div id="preview-loader" class="text-center py-5">
-                        <div class="whirl standard"></div>
-                    </div>
-                    <iframe id="doc-preview-frame" src="" frameborder="0" style="display:none;"></iframe>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                    <a id="download-doc-btn" href="#" class="btn btn-primary" download>Download</a>
+                <iframe id="doc-preview-frame" src="" frameborder="0" style="display:none;"></iframe>
+            </div>
+
+            <div class="modal-footer d-flex justify-content-between">
+                <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">
+                    Close
+                </button>
+
+                <div>
+                    <button type="button" class="btn btn-danger mr-2"
+                            onclick="rejectDocument(currentDocId)">
+                        Reject
+                    </button>
+
+                    <button type="button" class="btn btn-success"
+                            onclick="approveDocument(currentDocId)">
+                        Approve
+                    </button>
                 </div>
             </div>
         </div>
     </div>
+</div>
 
     {% else %}
     {% block auth_content %}{% endblock auth_content %}
@@ -347,121 +362,151 @@
 
     {% block extra_js %}{% endblock extra_js %}
 
-    <script>
-    // VIEW DOCUMENT FUNCTION
-    function viewDocument(element, id, title, fileUrl) {
-        // UI updates
-        $(element).find('.unread-dot').fadeOut();
-        $(element).addClass('is-read');
+  <script>
 
-        $('#modalDocTitle').text(title);
-        $('#download-doc-btn').attr('href', fileUrl);
-        $('#ntfViewModal').modal('show');
-        $('#doc-preview-frame').hide();
-        $('#preview-loader').show();
+let currentDocId = null;
 
-        let previewUrl = fileUrl;
-        if (fileUrl.toLowerCase().match(/\.(docx|xlsx|pptx)$/)) {
-            previewUrl = "https://docs.google.com/gview?url=" + window.location.origin + fileUrl + "&embedded=true";
-        }
+// =======================
+// VIEW DOCUMENT FUNCTION
+// =======================
+function viewDocument(element, id, title, fileUrl) {
 
-        $('#doc-preview-frame').attr('src', previewUrl).on('load', function() {
+    currentDocId = id;
+
+    // UI updates
+    $(element).find('.unread-dot').fadeOut();
+    $(element).addClass('is-read');
+
+    $('#modalDocTitle').text(title);
+    $('#ntfViewModal').modal('show');
+
+    $('#doc-preview-frame').hide();
+    $('#preview-loader').show();
+
+    let previewUrl = fileUrl;
+
+    if (fileUrl.toLowerCase().match(/\.(docx|xlsx|pptx)$/)) {
+        previewUrl = "https://docs.google.com/gview?url=" 
+            + window.location.origin + fileUrl + "&embedded=true";
+    }
+
+    $('#doc-preview-frame')
+        .attr('src', previewUrl)
+        .off('load')
+        .on('load', function () {
             $('#preview-loader').hide();
             $(this).show();
         });
 
-        // AJAX para i-mark as read sa database
-        $.ajax({
-            // Tiyaking tumutugma ito sa path sa urls.py: 'api/notifications/mark-read/<int:ntf_id>/'
-            url: "/api/notifications/mark-read/" + id + "/", 
-            type: "POST",
-            headers: { "X-CSRFToken": "{{ csrf_token }}" }, // Mas ligtas na paraan ng pagpasa ng token
-            data: { "csrfmiddlewaretoken": "{{ csrf_token }}" },
-            success: function(response) {
-                console.log("Database updated: Document marked as read.");
-            },
-            error: function(xhr) {
-                console.log("Error updating read status: " + xhr.status);
-            }
-        });
-    }
+    // MARK AS READ
+    $.ajax({
+        url: "/api/notifications/mark-read/" + id + "/",
+        type: "POST",
+        headers: { "X-CSRFToken": "{{ csrf_token }}" },
+        success: function () {
+            console.log("Marked as read.");
+        },
+        error: function (xhr) {
+            console.log("Read error: " + xhr.status);
+        }
+    });
+}
 
-    $(document).ready(function() {
-        // Fix for Modal backdrop issues
-        $(document).on('hidden.bs.modal', '.modal', function () {
-            $('.modal-backdrop').remove();
-            $('body').removeClass('modal-open');
-        });
 
-        // Notification Bell Click
-        $('.dropdown-list').on('show.bs.dropdown', function () {
-            $('#ntf-badge').fadeOut(300);
-        });
+// =======================
+// APPROVE FUNCTION
+// =======================
+function approveDocument(id) {
 
-        // UPDATE NOTIFICATIONS
-        function updateNotifications() {
-            // Huwag mag-refresh kung nakabukas ang menu para 'di mag-flicker
-            if ($('.dropdown-list').hasClass('show')) return;
+    if (!id) return;
+
+    Swal.fire({
+        title: "Approve this document?",
+        icon: "question",
+        showCancelButton: true,
+        confirmButtonText: "Yes, approve it",
+        confirmButtonColor: "#28a745"
+    }).then((result) => {
+
+        if (result.isConfirmed) {
 
             $.ajax({
-                url: "/api/notifications/", // Dapat tumutugma sa path('api/notifications/', ...)
-                type: "GET",
-                success: function(data) {
-                    // Update Badge
-                    if (data.unread_count > 0) {
-                        if ($('#ntf-badge').length) {
-                            $('#ntf-badge').text(data.unread_count).show();
-                        } else {
-                            $('.icon-bell').after('<span class="badge badge-danger" id="ntf-badge">' + data.unread_count + '</span>');
-                        }
-                    } else {
-                        $('#ntf-badge').hide();
-                    }
+                url: "/api/documents/approve/" + id + "/",
+                type: "POST",
+                headers: { "X-CSRFToken": "{{ csrf_token }}" },
+                success: function () {
 
-                    // Build Notification List
-                    if (data.notifications && data.notifications.length > 0) {
-                        let html = '';
-                        data.notifications.slice(0, 5).forEach(function(item) {
-                            // Dito nanggagaling ang permanenteng status
-                            let dot = item.is_read ? '' : '<div class="unread-dot"></div>';
-                            let readClass = item.is_read ? 'is-read' : '';
-                            
-                            html += `
-                            <div class="list-group-item list-group-item-action border-0 py-2 ntf-clickable ${readClass}" 
-                                 onclick="viewDocument(this, '${item.id}', '${item.title}', '${item.file_url}')">
-                                <div class="media">
-                                    <div class="align-self-start mr-3">
-                                        <em class="fas fa-envelope fa-2x text-warning"></em>
-                                    </div>
-                                    <div class="media-body pr-3">
-                                        <p class="m-0 font-weight-bold" style="font-size: 13px;">New Document</p>
-                                        <p class="m-0 text-muted" style="font-size: 12px;">
-                                            <strong>${item.sender}</strong> sent you "${item.title}"
-                                        </p>
-                                        <small class="text-muted" style="font-size: 10px;">${item.time_ago}</small>
-                                    </div>
-                                    ${dot}
-                                </div>
-                            </div>`;
-                        });
-                        $('#ntf-items-container').html(html);
-                    }
+                    Swal.fire("Approved!", "Document approved successfully.", "success");
+
+                    $('#ntfViewModal').modal('hide');
+
+                    // Optional: remove notification visually
+                    $("#ntf-row-" + id).fadeOut();
                 },
-                error: function(xhr) {
-                    if(xhr.status === 404) {
-                        console.log("Notification API endpoint not found. Check your urls.py.");
-                        // Optional: clearInterval(ntfInterval); 
-                    }
+                error: function () {
+                    Swal.fire("Error", "Something went wrong.", "error");
                 }
             });
         }
-
-        // Start polling (20 seconds)
-        let ntfInterval = setInterval(updateNotifications, 20000); 
-        
-        // Initial call pagka-load ng page
-        updateNotifications();
     });
+}
+
+
+// =======================
+// REJECT FUNCTION
+// =======================
+function rejectDocument(id) {
+
+    if (!id) return;
+
+    Swal.fire({
+        title: "Reject this document?",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Yes, reject it",
+        confirmButtonColor: "#dc3545"
+    }).then((result) => {
+
+        if (result.isConfirmed) {
+
+            $.ajax({
+                url: "/api/documents/reject/" + id + "/",
+                type: "POST",
+                headers: { "X-CSRFToken": "{{ csrf_token }}" },
+                success: function () {
+
+                    Swal.fire("Rejected!", "Document rejected successfully.", "success");
+
+                    $('#ntfViewModal').modal('hide');
+
+                    $("#ntf-row-" + id).fadeOut();
+                },
+                error: function () {
+                    Swal.fire("Error", "Something went wrong.", "error");
+                }
+            });
+        }
+    });
+}
+
+
+// =======================
+// DOCUMENT READY
+// =======================
+$(document).ready(function () {
+
+    // Fix modal backdrop issue
+    $(document).on('hidden.bs.modal', '.modal', function () {
+        $('.modal-backdrop').remove();
+        $('body').removeClass('modal-open');
+    });
+
+    // Hide badge when opening dropdown
+    $('.dropdown-list').on('show.bs.dropdown', function () {
+        $('#ntf-badge').fadeOut(300);
+    });
+
+});
 </script>
 </body> 
 </html>

@@ -6,7 +6,6 @@
 {% block extra_css %}
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/morris.js/0.5.1/morris.css">
 <style>
-    /* Instant Load - No Animations */
     * { transition: none !important; animation: none !important; }
     
     .card { border-radius: 8px; border: 1px solid #eee; box-shadow: 0 2px 4px rgba(0,0,0,0.05); background: #fff; margin-bottom: 20px; overflow: hidden; }
@@ -41,9 +40,9 @@
     .list-group-item { border: none; border-bottom: 1px solid #f4f4f4; padding: 10px 15px; cursor: pointer; }
     .unread-item { background-color: #fff9f0; border-left: 3px solid #ff902b; }
 
-    /* Modal Styling para sa Full Screen Preview */
     .modal-xl { max-width: 90%; }
-    #previewFrame { background: #f4f4f4; min-height: 75vh; }
+    #previewFrame { background: #f4f4f4; min-height: 75vh; border-radius: 0 0 8px 8px; }
+    .modal-content { border-radius: 12px; border: none; overflow: hidden; }
 </style>
 {% endblock %}
 
@@ -166,12 +165,11 @@
                 </button>
             </div>
             <div class="modal-body p-0">
-                <iframe id="previewFrame" src="" width="100%" height="600px" frameborder="0"></iframe>
+                <iframe id="previewFrame" src="" width="100%" height="700px" frameborder="0"></iframe>
             </div>
         </div>
     </div>
 </div>
-
 {% endblock %}
 
 {% block extra_js %}
@@ -180,7 +178,6 @@
 
 <script>
 $(document).ready(function() {
-    // --- 1. Charts Initialization ---
     var wordCount = {{ word_count|default:0 }};
     var excelCount = {{ excel_count|default:0 }};
     var pptCount = {{ ppt_count|default:0 }};
@@ -218,21 +215,21 @@ $(document).ready(function() {
         formatter: function (x) { return x + " files" }
     });
 
-    // --- 2. Document Preview Logic ---
     $('.btn-preview').on('click', function() {
         var fileUrl = $(this).data('url');
-        var fullUrl = $(this).data('full-url'); // Kailangan ito para sa Office Viewer (Ngrok URL)
+        var fullUrl = $(this).data('full-url');
         var title = $(this).data('title');
         var viewerUrl = "";
 
-        // Check if file is Office (Word, Excel, PPT)
-        var isOffice = fileUrl.toLowerCase().match(/\.(docx|doc|xlsx|xls|pptx|ppt)$/);
+        var extension = fileUrl.split('.').pop().toLowerCase();
+        var isOffice = ['docx', 'doc', 'xlsx', 'xls', 'pptx', 'ppt'].includes(extension);
 
         if (isOffice) {
-            // Gamit ang Microsoft Online Viewer
             viewerUrl = "https://view.officeapps.live.com/op/view.aspx?src=" + encodeURIComponent(fullUrl);
+        } else if (extension === 'pdf') {
+       
+            viewerUrl = fileUrl + "#toolbar=0&navpanes=0&scrollbar=1";
         } else {
-            // Direct sa file (para sa PDF)
             viewerUrl = fileUrl;
         }
 
@@ -241,7 +238,6 @@ $(document).ready(function() {
         $('#docPreviewModal').modal('show');
     });
 
-    // Linisin ang iframe kapag sinarado ang modal para tumigil ang loading
     $('#docPreviewModal').on('hidden.bs.modal', function () {
         $('#previewFrame').attr('src', '');
     });

@@ -122,6 +122,14 @@ urlpatterns = [
    # Notification API
     path('api/notifications/', documentview.get_notifications_api, name='notifications_api'),
     path('api/notifications/mark-read/<int:ntf_id>/', documentview.mark_as_read_api, name='mark_as_read_api'),
+
+    # Approved / Reject
+   path("api/documents/approve/<int:doc_id>/", documentview.approve_document_api, name="approve_document_api"),
+   path("api/documents/reject/<int:doc_id>/", documentview.reject_document_api, name="reject_document_api"),
+
+   path('my-uploads/', documentview.my_uploads_view, name='my_uploads'),
+
+
 ]
 
 # Media files serving (Importante para ma-view/download ang uploaded files)

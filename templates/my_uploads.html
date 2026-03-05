@@ -1,0 +1,247 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} | ERDMS{% endblock title %}
+
+{% block content %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+
+<style>
+    .container-fluid { background: #f8fafd; min-height: 100vh; padding: 2rem; }
+
+    /* Layout Controls */
+    .top-controls {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        gap: 20px;
+    }
+
+    /* Pill-shaped Search Bar */
+    .dataTables_filter { position: relative; margin: 0 !important; }
+    .dataTables_filter input {
+        width: 350px !important;
+        height: 45px;
+        border-radius: 25px !important;
+        padding: 10px 20px 10px 45px !important;
+        border: 1px solid #e2e8f0 !important;
+        background: #fff !important;
+    }
+
+    .dataTables_filter::before {
+        content: "\f002";
+        font-family: "Font Awesome 5 Free"; font-weight: 900;
+        position: absolute; left: 18px; top: 50%;
+        transform: translateY(-50%); color: #94a3b8; z-index: 5;
+    }
+
+    /* Pill-shaped Filter */
+    .filter-pill-container { display: flex; align-items: center; gap: 10px; }
+    .custom-filter-select {
+        height: 45px; min-width: 150px;
+        padding: 0 35px 0 20px;
+        border-radius: 25px; border: 1px solid #e2e8f0;
+        background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2394a3b8' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E") no-repeat calc(100% - 15px) center;
+        appearance: none; cursor: pointer; font-weight: 600; color: #475569;
+    }
+
+    /* Table Styling */
+    #myUploadsTable { border-collapse: separate !important; border-spacing: 0 8px !important; margin-top: 0 !important; }
+    #myUploadsTable thead th { background: transparent; color: #94a3b8; text-transform: uppercase; font-size: 0.75rem; border: none; padding: 10px; }
+    #myUploadsTable tbody tr { background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.02); transition: 0.2s; }
+    #myUploadsTable tbody td { padding: 15px; border: none; vertical-align: middle; }
+    #myUploadsTable tbody tr td:first-child { border-radius: 12px 0 0 12px; }
+    #myUploadsTable tbody tr td:last-child { border-radius: 0 12px 12px 0; }
+
+    /* Buttons */
+    .btn-action { width: 35px; height: 35px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; border: none; text-decoration: none; transition: 0.3s; cursor: pointer; }
+    .btn-view { background: #eef2ff; color: #4361ee; }
+    .btn-download { background: #ecfdf5; color: #10b981; }
+    .btn-delete { background: #fef2f2; color: #ef4444; }
+    .btn-action:hover { opacity: 0.8; transform: translateY(-2px); }
+
+    .upload-drop-zone { border: 2px dashed #cbd5e1; border-radius: 12px; padding: 20px; text-align: center; cursor: pointer; background: #f8fafc; }
+</style>
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold mb-0">My Uploaded Documents</h3>
+            <small class="text-muted">Manage and track your contributed files.</small>
+        </div>
+        <button class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#uploadModal">
+            <i class="fas fa-plus me-2"></i> Upload New
+        </button>
+    </div>
+
+    <table class="table w-100" id="myUploadsTable">
+        <thead>
+            <tr>
+                <th>Document Name</th>
+                <th>Category</th>
+                <th>Date Uploaded</th>
+                <th>Status</th>
+                <th class="text-center">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for doc in my_documents %}
+            <tr id="doc-row-{{ doc.id }}">
+                <td>
+                    <div class="d-flex align-items-center">
+                        <i class="fas {% if doc.category == 'word' %}fa-file-word text-primary{% elif doc.category == 'excel' %}fa-file-excel text-success{% elif doc.category == 'ppt' %}fa-file-powerpoint text-warning{% else %}fa-file-pdf text-danger{% endif %} fs-4 me-3"></i>
+                        <div>
+                            <div class="fw-bold text-dark small">{{ doc.title }}</div>
+                            <div class="text-muted" style="font-size: 0.7rem;">{{ doc.file.name }}</div>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge bg-light text-dark border px-3 py-2 rounded-pill">{{ doc.category|upper }}</span></td>
+                <td class="small">{{ doc.uploaded_at|date:"M d, Y" }}</td>
+                <td class="status-cell">
+                    <span class="badge {% if doc.status == 'APPROVED' %}bg-success{% elif doc.status == 'REJECTED' %}bg-danger{% else %}bg-info{% endif %} bg-opacity-10 {% if doc.status == 'APPROVED' %}text-success{% elif doc.status == 'REJECTED' %}text-danger{% else %}text-info{% endif %} rounded-pill px-3 py-2">
+                        {{ doc.status }}
+                    </span>
+                </td>
+                <td>
+                    <div class="d-flex justify-content-center gap-2">
+                        <button type="button" class="btn-action btn-view" onclick="viewAndRefresh(this, '{{ doc.id }}', '{{ doc.title|escapejs }}', '{{ doc.file.url }}')">
+                            <i class="fa fa-eye"></i>
+                        </button>
+                        <a href="{{ doc.file.url }}" class="btn-action btn-download" download>
+                            <i class="fa fa-download"></i>
+                        </a>
+                        <button type="button" class="btn-action btn-delete" onclick="confirmDelete('{{ doc.id }}', '{{ doc.title|escapejs }}')">
+                            <i class="fa fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="modal fade" id="uploadModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-0 px-4 pt-4">
+                <h5 class="fw-bold">Upload New Document</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form action="{% url 'upload_document' %}" method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">DOCUMENT TITLE</label>
+                        <input type="text" name="title" class="form-control rounded-3" placeholder="e.g. Monthly Report" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">CATEGORY</label>
+                        <select name="category" class="form-select rounded-3" required>
+                            <option value="" disabled selected>Select Category</option>
+                            <option value="pdf">PDF Document</option>
+                            <option value="word">Word Document</option>
+                            <option value="excel">Excel Spreadsheet</option>
+                            <option value="ppt">Powerpoint Presentation</option>
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold text-muted">ATTACHMENT</label>
+                        <div class="upload-drop-zone" onclick="document.getElementById('docFile').click()">
+                            <i class="fas fa-cloud-upload-alt fs-2 text-primary mb-2"></i>
+                            <p class="mb-0 small text-muted" id="file-name-display">Click to select a file</p>
+                            <input type="file" name="file" id="docFile" class="d-none" required onchange="updateFileName(this)">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 py-2 rounded-pill fw-bold">Confirm Upload</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="filterTemplate" class="d-none">
+    <div class="filter-pill-container">
+        <span class="small fw-bold text-muted">TYPE:</span>
+        <select id="categoryFilter" class="custom-filter-select">
+            <option value="">All Types</option>
+            <option value="WORD">Word</option>
+            <option value="PDF">PDF</option>
+            <option value="EXCEL">Excel</option>
+            <option value="PPT">Powerpoint</option>
+        </select>
+    </div>
+</div>
+
+{% endblock content %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    function updateFileName(input) {
+        const display = document.getElementById('file-name-display');
+        if (input.files && input.files[0]) {
+            display.innerHTML = `<span class="text-primary fw-bold">${input.files[0].name}</span>`;
+        }
+    }
+
+    // GUMAGANA NA EYE ICON (KOPYA SA ALL_DOCUMENTS LOGIC)
+    function viewAndRefresh(element, id, title, url) {
+        if (url) {
+            window.open(url, '_blank');
+            
+            // UI Update: Gawing 'APPROVED' ang badge visually
+            let row = $(element).closest('tr');
+            let statusCell = row.find('.status-cell');
+            statusCell.html('<span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3 py-2">● APPROVED</span>');
+            
+            // Refresh DataTable Cell
+            if ($.fn.DataTable.isDataTable('#myUploadsTable')) {
+                let table = $('#myUploadsTable').DataTable();
+                table.cell(statusCell).invalidate().draw(false);
+            }
+        } else {
+            Swal.fire('Error', 'File URL not found.', 'error');
+        }
+    }
+
+    function confirmDelete(id, title) {
+        Swal.fire({
+            title: 'Delete this file?',
+            text: "Are you sure you want to delete: " + title,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#94a3b8',
+            confirmButtonText: 'Yes, delete it!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = `/delete-document/${id}/`;
+            }
+        });
+    }
+
+    $(document).ready(function() {
+        if ($.fn.DataTable) {
+            let table = $('#myUploadsTable').DataTable({
+                "dom": '<"top-controls"f <"custom-filter-placeholder">>rtip',
+                "pageLength": 10,
+                "order": [[ 2, "desc" ]],
+                "language": {
+                    "search": "",
+                    "searchPlaceholder": "Search document name...",
+                    "paginate": { "previous": "<", "next": ">" }
+                }
+            });
+
+            $(".custom-filter-placeholder").html($("#filterTemplate").html());
+
+            $(document).on('change', '#categoryFilter', function() {
+                table.column(1).search($(this).val()).draw();
+            });
+        }
+    });
+</script>
+{% endblock extra_js %}

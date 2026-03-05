@@ -1,142 +1,359 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Employee Dashboard | EDMS{% endblock %}
+{% block title %}All Received Documents{% endblock %}
 
 {% block content %}
-<div class="container-fluid p-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="fw-bold text-dark">Welcome back, {{ request.user.username }}!</h2>
-            <p class="text-muted">
-                <i class="fas fa-building me-1"></i> Office: <strong>{{ profile.office.office_name }}</strong> | 
-                <span class="badge bg-primary">{{ profile.role }}</span>
-            </p>
+<style>
+    /* 1. Layout Fix for Controls */
+    .dataTables_wrapper .top-controls {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding: 0 5px;
+    }
+
+    /* 2. Search Bar Alignment & Icon */
+    .dataTables_filter {
+        margin: 0 !important;
+        position: relative;
+        text-align: left !important;
+    }
+
+    .dataTables_filter label {
+        margin-bottom: 0;
+        display: block;
+    }
+
+    .dataTables_filter input {
+        width: 320px !important;
+        height: 42px;
+        border-radius: 12px !important;
+        padding: 10px 15px 10px 40px !important;
+        border: 1px solid #e2e8f0 !important;
+        background-color: #f8fafc !important;
+        margin-left: 0 !important;
+    }
+
+    .dataTables_filter::before {
+        content: "\f002";
+        font-family: "Font Awesome 6 Free", "Font Awesome 5 Free";
+        font-weight: 900;
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #94a3b8;
+        z-index: 5;
+    }
+
+    /* 3. Filter Container Alignment */
+    .custom-filter-placeholder {
+        display: flex;
+        align-items: center;
+    }
+
+    .filter-container {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .custom-filter-select {
+        height: 42px;
+        padding: 0 15px;
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+        background-color: #fff;
+        color: #475569;
+        font-weight: 600;
+        cursor: pointer;
+        outline: none;
+    }
+
+    /* 4. Table Alignment & Spacing */
+    #receivedDataTable {
+        border-collapse: collapse !important;
+        margin-top: 1rem !important;
+    }
+
+    #receivedDataTable thead th {
+        padding: 15px 12px !important;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 2px solid #f1f5f9 !important;
+        background-color: #f8fafc;
+    }
+
+    #receivedDataTable tbody td {
+        padding: 15px 12px !important;
+        vertical-align: middle;
+    }
+
+    /* 5. Pagination Buttons Styling */
+    .dataTables_paginate {
+        margin-top: 1.5rem !important;
+        padding-top: 1rem;
+        border-top: 1px solid #f1f5f9;
+    }
+
+    .dataTables_paginate .paginate_button.current {
+        background: #4361ee !important;
+        color: white !important;
+        border-color: #4361ee !important;
+        box-shadow: 0 4px 10px rgba(67, 97, 238, 0.3);
+    }
+
+    .dataTables_paginate .paginate_button:hover:not(.current):not(.disabled) {
+        background: #f8fafc !important;
+        border-color: #cbd5e1 !important;
+        color: #4361ee !important;
+    }
+
+    /* Badge styles */
+    .badge-read { background-color: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; font-weight: 600; }
+    .badge-unread { background-color: #fef9c3; color: #a16207; border: 1px solid #fef08a; font-weight: 600; }
+
+    .btn-action {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        text-decoration: none;
+    }
+    .btn-view { background-color: #eef2ff !important; color: #4361ee !important; border: none; }
+    .btn-download { background-color: #ecfdf5 !important; color: #10b981 !important; }
+</style>
+
+<div class="container-fluid py-4">
+    <div class="card card-default shadow-sm border-0 rounded-4">
+        <div class="card-header bg-white border-0 pt-4 px-4">
+            <h4 class="m-0 fw-bold text-primary">
+                <i class="fas fa-inbox me-2"></i> All Received Documents
+            </h4>
+            <p class="text-muted small mb-0">Manage and filter all documents sent to your account.</p>
         </div>
-        <div>
-            <button class="btn btn-primary shadow-sm px-4" style="background-color: #348fe2; border: none;">
-                <i class="fas fa-plus me-2"></i> New Document
-            </button>
+        
+        <div class="card-body p-4">
+            <div class="table-responsive">
+                <table class="table table-hover w-100" id="receivedDataTable">
+                    <thead>
+                        <tr>
+                            <th>Document Title</th>
+                            <th>Sender</th>
+                            <th>Date Received</th>
+                            <th>Status</th>
+                            <th class="text-center">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for doc in received_documents %}
+                        {% with full_url=request.build_absolute_uri|slice:":-1"|add:doc.file.url %}
+                        <tr id="doc-row-{{ doc.id }}">
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <i class="far fa-file-alt fa-lg text-info me-3"></i>
+                                    <span class="fw-bold text-dark">{{ doc.title }}</span>
+                                </div>
+                            </td>
+                            <td><span class="text-muted">@{{ doc.uploaded_by.username }}</span></td>
+                            <td data-order="{{ doc.uploaded_at|date:'YmdHis' }}">
+                                <span class="small">{{ doc.uploaded_at|date:"M d, Y h:i A" }}</span>
+                            </td>
+                            <td class="status-cell">
+                                {% if doc.is_read %}
+                                    <span class="badge badge-read p-2 px-3 rounded-pill">Read</span>
+                                {% else %}
+                                    <span class="badge badge-unread p-2 px-3 rounded-pill">Unread</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="d-flex justify-content-center gap-2">
+                                    <button class="btn-action btn-view" 
+                                            onclick="viewAndRefresh(this, '{{ doc.id }}', '{{ doc.title|escapejs }}', '{{ doc.file.url }}', '{{ full_url }}')"
+                                            data-bs-toggle="tooltip" title="View & Process">
+                                        <i class="fa fa-eye"></i>
+                                    </button>
+                                    <a href="{{ doc.file.url }}" class="btn-action btn-download" 
+                                       download data-bs-toggle="tooltip" title="Download Original">
+                                        <i class="fa fa-download"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endwith %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
+</div>
 
-    <div class="row mb-4">
-        <div class="col-md-4">
-            <div class="card border-0 shadow-sm p-3">
-                <div class="d-flex align-items-center">
-                    <div class="icon-box bg-light-blue p-3 rounded-3 me-3">
-                        <i class="fas fa-file-alt fa-2x text-primary"></i>
-                    </div>
-                    <div>
-                        <h6 class="text-muted mb-0">My Uploads</h6>
-                        <h3 class="fw-bold mb-0">{{ my_uploads_count }}</h3>
-                    </div>
+<div class="modal fade" id="docPreviewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-bottom px-4 bg-white">
+                <h5 class="modal-title fw-bold text-primary" id="previewTitle text-truncate" style="max-width: 80%;">Document Preview</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0 bg-dark">
+                <div class="preview-container" style="height: 70vh; position: relative;">
+                    <iframe id="previewFrame" src="" style="width: 100%; height: 100%; border: none;"></iframe>
                 </div>
             </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card border-0 shadow-sm p-3">
-                <div class="d-flex align-items-center">
-                    <div class="icon-box bg-light-success p-3 rounded-3 me-3">
-                        <i class="fas fa-inbox fa-2x text-success"></i>
-                    </div>
-                    <div>
-                        <h6 class="text-muted mb-0">Incoming Docs (Office)</h6>
-                        <h3 class="fw-bold mb-0">{{ office_docs_count }}</h3>
-                    </div>
+            <div class="modal-footer bg-white border-top d-flex justify-content-between px-4 py-3">
+                <div class="text-muted small">
+                    <i class="fas fa-shield-alt me-1"></i> Confirm document status to update records.
                 </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="row">
-        <div class="col-lg-8">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white py-3 border-0">
-                    <h5 class="mb-0 fw-bold text-dark">My Recent Uploads</h5>
-                </div>
-                <div class="card-body pt-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Ref No.</th>
-                                    <th>Document Title</th>
-                                    <th>Date</th>
-                                    <th>Status</th>
-                                    <th class="text-center">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for doc in my_uploads %}
-                                <tr>
-                                    <td><span class="text-muted small">#{{ doc.id }}</span></td>
-                                    <td><span class="fw-bold text-dark">{{ doc.title }}</span></td>
-                                    <td>{{ doc.created_at|date:"M d, Y" }}</td>
-                                    <td>
-                                        {% if doc.status == 'PENDING' %}
-                                            <span class="badge rounded-pill bg-warning text-dark">Pending</span>
-                                        {% elif doc.status == 'COMPLETED' %}
-                                            <span class="badge rounded-pill bg-success">Completed</span>
-                                        {% else %}
-                                            <span class="badge rounded-pill bg-info text-dark">{{ doc.status }}</span>
-                                        {% endif %}
-                                    </td>
-                                    <td class="text-center">
-                                        <a href="#" class="btn btn-sm btn-outline-primary rounded-circle">
-                                            <i class="fas fa-eye"></i>
-                                        </a>
-                                    </td>
-                                </tr>
-                                {% empty %}
-                                <tr>
-                                    <td colspan="5" class="text-center text-muted py-5">
-                                        <i class="fas fa-folder-open d-block mb-2 fa-3x opacity-25"></i>
-                                        No documents uploaded yet.
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-lg-4">
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-body">
-                    <h5 class="fw-bold mb-3 text-dark">System Notification</h5>
-                    <div class="alert alert-primary border-0 small mb-0" style="background-color: #f0f7ff; color: #004a99;">
-                        <i class="fas fa-info-circle me-2"></i> 
-                        <strong>Pro Tip:</strong> Ensure all scanned documents are in <strong>PDF format</strong> before uploading to maintain quality.
-                    </div>
-                </div>
-            </div>
-            
-            <div class="card border-0 shadow-sm">
-                <div class="card-body">
-                    <h6 class="fw-bold mb-3">Quick Links</h6>
-                    <div class="list-group list-group-flush small">
-                        <a href="#" class="list-group-item list-group-item-action border-0 px-0">
-                            <i class="fas fa-search me-2 text-muted"></i> Track a Document
-                        </a>
-                        <a href="#" class="list-group-item list-group-item-action border-0 px-0">
-                            <i class="fas fa-history me-2 text-muted"></i> Activity Logs
-                        </a>
-                    </div>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-warning px-4 rounded-pill fw-bold text-dark" id="btnReturn">
+                        <i class="fas fa-undo-alt me-2"></i> Return Document
+                    </button>
+                    <button type="button" class="btn btn-success px-4 rounded-pill fw-bold" id="btnApprove">
+                        <i class="fas fa-check-circle me-2"></i> Approve Document
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<style>
-    .bg-light-blue { background-color: #e3f2fd; }
-    .bg-light-success { background-color: #e8f5e9; }
-    .card { border-radius: 12px; transition: transform 0.2s; }
-    .table thead th { border-top: none; font-size: 0.75rem; text-transform: uppercase; color: #888; letter-spacing: 1px; }
-    .badge { font-weight: 500; padding: 0.5em 0.8em; }
-    .icon-box { min-width: 60px; text-align: center; }
-</style>
+<div id="filterWrapper" class="d-none">
+    <div class="filter-container">
+        <span class="small fw-bold text-muted">SHOW:</span>
+        <select id="statusFilter" class="custom-filter-select">
+            <option value="">All Documents</option>
+            <option value="Read">Read Only</option>
+            <option value="Unread">Unread Only</option>
+        </select>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let currentDocId = null;
+
+    function viewAndRefresh(element, id, title, url, fullUrl) {
+        currentDocId = id;
+        
+        // 1. Mark as Read Visual Update
+        let row = $(element).closest('tr');
+        let statusCell = row.find('.status-cell');
+        statusCell.html('<span class="badge badge-read p-2 px-3 rounded-pill">Read</span>');
+        
+        if ($.fn.DataTable.isDataTable('#receivedDataTable')) {
+            let table = $('#receivedDataTable').DataTable();
+            table.cell(statusCell).invalidate().draw(false);
+        }
+
+        // 2. Mark as Read AJAX call
+        $.ajax({
+            url: `/documents/mark-read/${id}/`, // Palitan ito ng iyong mark-read endpoint
+            method: 'POST',
+            data: { 'csrfmiddlewaretoken': '{{ csrf_token }}' }
+        });
+
+        // 3. Document Preview Logic
+        var extension = url.split('.').pop().toLowerCase();
+        $('#previewTitle').text(title);
+        $('#previewFrame').removeAttr('srcdoc'); 
+
+        if (extension === 'pdf') {
+            $('#previewFrame').attr('src', url + "#toolbar=0");
+        } 
+        else if (['docx', 'doc', 'xlsx', 'xls', 'pptx', 'ppt'].includes(extension)) {
+            // Check if on localhost (Office viewer needs public URL)
+            if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+                $('#previewFrame').attr('srcdoc', `
+                    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; background:#f8fafc; font-family:sans-serif; text-align:center; padding:20px;">
+                        <i class="fas fa-file-word" style="font-size:50px; color:#2b579a; margin-bottom:15px;"></i>
+                        <h4>Office Preview Not Available on Localhost</h4>
+                        <p>Previewing Office files requires a public server. Use the <b>Approve</b> or <b>Return</b> buttons below.</p>
+                    </div>
+                `);
+            } else {
+                $('#previewFrame').attr('src', "https://view.officeapps.live.com/op/embed.aspx?src=" + encodeURIComponent(fullUrl));
+            }
+        } 
+        else if (['jpg', 'jpeg', 'png', 'gif'].includes(extension)) {
+            $('#previewFrame').attr('src', url);
+        }
+
+        var myModal = new bootstrap.Modal(document.getElementById('docPreviewModal'));
+        myModal.show();
+    }
+
+    $(document).ready(function() {
+        // --- DATA TABLE INITIALIZATION ---
+        if ($.fn.DataTable) {
+            let table = $('#receivedDataTable').DataTable({
+                "pageLength": 8, 
+                "order": [[ 2, "desc" ]],
+                "responsive": true,
+                "autoWidth": false,
+                "dom": '<"top-controls"f <"custom-filter-placeholder">>rtip',
+                "language": {
+                    "search": "",
+                    "searchPlaceholder": "Search by title or sender...",
+                    "paginate": { "previous": "Previous", "next": "Next" }
+                }
+            });
+
+            $(".custom-filter-placeholder").html($("#filterWrapper").html());
+
+            $(document).on('change', '#statusFilter', function() {
+                let val = $(this).val();
+                table.column(3).search(val ? '^' + val + '$' : '', true, false).draw();
+            });
+
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+            tooltipTriggerList.map(function (el) { return new bootstrap.Tooltip(el) });
+        }
+
+        // --- APPROVE BUTTON ACTION ---
+        $('#btnApprove').on('click', function() {
+            if(!currentDocId) return;
+            if(confirm("Are you sure you want to APPROVE this document?")) {
+                $.ajax({
+                    url: `/documents/approve/${currentDocId}/`, // Siguraduhin na tama ang URL path mo
+                    method: 'POST',
+                    data: { 'csrfmiddlewaretoken': '{{ csrf_token }}' },
+                    success: function(response) {
+                        alert("Document Approved Successfully.");
+                        location.reload();
+                    },
+                    error: function() { alert("Error approving document."); }
+                });
+            }
+        });
+
+        // --- RETURN BUTTON ACTION ---
+        $('#btnReturn').on('click', function() {
+            if(!currentDocId) return;
+            let reason = prompt("Enter the reason for returning this document:");
+            if (reason) {
+                $.ajax({
+                    url: `/documents/return/${currentDocId}/`, // Siguraduhin na tama ang URL path mo
+                    method: 'POST',
+                    data: { 
+                        'csrfmiddlewaretoken': '{{ csrf_token }}',
+                        'reason': reason 
+                    },
+                    success: function(response) {
+                        alert("Document has been returned to sender.");
+                        location.reload();
+                    },
+                    error: function() { alert("Error returning document."); }
+                });
+            }
+        });
+    });
+</script>
 {% endblock %}

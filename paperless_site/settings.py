@@ -14,8 +14,14 @@ SECRET_KEY = 'django-insecure-i%cnh7g@tejy5$&y1v2#i!r(nj&k$13zs9=w_ed5we491juopc
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['tyrell-choicest-michell.ngrok-free.dev', 'localhost', '127.0.0.1', '*']
+# settings.py
 
+# Payagan ang pag-embed ng iframe (Kailangan para sa Modal Preview)
+X_FRAME_OPTIONS = 'ALLOWALL'
+
+# Opsyonal: Para sa mas smooth na connection sa Ngrok
+CSRF_TRUSTED_ORIGINS = ['https://tyrell-choicest-michell.ngrok-free.dev']
 
 # Application definition
 

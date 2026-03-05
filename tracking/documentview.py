@@ -10,6 +10,7 @@ from django.http import JsonResponse
 from django.utils.timesince import timesince 
 from .models import Document, UserProfile, Routing 
 from .choices import OFFICE_CHOICES
+from django.views.decorators.http import require_POST
 
 @login_required
 def get_notifications_api(request):
@@ -299,3 +300,60 @@ def employee_dashboard(request):
     }
     
     return render(request, 'employee_dashboard.html', context)
+
+
+@login_required
+@require_POST
+def approve_document_api(request, doc_id):
+    document = get_object_or_404(
+        Document,
+        id=doc_id,
+        recipient=request.user
+    )
+
+    # Update document status
+    document.status = 'APPROVED'
+    document.save()
+
+    # Update latest routing record
+    latest_route = document.routings.order_by('-routed_at').first()
+    if latest_route:
+        latest_route.status = 'APPROVED'
+        latest_route.save()
+
+    return JsonResponse({"status": "success"})
+
+
+@login_required
+@require_POST
+def reject_document_api(request, doc_id):
+    document = get_object_or_404(
+        Document,
+        id=doc_id,
+        recipient=request.user
+    )
+
+    # Update document status
+    document.status = 'REJECTED'
+    document.save()
+
+    # Update latest routing record
+    latest_route = document.routings.order_by('-routed_at').first()
+    if latest_route:
+        latest_route.status = 'REJECTED'
+        latest_route.save()
+
+    return JsonResponse({"status": "success"})
+
+@login_required
+def my_uploads_view(request):
+   
+    my_documents = Document.objects.filter(uploaded_by=request.user).order_by('-uploaded_at')
+    query = request.GET.get('q', '')
+    if query:
+        my_documents = my_documents.filter(Q(title__icontains=query))
+
+    return render(request, 'my_uploads.html', {
+        'my_documents': my_documents,
+        'title': 'My Uploaded Documents'
+    })
