@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% block title %}Sent Documents | ERDMS{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <div class="content-heading">
+        <div>View Sent Documents
+            <small>Track documents you have sent to other staff members.</small>
+        </div>
+    </div>
+
+    <div class="card card-default shadow-sm border-0">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="bg-light text-muted">
+                        <tr>
+                            <th>Document Title</th>
+                            <th>Recipient</th>
+                            <th>Date Sent</th>
+                            <th class="text-center">Status</th>
+                            <th class="text-center">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for doc in sent_docs %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <em class="fa-solid fa-file-export text-primary mr-3"></em>
+                                    <span class="fw-bold">{{ doc.title }}</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="badge badge-info">{{ doc.recipient.username }}</div>
+                                <small class="d-block text-muted">{{ doc.recipient.userprofile.office }}</small>
+                            </td>
+                            <td>{{ doc.uploaded_at|date:"M d, Y | h:i A" }}</td>
+                            <td class="text-center">
+                                {% if doc.is_read %}
+                                    <span class="badge badge-success"><i class="fa fa-check mr-1"></i> Read</span>
+                                {% else %}
+                                    <span class="badge badge-warning text-white"><i class="fa fa-clock mr-1"></i> Unread</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <a href="{{ doc.file.url }}" class="btn btn-sm btn-outline-primary" title="View File">
+                                    <i class="fa fa-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center py-5">
+                                <p class="text-muted">You haven't sent any documents yet.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

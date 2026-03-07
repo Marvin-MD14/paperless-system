@@ -128,6 +128,7 @@ urlpatterns = [
    path("api/documents/reject/<int:doc_id>/", documentview.reject_document_api, name="reject_document_api"),
 
    path('my-uploads/', documentview.my_uploads_view, name='my_uploads'),
+   path('sent-documents/', documentview.view_sent_documents, name='view_sent_documents'),
 
 
 ]

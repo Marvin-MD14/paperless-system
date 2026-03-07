@@ -50,7 +50,7 @@
 <div class="container-fluid">
     <div class="stat-container">
         <div class="stat-card-flex bg-blue">
-            <h3>{{ recent_logs.count|default:"0" }}</h3>
+            <h3>{{ total_uploads|default:"0" }}</h3>
             <p>Total Uploads</p>
             <i class="icon-cloud-upload stat-icon-bg"></i>
         </div>
@@ -61,16 +61,16 @@
         </div>
         <div class="stat-card-flex bg-green">
             <h3>{{ processed_count|default:"0" }}</h3>
-            <p>Processed</p>
+            <p>Approved</p>
             <i class="icon-check stat-icon-bg"></i>
         </div>
         <div class="stat-card-flex bg-orange">
             <h3>{{ unread_received_count|default:"0" }}</h3>
-            <p>Pending Review</p>
-            <i class="icon-pencil stat-icon-bg"></i>
+            <p>Inbox (Unread)</p>
+            <i class="icon-envelope-letter stat-icon-bg"></i>
         </div>
         <div class="stat-card-flex bg-red">
-            <h3>0</h3>
+            <h3>{{ returned_count|default:"0" }}</h3>
             <p>Returned</p>
             <i class="icon-action-undo stat-icon-bg"></i>
         </div>
@@ -79,7 +79,7 @@
     <div class="row">
         <div class="col-xl-6 col-lg-12">
             <div class="card">
-                <div class="card-header">Document Submission Trend</div>
+                <div class="card-header">Document Categories Distribution</div>
                 <div class="card-body">
                     <div id="morris-bar-chart" class="chart-container"></div>
                 </div>
@@ -104,12 +104,12 @@
                 <div class="card-body p-3">
                     <p class="text-bold mb-1" style="font-size: 12px; font-weight: 600;">Storage Status</p>
                     <div class="d-flex justify-content-between">
-                        <small class="text-primary font-weight-bold">{{ total_size_mb }} MB Used</small>
-                        <small class="text-muted">Limit: {{ storage_limit }} MB</small>
+                        <small class="text-primary font-weight-bold">{{ total_size_mb|default:"0" }} MB Used</small>
+                        <small class="text-muted">Limit: {{ storage_limit|default:"100" }} MB</small>
                     </div>
                     <div class="storage-progress">
                         <div class="storage-bar {% if storage_percentage > 90 %}bg-danger{% else %}bg-purple{% endif %}" 
-                             style="width: {{ storage_percentage }}%; background-color: #764ba2;"></div>
+                             style="width: {{ storage_percentage|default:0 }}%; background-color: #764ba2;"></div>
                     </div>
                 </div>
             </div>
@@ -118,9 +118,8 @@
         <div class="col-xl-3 col-md-6">
             <div class="card">
                 <div class="card-header">
-                    <span>Unread Documents</span>
-                    <a href="{% url 'received_documents' %}" class="btn btn-xs btn-link text-info p-0">View All</a>
-                </div>
+                    <span>Unread Received Documents</span>
+<a href="{% url 'received_documents' %}" class="btn btn-xs btn-link text-info p-0">View All</a>                </div>
                 <div class="list-group">
                     {% for doc in unread_docs %}
                     {% with full_url=request.build_absolute_uri|slice:":-1"|add:doc.file.url %}
@@ -137,7 +136,7 @@
                                 </span>
                             </div>
                             <div class="media-body">
-                                <p class="text-sm font-weight-bold text-dark m-0">{{ doc.title|truncatechars:15 }}</p>
+                                <p class="text-sm font-weight-bold text-dark m-0">{{ doc.title|truncatechars:20 }}</p>
                                 <p class="text-muted m-0" style="font-size: 10px;">From: {{ doc.uploaded_by.username }}</p>
                             </div>
                         </div>
@@ -146,7 +145,7 @@
                     {% empty %}
                     <div class="p-4 text-center">
                         <em class="icon-check fa-2x text-muted mb-2"></em>
-                        <p class="text-muted mb-0">All caught up!</p>
+                        <p class="text-muted mb-0">No new documents!</p>
                     </div>
                     {% endfor %}
                 </div>
@@ -178,11 +177,13 @@
 
 <script>
 $(document).ready(function() {
+    // Chart Data
     var wordCount = {{ word_count|default:0 }};
     var excelCount = {{ excel_count|default:0 }};
     var pptCount = {{ ppt_count|default:0 }};
     var pdfCount = {{ pdf_count|default:0 }};
 
+    // Morris Bar Chart
     new Morris.Bar({
         element: 'morris-bar-chart',
         data: [
@@ -191,7 +192,7 @@ $(document).ready(function() {
             { y: 'PPT', a: pptCount },
             { y: 'PDF', a: pdfCount }
         ],
-        xkey: 'y', ykeys: ['a'], labels: ['Uploaded'],
+        xkey: 'y', ykeys: ['a'], labels: ['Count'],
         barColors: function (row, series, type) {
             if (row.label == "Word") return "#23b7e5";
             else if (row.label == "Excel") return "#27c24c";
@@ -202,6 +203,7 @@ $(document).ready(function() {
         hideHover: 'auto', resize: true, gridTextSize: 11
     });
 
+    // Morris Donut Chart
     new Morris.Donut({
         element: 'morris-donut-chart',
         data: [
@@ -215,6 +217,7 @@ $(document).ready(function() {
         formatter: function (x) { return x + " files" }
     });
 
+    // Preview Logic
     $('.btn-preview').on('click', function() {
         var fileUrl = $(this).data('url');
         var fullUrl = $(this).data('full-url');
@@ -227,7 +230,6 @@ $(document).ready(function() {
         if (isOffice) {
             viewerUrl = "https://view.officeapps.live.com/op/view.aspx?src=" + encodeURIComponent(fullUrl);
         } else if (extension === 'pdf') {
-       
             viewerUrl = fileUrl + "#toolbar=0&navpanes=0&scrollbar=1";
         } else {
             viewerUrl = fileUrl;
@@ -238,6 +240,7 @@ $(document).ready(function() {
         $('#docPreviewModal').modal('show');
     });
 
+    // Clear iframe on modal close
     $('#docPreviewModal').on('hidden.bs.modal', function () {
         $('#previewFrame').attr('src', '');
     });

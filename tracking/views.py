@@ -238,27 +238,28 @@ def head_dashboard(request):
 
     return render(request, 'head_dashboard.html', context)
 
-
 @login_required
 @never_cache
 def user_dashboard(request):
-    # Siguraduhing may profile ang user
+    # 1. Siguraduhing may profile ang user
     profile, created = UserProfile.objects.get_or_create(
         user=request.user,
         defaults={'role': 'STAFF'} 
     )
 
-    # Role Redirection
+    # 2. Role Redirection
     if profile.role == 'HEAD':
         return redirect('head_dashboard')
     elif profile.role in ['GOVERNOR', 'EXECUTIVE']:
         return redirect('executive_dashboard')
 
-    # DATA FETCHING
+    # 3. DATA FETCHING (Base Querysets)
+    # Ang uploads ay ang mga dokumentong pag-aari ng user
     all_uploads = Document.objects.filter(uploaded_by=request.user)
+    # Ang received ay ang mga dokumentong ipinadala sa kanya
     received_all = Document.objects.filter(recipient=request.user)
 
-    # STORAGE CALCULATION (Manual calculation dahil walang file_size field)
+    # 4. STORAGE CALCULATION
     total_bytes = 0
     for doc in all_uploads:
         try:
@@ -269,38 +270,42 @@ def user_dashboard(request):
             
     total_size_mb = round(total_bytes / (1024 * 1024), 2)
 
-    # --- DYNAMIC STORAGE LOGIC (Unlimited 100MB Blocks) ---
+    # Dynamic Storage Logic (Incremental 100MB)
     storage_limit = 100
-    # Habang ang total size ay mas malaki sa limit, dagdag lang ng 100MB
     while total_size_mb >= storage_limit:
         storage_limit += 100
     
-    # Kalkulahin ang percentage para sa bar (e.g., 50MB / 100MB = 50%)
     storage_percentage = (total_size_mb / storage_limit) * 100
 
+    # 5. CONTEXT BUILDING
     context = {
         'profile': profile,
         
-        # 1. PARA SA METRIC CARDS
-        'recent_logs': all_uploads, 
-        'processed_count': all_uploads.filter(status='PROCESSED').count(),
+        # --- METRIC CARDS ---
+        'total_uploads': all_uploads.count(),
+        
+        # Binabago natin ang filter base sa common status strings ('APPROVED' at 'REJECTED')
+        # Siguraduhin na 'APPROVED' at 'REJECTED' ang nilalagay ng iyong approve/reject functions
+        'processed_count': all_uploads.filter(status__iexact='APPROVED').count(),
+        'returned_count': all_uploads.filter(status__iexact='REJECTED').count(),
+        
         'unread_received_count': received_all.filter(is_read=False).count(),
         'total_size_mb': total_size_mb, 
         'storage_limit': storage_limit,
         'storage_percentage': storage_percentage,
         
-        # 2. PARA SA MORRIS CHARTS
-        'word_count': all_uploads.filter(category='word').count(),
-        'excel_count': all_uploads.filter(category='excel').count(),
-        'ppt_count': all_uploads.filter(category='ppt').count(),
-        'pdf_count': all_uploads.filter(category='pdf').count(),
+        # --- MORRIS CHARTS ---
+        # Ginagamit ang __iexact para hindi maging case-sensitive
+        'word_count': all_uploads.filter(category__iexact='word').count(),
+        'excel_count': all_uploads.filter(category__iexact='excel').count(),
+        'ppt_count': all_uploads.filter(category__iexact='ppt').count(),
+        'pdf_count': all_uploads.filter(category__iexact='pdf').count(),
         
-        # 3. PARA SA UNREAD DOCUMENTS LIST
+        # --- UNREAD DOCUMENTS LIST (INBOX) ---
         'unread_docs': received_all.filter(is_read=False).order_by('-uploaded_at')[:5],
     }
 
     return render(request, 'employee_dashboard.html', context)
-
 def register(request):
 
     

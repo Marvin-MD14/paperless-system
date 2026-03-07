@@ -119,3 +119,25 @@ def manage_user_profile(sender, instance, created, **kwargs):
     else:
         # Kapag existing user (like yung ID 28 mo), siguraduhin na may profile
         UserProfile.objects.get_or_create(user=instance)
+
+class Notification(models.Model):
+    NOTIFICATION_TYPES = (
+        ('NEW_DOC', 'New Document Received'),
+        ('APPROVE', 'Document Approved'),
+        ('REJECT', 'Document Rejected/Returned'),
+        ('SYSTEM', 'System Message'),
+    )
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
+    sender = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='sent_notifications')
+    document = models.ForeignKey('Document', on_delete=models.CASCADE, null=True, blank=True)
+    message = models.TextField()
+    notification_type = models.CharField(max_length=20, choices=NOTIFICATION_TYPES, default='NEW_DOC')
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Notification for {self.user.username}: {self.notification_type}"
+
+    class Meta:
+        ordering = ['-created_at']
