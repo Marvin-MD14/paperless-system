@@ -1,8 +1,8 @@
 import os
 from django.db import models
 from django.contrib.auth.models import User
-from django.db.models.signals import post_save # Idinagdag ito
-from django.dispatch import receiver          # Idinagdag ito
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 from .choices import OFFICE_CHOICES, OFFICE_DICT, STATUS_CHOICES, ROLE_CHOICES, REGISTRATION_TYPES
 
 # --- OFFICE MODEL ---
@@ -25,15 +25,13 @@ class UserProfile(models.Model):
     approved_at = models.DateTimeField(null=True, blank=True)
     approved_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='approved_users')
     
-    # NEW FIELD: Track how the user was created
     registration_type = models.CharField(
         max_length=20,
         choices=REGISTRATION_TYPES,
-        default='ADMIN',  # Default to ADMIN for backward compatibility
+        default='ADMIN',
         help_text="How was this user account created?"
     )
     
-    # Optional but useful: Track when they registered
     registered_at = models.DateTimeField(auto_now_add=True)
     
     def __str__(self):
@@ -59,7 +57,7 @@ class Document(models.Model):
     ]
 
     title = models.CharField(max_length=255)
-    description = models.TextField(blank=True)
+    description = models.TextField(blank=True, help_text="Comment from the sender/uploader")
     file = models.FileField(upload_to='documents/%Y/%m/%d/')
     uploaded_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='uploaded_documents')
     
@@ -76,6 +74,9 @@ class Document(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
     category = models.CharField(max_length=10, choices=CATEGORY_CHOICES, default='pdf')
+    
+    # NEW FIELD: Ito ang mag-iimbak ng feedback/comment mula sa Receiver (Approved/Rejected note)
+    remarks = models.TextField(blank=True, null=True, help_text="Feedback or reason from the receiver")
 
     def save(self, *args, **kwargs):
         if self.file:
@@ -109,17 +110,7 @@ class Routing(models.Model):
     def __str__(self):
         return f"Route for {self.document.title}"
 
-# --- SIGNALS PARA SA AUTOMATIC USERPROFILE CREATION ---
-# Ito ang mag-aayos ng "No UserProfile matches" error mo
-@receiver(post_save, sender=User)
-def manage_user_profile(sender, instance, created, **kwargs):
-    if created:
-        # Kapag bagong user, gawan agad ng profile
-        UserProfile.objects.create(user=instance)
-    else:
-        # Kapag existing user (like yung ID 28 mo), siguraduhin na may profile
-        UserProfile.objects.get_or_create(user=instance)
-
+# --- NOTIFICATION MODEL ---
 class Notification(models.Model):
     NOTIFICATION_TYPES = (
         ('NEW_DOC', 'New Document Received'),
@@ -141,3 +132,11 @@ class Notification(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+
+# --- SIGNALS ---
+@receiver(post_save, sender=User)
+def manage_user_profile(sender, instance, created, **kwargs):
+    if created:
+        UserProfile.objects.create(user=instance)
+    else:
+        UserProfile.objects.get_or_create(user=instance)

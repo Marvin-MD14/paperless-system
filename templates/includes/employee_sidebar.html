@@ -28,7 +28,7 @@
 
          <li class="{% if request.resolver_match.url_name == 'user_dashboard' %}active{% endif %}">
             <a href="{% url 'user_dashboard' %}" title="Dashboard">
-               <em class="icon-speedometer"></em>
+               <em class="icon-speedometer" style="color: #3498db;"></em>
                <span>Dashboard</span>
             </a>
          </li>
@@ -38,55 +38,55 @@
                {% if unread_received_count > 0 %}
                <div class="badge badge-danger float-right">{{ unread_received_count }}</div>
                {% endif %}
-               <em class="icon-envelope-letter"></em>
+               <em class="icon-envelope-letter" style="color: #e74c3c;"></em>
                <span>Received Docs</span>
             </a>
          </li>
 
          <li class="{% if 'document' in request.path %}active{% endif %}">
             <a href="#docs-submenu" title="Documents" data-toggle="collapse" class="{% if 'document' in request.path %}{% else %}collapsed{% endif %}">
-               <em class="icon-doc"></em>
+               <em class="icon-doc" style="color: #f39c12;"></em>
                <span>My Documents</span>
             </a>
             <ul class="sidebar-nav sidebar-subnav collapse {% if 'document' in request.path %}show{% endif %}" id="docs-submenu">
                <li class="sidebar-subnav-header">My Documents</li>
                <li>
                   <a href="{% url 'upload_document' %}" title="Upload New">
+                     <em class="icon-cloud-upload mr-2" style="color: #27ae60; font-size: 0.8rem;"></em>
                      <span>Upload Documents</span>
                   </a>
                </li>
                <li>
-                  <a href="{% url 'all_documents' %}" title="Recent Uploads">
-                     <span>Recent Uploads</span>
+                  <a href="{% url 'view_sent_documents' %}" title="View Sent Documents">
+                     <em class="icon-paper-plane mr-2" style="color: #9b59b6; font-size: 0.8rem;"></em>
+                     <span>View Sent Documents</span>
                   </a>
                </li>
-              <li>
-    <a href="{% url 'view_sent_documents' %}" title="View Sent Documents">
-        <span class="d-flex align-items-center">
-            View Sent Documents
-            <i class="fas fa-paper-plane ms-2 text-primary" style="font-size: 0.7rem;"></i>
-        </span>
-    </a>
-</li>
             </ul>
          </li>
 
          <li>
             <a href="#tracking-submenu" title="Tracking" data-toggle="collapse" class="collapsed">
-               <em class="icon-map"></em>
+               <em class="icon-map" style="color: #1abc9c;"></em>
                <span>Document Tracking</span>
             </a>
             <ul class="sidebar-nav sidebar-subnav collapse" id="tracking-submenu">
                <li class="sidebar-subnav-header">Document Tracking</li>
                <li>
                   <a href="{% url 'received_documents' %}">
+                     <em class="icon-arrow-right-circle mr-2" style="color: #1abc9c; font-size: 0.8rem;"></em>
                      <span>Incoming Docs</span>
                      {% if unread_received_count > 0 %}
                      <span class="label label-danger float-right">{{ unread_received_count }}</span>
                      {% endif %}
                   </a>
                </li>
-               <li><a href="#"><span>Outgoing Docs</span></a></li>
+               <li>
+                  <a href="#">
+                     <em class="icon-arrow-left-circle mr-2" style="color: #e67e22; font-size: 0.8rem;"></em>
+                     <span>Outgoing Docs</span>
+                  </a>
+               </li>
             </ul>
          </li>
 
@@ -98,7 +98,7 @@
                {% if pending_requests_count > 0 %}
                <div class="badge badge-warning float-right">{{ pending_requests_count }}</div>
                {% endif %}
-               <em class="icon-user-follow"></em>
+               <em class="icon-user-follow" style="color: #f1c40f;"></em>
                <span>Registration Requests</span>
             </a>
          </li>

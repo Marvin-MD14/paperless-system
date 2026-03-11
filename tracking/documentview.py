@@ -102,25 +102,29 @@ def employee_dashboard(request):
 # ==========================================
 # 3. APPROVE & REJECT (WITH GMAIL NOTIF)
 # ==========================================
-
 @login_required
 @require_POST
 def approve_document_api(request, doc_id):
-    """
-    Logic para sa pag-approve at pag-email sa uploader.
-    """
     document = get_object_or_404(Document, id=doc_id, recipient=request.user)
+    
+    # Kunin ang remarks mula sa POST (galing sa SweetAlert modal)
+    remarks = request.POST.get('remarks', 'Document approved and is now on process.')
+
+    # 1. Update Document
     document.status = 'APPROVED'
-    document.is_read = False # Para mag-notif sa bell ng uploader
+    document.remarks = remarks  # Dito na ise-save ang message
     document.save()
 
-    # I-update ang Routing status
-    latest_route = document.routings.order_by('-routed_at').first()
-    if latest_route:
-        latest_route.status = 'APPROVED'
-        latest_route.save()
+    # 2. In-App Notification
+    Notification.objects.create(
+        user=document.uploaded_by,
+        sender=request.user,
+        document=document,
+        message=f"APPROVED: '{document.title}'. Note: {remarks}",
+        notification_type='APPROVE'
+    )
 
-    # GMAIL NOTIFICATION
+    # 3. Gmail Notification para sa Approval
     uploader = document.uploaded_by
     if uploader.email:
         try:
@@ -128,66 +132,57 @@ def approve_document_api(request, doc_id):
             body = (
                 f"Hi {uploader.get_full_name() or uploader.username},\n\n"
                 f"Your document '{document.title}' has been APPROVED by {request.user.username}.\n\n"
-                f"Log in to the Paperless System to view details."
+                f"FEEDBACK/REMARKS: {remarks}\n\n"
+                f"You can view this in your dashboard: {request.build_absolute_uri('/')}\n\n"
+                f"Regards,\nERDMS System"
             )
             send_mail(subject, body, settings.DEFAULT_FROM_EMAIL, [uploader.email], fail_silently=True)
         except Exception as e:
-            print(f"Email Error: {e}")
+            print(f"Gmail Error: {e}")
 
     return JsonResponse({"status": "success"})
+
+
 @login_required
 @require_POST
 def reject_document_api(request, doc_id):
-    """
-    Logic para sa pag-reject/return, pag-email, at pag-notif sa uploader.
-    """
-    # 1. Kunin ang dokumento (Dapat ang recipient ang nagre-reject)
     document = get_object_or_404(Document, id=doc_id, recipient=request.user)
     
-    # 2. Update Document Status
+    # Kunin ang reason (reason ang key name sa JS mo kadalasan sa rejection)
+    rejection_reason = request.POST.get('reason', 'No reason provided.')
+
+    # 1. Update Document
     document.status = 'REJECTED'
+    document.remarks = rejection_reason # I-save ang reason sa remarks field
     document.is_read = False 
     document.save()
 
-    # 3. Update Routing status kung mayroon
-    latest_route = document.routings.order_by('-routed_at').first()
-    if latest_route:
-        latest_route.status = 'REJECTED'
-        latest_route.save()
-
-    # 4. CREATE SYSTEM NOTIFICATION (Para sa Bell/Dashboard)
-    # Ito ang kulang para lumabas ang red dot o notif sa uploader
+    # 2. In-App Notification
     Notification.objects.create(
         user=document.uploaded_by,
         sender=request.user,
         document=document,
-        message=f"Document '{document.title}' was rejected by {request.user.username}.",
-        notification_type='REJECT' # Siguraduhing 'REJECT' ay valid type sa model mo
+        message=f"REJECTED: '{document.title}'. Reason: {rejection_reason}",
+        notification_type='REJECT'
     )
 
-    # 5. GMAIL NOTIFICATION
+    # 3. Gmail Notification para sa Rejection
     uploader = document.uploaded_by
     if uploader.email:
         try:
-            subject = f"❌ Document Returned/Rejected: {document.title}"
+            subject = f"❌ Document Rejected: {document.title}"
             body = (
                 f"Hi {uploader.get_full_name() or uploader.username},\n\n"
-                f"Your document '{document.title}' was RETURNED or REJECTED by {request.user.username}.\n\n"
-                f"Please review the document in your dashboard.\n\n"
-                f"Link: {request.build_absolute_uri('/')}"
+                f"Your document '{document.title}' was REJECTED by {request.user.username}.\n\n"
+                f"REASON: {rejection_reason}\n\n"
+                f"Please check the document and re-upload if necessary.\n\n"
+                f"Regards,\nERDMS System"
             )
-            send_mail(
-                subject, 
-                body, 
-                settings.DEFAULT_FROM_EMAIL, 
-                [uploader.email], 
-                fail_silently=True
-            )
+            send_mail(subject, body, settings.DEFAULT_FROM_EMAIL, [uploader.email], fail_silently=True)
         except Exception as e:
-            print(f"Email Error: {e}")
+            print(f"Gmail Error: {e}")
 
-    return JsonResponse({"status": "success", "message": "Document rejected and uploader notified."})
-
+    return JsonResponse({"status": "success"})
 # ==========================================
 # 4. DOCUMENT OPERATIONS (UPLOAD, SEND, DELETE)
 # ==========================================

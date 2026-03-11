@@ -193,6 +193,9 @@
         max-height: 320px; 
         overflow-y: auto;
     }
+    .swal2-container {
+    z-index: 1060 !important;
+    }
 </style>
 
     {% block extra_css %}{% endblock extra_css %}
@@ -363,14 +366,12 @@
     {% block extra_js %}{% endblock extra_js %}
 
   <script>
-
 let currentDocId = null;
 
 // =======================
 // VIEW DOCUMENT FUNCTION
 // =======================
 function viewDocument(element, id, title, fileUrl) {
-
     currentDocId = id;
 
     // UI updates
@@ -385,6 +386,7 @@ function viewDocument(element, id, title, fileUrl) {
 
     let previewUrl = fileUrl;
 
+    // Check if file is Office Doc for Google Viewer
     if (fileUrl.toLowerCase().match(/\.(docx|xlsx|pptx)$/)) {
         previewUrl = "https://docs.google.com/gview?url=" 
             + window.location.origin + fileUrl + "&embedded=true";
@@ -398,7 +400,7 @@ function viewDocument(element, id, title, fileUrl) {
             $(this).show();
         });
 
-    // MARK AS READ
+    // MARK AS READ via AJAX
     $.ajax({
         url: "/api/notifications/mark-read/" + id + "/",
         type: "POST",
@@ -412,36 +414,45 @@ function viewDocument(element, id, title, fileUrl) {
     });
 }
 
-
 // =======================
-// APPROVE FUNCTION
+// APPROVE FUNCTION (WITH REMARKS)
 // =======================
 function approveDocument(id) {
-
     if (!id) return;
 
     Swal.fire({
-        title: "Approve this document?",
+        title: "Approve/Receive Document",
+        text: "Add a note or remarks for the uploader:",
+        input: "text",
+        inputPlaceholder: "e.g., Received, on process for Head's signature",
+        inputAttributes: {
+            "maxlength": 100
+        },
         icon: "question",
         showCancelButton: true,
-        confirmButtonText: "Yes, approve it",
-        confirmButtonColor: "#28a745"
+        confirmButtonText: "Confirm Approval",
+        confirmButtonColor: "#28a745",
+        preConfirm: (remarks) => {
+            return remarks || "Document approved and is now on process.";
+        }
     }).then((result) => {
-
         if (result.isConfirmed) {
+            const remarks = result.value;
 
             $.ajax({
                 url: "/api/documents/approve/" + id + "/",
                 type: "POST",
                 headers: { "X-CSRFToken": "{{ csrf_token }}" },
-                success: function () {
-
-                    Swal.fire("Approved!", "Document approved successfully.", "success");
-
+                data: {
+                    "remarks": remarks
+                },
+                success: function (response) {
+                    Swal.fire("Success!", "Document status updated.", "success");
                     $('#ntfViewModal').modal('hide');
 
-                    // Optional: remove notification visually
+                    // Visual feedback: remove rows
                     $("#ntf-row-" + id).fadeOut();
+                    $(`#doc-row-${id}`).fadeOut();
                 },
                 error: function () {
                     Swal.fire("Error", "Something went wrong.", "error");
@@ -450,36 +461,49 @@ function approveDocument(id) {
         }
     });
 }
-
 
 // =======================
 // REJECT FUNCTION
 // =======================
 function rejectDocument(id) {
-
     if (!id) return;
 
     Swal.fire({
-        title: "Reject this document?",
+        title: "Reject Document",
+        text: "Please provide a reason for rejection:",
+        input: "textarea",
+        inputPlaceholder: "Type your reason here...",
+        inputAttributes: {
+            "aria-label": "Type your reason here"
+        },
         icon: "warning",
         showCancelButton: true,
-        confirmButtonText: "Yes, reject it",
-        confirmButtonColor: "#dc3545"
+        confirmButtonText: "Submit Rejection",
+        confirmButtonColor: "#dc3545",
+        preConfirm: (message) => {
+            if (!message) {
+                Swal.showValidationMessage("Reason is required to reject a document");
+            }
+            return message;
+        }
     }).then((result) => {
-
         if (result.isConfirmed) {
+            const reason = result.value;
 
             $.ajax({
                 url: "/api/documents/reject/" + id + "/",
                 type: "POST",
                 headers: { "X-CSRFToken": "{{ csrf_token }}" },
-                success: function () {
-
-                    Swal.fire("Rejected!", "Document rejected successfully.", "success");
-
+                data: {
+                    "reason": reason
+                },
+                success: function (response) {
+                    Swal.fire("Rejected!", "Document rejected and uploader notified.", "success");
                     $('#ntfViewModal').modal('hide');
-
+                    
+                    // Visual feedback: remove rows
                     $("#ntf-row-" + id).fadeOut();
+                    $(`#doc-row-${id}`).fadeOut();
                 },
                 error: function () {
                     Swal.fire("Error", "Something went wrong.", "error");
@@ -489,19 +513,24 @@ function rejectDocument(id) {
     });
 }
 
-
 // =======================
-// DOCUMENT READY
+// DOCUMENT READY & FIXES
 // =======================
 $(document).ready(function () {
 
-    // Fix modal backdrop issue
+    // IMPORTANT FIX: Pinapatay ang focus enforcement ng Bootstrap
+    // para makapag-type ka sa SweetAlert kahit nakabukas ang Preview Modal.
+    $(document).on('shown.bs.modal', function (e) {
+        $(document).off('focusin.bs.modal');
+    });
+
+    // Fix modal backdrop and scroll issue
     $(document).on('hidden.bs.modal', '.modal', function () {
         $('.modal-backdrop').remove();
         $('body').removeClass('modal-open');
     });
 
-    // Hide badge when opening dropdown
+    // Hide badge when opening notification dropdown
     $('.dropdown-list').on('show.bs.dropdown', function () {
         $('#ntf-badge').fadeOut(300);
     });
