@@ -1,93 +1,229 @@
 {% extends 'base.html' %}
-
 {% load static %}
+
 {% block title %} Head Dashboard | ERDMS System{% endblock %}
 
-<!-- START Desktop Sidebar -->
-<!-- <nav class="sidebar d-none d-lg-block shadow">
-    <div class="p-4 text-center">
-        <img src="{% static 'img/capitol.png' %}" alt="Logo" style="width: 60px;">
-        <h6 class="mt-2 fw-bold text-uppercase">Head Portal</h6>
-    </div>
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/morris.js/0.5.1/morris.css">
+<style>
+    /* Disable transitions for faster loading */
+    * { transition: none !important; animation: none !important; }
+    
+    .card { border-radius: 8px; border: 1px solid #eee; box-shadow: 0 2px 4px rgba(0,0,0,0.05); background: #fff; margin-bottom: 20px; overflow: hidden; }
+    .card-header { padding: 12px 15px; border-bottom: 1px solid #eee; font-weight: 600; color: #333; display: flex; justify-content: space-between; align-items: center; }
+    .card-body { padding: 15px; }
+    
+    .chart-container { height: 280px; width: 100%; }
+    .donut-container { height: 200px; width: 100%; }
+    
+    .stat-container { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 25px; width: 100%; }
+    
+    .stat-card-flex { 
+        flex: 1; min-width: 180px; position: relative; padding: 20px; border-radius: 12px; 
+        color: white; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border: none; 
+        display: flex; flex-direction: column; justify-content: center; 
+    }
+    
+    .stat-card-flex h3 { font-size: 1.8rem; font-weight: 700; margin: 0; z-index: 2; line-height: 1; }
+    .stat-card-flex p { font-size: 0.8rem; font-weight: 500; opacity: 0.9; margin: 5px 0 0 0; z-index: 2; text-transform: uppercase; letter-spacing: 0.5px; }
+    
+    .stat-icon-bg { position: absolute; right: -5px; bottom: -5px; font-size: 3.5rem; opacity: 0.2; transform: rotate(-10deg); z-index: 1; }
 
-    <ul class="nav flex-column mt-3">
-        <li class="nav-item">
-            <a href="{% url 'head_dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'head_dashboard' %}active{% endif %}">
-                <span><i class="fas fa-tachometer-alt me-2"></i> Dashboard</span>
-            </a>
-        </li>
+    /* Gradients */
+    .bg-blue { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+    .bg-green { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+    .bg-orange { background: linear-gradient(135deg, #f9d423 0%, #ff4e50 100%); }
+    .bg-red { background: linear-gradient(135deg, #f85032 0%, #e73827 100%); }
+    .bg-purple { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    .bg-teal { background: linear-gradient(135deg, #2af598 0%, #009efd 100%); }
+    
+    .list-group-item { border: none; border-bottom: 1px solid #f4f4f4; padding: 10px 15px; cursor: pointer; }
+    .unread-item { background-color: #fff9f0; border-left: 3px solid #ff902b; }
 
-        <li class="nav-item">
-            <a class="nav-link dropdown-toggle" href="#" id="mainPageDropdown" role="button" data-bs-toggle="collapse" data-bs-target="#mainPageMenu">
-                <span><i class="fas fa-folder me-2"></i> Main Page</span>
-            </a>
-            <div class="collapse" id="mainPageMenu">
-                <ul class="nav flex-column ms-3">
-                    <li><a class="dropdown-item" href="#">Page 1</a></li>
-                    <li><a class="dropdown-item" href="#">Page 2</a></li>
-                </ul>
-            </div>
-        </li>
-
-        <li class="nav-item">
-            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#docsMenu">
-                <span><i class="fas fa-file-invoice me-2"></i> Documents</span>
-            </a>
-            <div class="collapse" id="docsMenu">
-                <ul class="nav flex-column ms-3">
-                    <li><a class="dropdown-item" href="#">Incoming</a></li>
-                    <li><a class="dropdown-item" href="#">Outgoing</a></li>
-                    <li><a class="dropdown-item" href="#">Archived</a></li>
-                </ul>
-            </div>
-        </li>
-
-        <li class="nav-item mt-4">
-            <a href="{% url 'logout' %}" class="nav-link text-danger">
-                <span><i class="fas fa-sign-out-alt me-2"></i> Logout</span>
-            </a>
-        </li>
-    </ul>
-</nav> -->
-<!-- END Desktop Sidebar -->
+    .modal-xl { max-width: 90%; }
+    #previewFrame { background: #f4f4f4; min-height: 75vh; border-radius: 0 0 8px 8px; }
+</style>
+{% endblock %}
 
 {% block content %}
-<!-- START Mobile Offcanvas Sidebar -->
-<div class="offcanvas offcanvas-start sidebar" tabindex="-1" id="offcanvasSidebar" style="width: 250px;">
-    <div class="offcanvas-body p-0">
-        <ul class="nav flex-column">
-            <li class="nav-item">
-                <a href="{% url 'head_dashboard' %}" class="nav-link">
-                    <span><i class="fas fa-tachometer-alt me-2"></i> Dashboard</span>
-                </a>
-            </li>
+<div class="container-fluid">
+    <div class="stat-container">
+        <div class="stat-card-flex bg-teal">
+            <h3>{{ total_staff|default:"0" }}</h3>
+            <p>Department Staff</p>
+            <i class="icon-people stat-icon-bg"></i>
+        </div>
+        
+        <div class="stat-card-flex bg-orange">
+            <h3>{{ unread_received_count|default:"0" }}</h3>
+            <p>Pending Review</p>
+            <i class="icon-envelope-letter stat-icon-bg"></i>
+        </div>
 
-            <li class="nav-item">
-                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#mobileMainPage">
-                    <span><i class="fas fa-folder me-2"></i> Main Page</span>
-                </a>
-                <div class="collapse" id="mobileMainPage">
-                    <ul class="nav flex-column ms-3">
-                        <li><a class="dropdown-item" href="#">Page 1</a></li>
-                        <li><a class="dropdown-item" href="#">Page 2</a></li>
-                    </ul>
-                </div>
-            </li>
+        <div class="stat-card-flex bg-green">
+            <h3>{{ approved_count|default:"0" }}</h3>
+            <p>Total Approved</p>
+            <i class="icon-check stat-icon-bg"></i>
+        </div>
 
-            <li class="nav-item">
-                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="collapse" data-bs-target="#mobileDocsMenu">
-                    <span><i class="fas fa-file-invoice me-2"></i> Documents</span>
-                </a>
-                <div class="collapse" id="mobileDocsMenu">
-                    <ul class="nav flex-column ms-3">
-                        <li><a class="dropdown-item" href="#">Incoming</a></li>
-                        <li><a class="dropdown-item" href="#">Outgoing</a></li>
-                        <li><a class="dropdown-item" href="#">Archived</a></li>
-                    </ul>
+        <div class="stat-card-flex bg-blue">
+            <h3>{{ total_department_docs|default:"0" }}</h3>
+            <p>Total Documents</p>
+            <i class="icon-doc stat-icon-bg"></i>
+        </div>
+
+        <div class="stat-card-flex bg-red">
+            <h3>{{ rejected_count|default:"0" }}</h3>
+            <p>Returned/Rejected</p>
+            <i class="icon-close stat-icon-bg"></i>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-xl-6 col-lg-12">
+            <div class="card">
+                <div class="card-header">Document Traffic (By Category)</div>
+                <div class="card-body">
+                    <div id="morris-bar-chart" class="chart-container"></div>
                 </div>
-            </li>
-        </ul>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card">
+                <div class="card-header">File Type Distribution</div>
+                <div class="card-body">
+                    <div id="morris-donut-chart" class="donut-container"></div>
+                </div>
+                <div class="card-footer text-center">
+                    <small class="text-muted"><em class="fa fa-circle text-info"></em> Word</small>
+                    <small class="text-muted mx-1"><em class="fa fa-circle text-success"></em> Excel</small>
+                    <small class="text-muted mx-1"><em class="fa fa-circle text-warning"></em> PPT</small>
+                    <small class="text-muted"><em class="fa fa-circle text-danger"></em> PDF</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <span>For Your Review</span>
+                    <a href="{% url 'received_documents' %}" class="btn btn-xs btn-link text-info p-0">View Inbox</a>
+                </div>
+                <div class="list-group">
+                    {% for doc in unread_docs %}
+                    {% with full_url=request.build_absolute_uri|slice:":-1"|add:doc.file.url %}
+                    <a href="javascript:void(0);" 
+                       class="list-group-item list-group-item-action unread-item btn-preview"
+                       data-url="{{ doc.file.url }}"
+                       data-full-url="{{ full_url }}"
+                       data-title="{{ doc.title }}">
+                        <div class="media align-items-center">
+                            <div class="mr-2">
+                                <span class="fa-stack fa-sm">
+                                    <em class="fa fa-circle fa-stack-2x text-warning"></em>
+                                    <em class="far fa-file-alt fa-stack-1x fa-inverse"></em>
+                                </span>
+                            </div>
+                            <div class="media-body">
+                                <p class="text-sm font-weight-bold text-dark m-0">{{ doc.title|truncatechars:18 }}</p>
+                                <p class="text-muted m-0" style="font-size: 10px;">By: {{ doc.uploaded_by.get_full_name|default:doc.uploaded_by.username }}</p>
+                            </div>
+                        </div>
+                    </a>
+                    {% endwith %}
+                    {% empty %}
+                    <div class="p-4 text-center">
+                        <em class="icon-check fa-2x text-muted mb-2"></em>
+                        <p class="text-muted mb-0">Clear! No pending docs.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
     </div>
 </div>
-<!-- END Mobile Offcanvas Sidebar -->
+
+<div class="modal fade" id="docPreviewModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="previewTitle">Document Review</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body p-0">
+                <iframe id="previewFrame" src="" width="100%" height="700px" frameborder="0"></iframe>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/raphael/2.3.0/raphael.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/morris.js/0.5.1/morris.min.js"></script>
+
+<script>
+$(document).ready(function() {
+    // Analytics Data
+    var wordCount = {{ word_count|default:0 }};
+    var excelCount = {{ excel_count|default:0 }};
+    var pptCount = {{ ppt_count|default:0 }};
+    var pdfCount = {{ pdf_count|default:0 }};
+
+    // Bar Chart
+    new Morris.Bar({
+        element: 'morris-bar-chart',
+        data: [
+            { y: 'Word', a: wordCount },
+            { y: 'Excel', a: excelCount },
+            { y: 'PPT', a: pptCount },
+            { y: 'PDF', a: pdfCount }
+        ],
+        xkey: 'y', ykeys: ['a'], labels: ['Files'],
+        barColors: function (row, series, type) {
+            if (row.label == "Word") return "#23b7e5";
+            else if (row.label == "Excel") return "#27c24c";
+            else if (row.label == "PPT") return "#fad732";
+            else if (row.label == "PDF") return "#f05050";
+            return "#23b7e5";
+        },
+        hideHover: 'auto', resize: true
+    });
+
+    // Donut Chart
+    new Morris.Donut({
+        element: 'morris-donut-chart',
+        data: [
+            { label: "Word", value: wordCount },
+            { label: "Excel", value: excelCount },
+            { label: "PPT", value: pptCount },
+            { label: "PDF", value: pdfCount }
+        ],
+        colors: ['#23b7e5', '#27c24c', '#fad732', '#f05050'],
+        resize: true
+    });
+
+    // Preview Script
+    $('.btn-preview').on('click', function() {
+        var fileUrl = $(this).data('url');
+        var fullUrl = $(this).data('full-url');
+        var title = $(this).data('title');
+        var extension = fileUrl.split('.').pop().toLowerCase();
+        var viewerUrl = (['docx', 'doc', 'xlsx', 'xls', 'pptx', 'ppt'].includes(extension)) 
+            ? "https://view.officeapps.live.com/op/view.aspx?src=" + encodeURIComponent(fullUrl)
+            : fileUrl;
+
+        $('#previewTitle').text(title);
+        $('#previewFrame').attr('src', viewerUrl);
+        $('#docPreviewModal').modal('show');
+    });
+
+    $('#docPreviewModal').on('hidden.bs.modal', function () {
+        $('#previewFrame').attr('src', '');
+    });
+});
+</script>
 {% endblock %}

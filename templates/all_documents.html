@@ -5,6 +5,7 @@
 
 {% block content %}
 <style>
+    /* 1. DataTable Search Bar Styling */
     .dataTables_wrapper .top-controls {
         display: flex;
         justify-content: space-between;
@@ -46,7 +47,7 @@
         z-index: 5;
     }
 
-    /* 3. Filter Container Alignment */
+    /* 2. Filter Container */
     .custom-filter-placeholder {
         display: flex;
         align-items: center;
@@ -70,7 +71,7 @@
         outline: none;
     }
 
-    /* 4. Table Alignment & Spacing */
+    /* 3. Table Styling */
     #receivedDataTable {
         border-collapse: collapse !important;
         margin-top: 1rem !important;
@@ -90,23 +91,12 @@
         vertical-align: middle;
     }
 
-    /* 5. Pagination Buttons Styling */
+    /* 4. Pagination */
     .dataTables_paginate {
         margin-top: 1.5rem !important;
         padding-top: 1rem;
         border-top: 1px solid #f1f5f9;
     }
-
-    /* .dataTables_paginate .paginate_button {
-        padding: 8px 16px !important;
-        margin: 0 3px !important;
-        border-radius: 10px !important;
-        border: 1px solid #e2e8f0 !important;
-        background: white !important;
-        color: #475569 !important;
-        font-weight: 600 !important;
-        transition: all 0.2s ease;
-    } */
 
     .dataTables_paginate .paginate_button.current {
         background: #4361ee !important;
@@ -115,15 +105,11 @@
         box-shadow: 0 4px 10px rgba(67, 97, 238, 0.3);
     }
 
-    .dataTables_paginate .paginate_button:hover:not(.current):not(.disabled) {
-        background: #f8fafc !important;
-        border-color: #cbd5e1 !important;
-        color: #4361ee !important;
-    }
-
-    /* Badge styles */
-    .badge-read { background-color: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; font-weight: 600; }
+    /* 5. Badge Status Styles */
+    .badge-received { background-color: #e7f3ff; color: #0066cc; border: 1px solid #0066cc; font-weight: 600; }
     .badge-unread { background-color: #fef9c3; color: #a16207; border: 1px solid #fef08a; font-weight: 600; }
+    .badge-approved { background-color: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; font-weight: 600; }
+    .badge-rejected { background-color: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; font-weight: 600; }
 
     .btn-action {
         width: 38px;
@@ -134,8 +120,9 @@
         justify-content: center;
         transition: all 0.2s ease;
         text-decoration: none;
+        border: none;
     }
-    .btn-view { background-color: #eef2ff !important; color: #4361ee !important; border: none; }
+    .btn-view { background-color: #eef2ff !important; color: #4361ee !important; }
     .btn-download { background-color: #ecfdf5 !important; color: #10b981 !important; }
 </style>
 
@@ -155,7 +142,7 @@
                         <tr>
                             <th>Document Title</th>
                             <th>Sender</th>
-                            <th>Date Received</th>
+                            <th>Date Sent</th>
                             <th>Status</th>
                             <th class="text-center">Action</th>
                         </tr>
@@ -173,17 +160,21 @@
                             <td data-order="{{ doc.uploaded_at|date:'YmdHis' }}">
                                 <span class="small">{{ doc.uploaded_at|date:"M d, Y h:i A" }}</span>
                             </td>
-                            <td class="status-cell">
-                                {% if doc.is_read %}
-                                    <span class="badge badge-read p-2 px-3 rounded-pill">Read</span>
+                            <td class="status-cell" id="status-col-{{ doc.id }}">
+                                {% if doc.status == 'RECEIVED' %}
+                                    <span class="badge badge-received p-2 px-3 rounded-pill">RECEIVED</span>
+                                {% elif doc.status == 'APPROVED' %}
+                                    <span class="badge badge-approved p-2 px-3 rounded-pill">APPROVED</span>
+                                {% elif doc.status == 'REJECTED' %}
+                                    <span class="badge badge-rejected p-2 px-3 rounded-pill">REJECTED</span>
                                 {% else %}
-                                    <span class="badge badge-unread p-2 px-3 rounded-pill">Unread</span>
+                                    <span class="badge badge-unread p-2 px-3 rounded-pill">PENDING</span>
                                 {% endif %}
                             </td>
                             <td>
                                 <div class="d-flex justify-content-center gap-2">
-                                    <button class="btn-action btn-view" 
-                                            onclick="viewAndRefresh(this, '{{ doc.id }}', '{{ doc.title|escapejs }}', '{{ doc.file.url }}')"
+                                    <button class="btn-action btn-view" id="view-btn-{{ doc.id }}"
+                                            onclick="viewAndMarkReceived(this, '{{ doc.id }}', '{{ doc.title|escapejs }}', '{{ doc.file.url }}', '{{ doc.status }}')"
                                             data-bs-toggle="tooltip" title="View">
                                         <i class="fa fa-eye"></i>
                                     </button>
@@ -206,9 +197,11 @@
     <div class="filter-container">
         <span class="small fw-bold text-muted">SHOW:</span>
         <select id="statusFilter" class="custom-filter-select">
-            <option value="">All Documents</option>
-            <option value="Read">Read Only</option>
-            <option value="Unread">Unread Only</option>
+            <option value="">All Status</option>
+            <option value="RECEIVED">Received</option>
+            <option value="PENDING">Pending</option>
+            <option value="APPROVED">Approved</option>
+            <option value="REJECTED">Rejected</option>
         </select>
     </div>
 </div>
@@ -216,27 +209,51 @@
 
 {% block extra_js %}
 <script>
-    function viewAndRefresh(element, id, title, url) {
+    /**
+     * Pinagsamang View at AJAX Status Update
+     */
+    function viewAndMarkReceived(element, id, title, url, currentStatus) {
+        // 1. Tawagin ang Preview Modal mula sa base.html
         if (typeof viewDocument === "function") {
-            viewDocument(element, id, title, url);
+            viewDocument(element, id, title, url, currentStatus);
         } else {
             window.open(url, '_blank');
         }
         
-        let row = $(element).closest('tr');
-        let statusCell = row.find('.status-cell');
-        statusCell.html('<span class="badge badge-read p-2 px-3 rounded-pill">Read</span>');
-        
-        if ($.fn.DataTable.isDataTable('#receivedDataTable')) {
-            let table = $('#receivedDataTable').DataTable();
-            table.cell(statusCell).invalidate().draw(false);
+        // 2. AJAX para i-update ang status sa database (kung hindi pa received/approved/rejected)
+        if (currentStatus !== 'RECEIVED' && currentStatus !== 'APPROVED' && currentStatus !== 'REJECTED') {
+            $.ajax({
+                url: "/api/documents/receive/" + id + "/",
+                type: "POST",
+                headers: { "X-CSRFToken": "{{ csrf_token }}" },
+                success: function(response) {
+                    // Update UI: Palitan ang badge sa table
+                    let row = $(element).closest('tr');
+                    let statusCell = row.find('.status-cell');
+                    let newBadge = '<span class="badge badge-received p-2 px-3 rounded-pill">RECEIVED</span>';
+                    
+                    statusCell.html(newBadge);
+                    
+                    // I-update ang DataTable internal data para sa filtering/sorting
+                    if ($.fn.DataTable.isDataTable('#receivedDataTable')) {
+                        let table = $('#receivedDataTable').DataTable();
+                        table.cell(statusCell).invalidate().draw(false);
+                    }
+
+                    // I-update ang onclick para 'RECEIVED' na ang status sa susunod
+                    $(element).attr('onclick', `viewAndMarkReceived(this, '${id}', '${title}', '${url}', 'RECEIVED')`);
+                },
+                error: function() {
+                    console.error("Could not update status to RECEIVED");
+                }
+            });
         }
     }
 
     $(document).ready(function() {
         if ($.fn.DataTable) {
             let table = $('#receivedDataTable').DataTable({
-                "pageLength": 8,  // <--- ITO ANG MAGPAPALABAS NG PAGE 2 PAG LAGPAS 10
+                "pageLength": 8,
                 "order": [[ 2, "desc" ]],
                 "responsive": true,
                 "autoWidth": false,
@@ -245,24 +262,29 @@
                     "search": "",
                     "searchPlaceholder": "Search by title or sender...",
                     "paginate": {
-                        "previous": "Previous",
-                        "next": "Next"
+                        "previous": '<i class="fas fa-chevron-left"></i>',
+                        "next": '<i class="fas fa-chevron-right"></i>'
                     }
                 }
             });
 
+            // Inject Custom Filter
             $(".custom-filter-placeholder").html($("#filterWrapper").html());
 
+            // Initialize Tooltips
             var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
             tooltipTriggerList.map(function (el) {
                 return new bootstrap.Tooltip(el)
             });
 
+            // Custom Status Filter Logic
             $(document).on('change', '#statusFilter', function() {
                 let val = $(this).val();
-                table.column(3).search(val ? '^' + val + '$' : '', true, false).draw();
+                // Column 3 is the Status column
+                table.column(3).search(val).draw();
             });
 
+            // Adjust table columns on sidebar toggle or resize
             $(window).on('resize', function () {
                 table.columns.adjust();
             });

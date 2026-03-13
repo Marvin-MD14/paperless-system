@@ -56,15 +56,17 @@ def get_notifications_api(request):
 @login_required
 @require_POST
 def mark_as_read_api(request, ntf_id):
-    """
-    API endpoint para i-update ang is_read status sa database.
-    Sumusuporta sa inbox docs at status updates.
-    """
     document = get_object_or_404(Document, Q(id=ntf_id) & (Q(recipient=request.user) | Q(uploaded_by=request.user)))
+    
+    # ALISIN O I-COMMENT ITO:
+    # if document.recipient == request.user and document.status in ['PENDING', 'FOR_REVIEW']:
+    #     document.status = 'RECEIVED'
+        
     if not document.is_read:
         document.is_read = True
-        document.save()
-    return JsonResponse({'status': 'success'})
+        document.save() # Siguraduhing naka-save
+        
+    return JsonResponse({'status': 'success', 'new_status': document.status})
 
 # ==========================================
 # 2. DASHBOARD LOGIC
@@ -350,3 +352,44 @@ def view_sent_documents(request):
     }
     # ALISIN ANG "documents/" DITO:
     return render(request, 'sent_documents.html', context)
+
+@login_required
+@require_POST
+def receive_document_api(request, doc_id):
+    """
+    API endpoint para i-mark ang document as RECEIVED.
+    Ito ay indicator na nakita na ng recipient ang file pero hindi pa Final Decision.
+    """
+    document = get_object_or_404(Document, id=doc_id, recipient=request.user)
+    
+    # 1. Update Status to RECEIVED
+    # Siguraduhin na 'RECEIVED' ay valid choice sa models.py mo
+    document.status = 'RECEIVED'
+    document.is_read = True # Matic na read na rin ito
+    document.save()
+
+    # 2. In-App Notification para sa uploader
+    Notification.objects.create(
+        user=document.uploaded_by,
+        sender=request.user,
+        document=document,
+        message=f"RECEIVED: '{document.title}' is now being reviewed by {request.user.username}.",
+        notification_type='INFO' # Or any type you use for status updates
+    )
+
+    # 3. (Optional) Gmail Notification
+    uploader = document.uploaded_by
+    if uploader.email:
+        try:
+            subject = f"📥 Document Received: {document.title}"
+            body = (
+                f"Hi {uploader.username},\n\n"
+                f"Your document '{document.title}' has been RECEIVED by {request.user.username}.\n"
+                f"Status: Under Review.\n\n"
+                f"ERDMS System"
+            )
+            send_mail(subject, body, settings.DEFAULT_FROM_EMAIL, [uploader.email], fail_silently=True)
+        except Exception as e:
+            print(f"Gmail Error: {e}")
+
+    return JsonResponse({"status": "success", "message": "Document marked as received."})

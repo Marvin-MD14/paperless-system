@@ -241,30 +241,48 @@
                             
                             <div id="ntf-items-container"> 
                                 {% for ntf in unread_notifications|slice:":5" %}
-                                <div class="list-group-item list-group-item-action border-0 py-2 ntf-clickable {% if ntf.is_read %}is-read{% endif %}" 
-                                     id="ntf-row-{{ ntf.id }}"
-                                     onclick="viewDocument(this, '{{ ntf.id }}', '{{ ntf.title }}', '{{ ntf.file.url }}')">
-                                    <div class="media">
-                                        <div class="align-self-start mr-3">
-                                            <em class="fas fa-envelope fa-2x text-warning"></em>
-                                        </div>
-                                        <div class="media-body pr-3">
-                                            <p class="m-0 font-weight-bold" style="font-size: 13px;">New Document</p>
-                                            <p class="m-0 text-muted" style="font-size: 12px;">
-                                                <strong>{{ ntf.uploaded_by.username }}</strong> sent you "{{ ntf.title|truncatechars:20 }}"
-                                            </p>
-                                            <small class="text-muted" style="font-size: 10px;">{{ ntf.uploaded_at|timesince }} ago</small>
-                                        </div>
-                                        {% if not ntf.is_read %}
-                                        <div class="unread-dot"></div>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                                {% empty %}
-                                <div class="list-group-item text-center border-0 py-4" id="ntf-empty">
-                                    <p class="m-0 text-muted text-sm">No new documents</p>
-                                </div>
-                                {% endfor %}
+<div class="list-group-item list-group-item-action border-0 py-2 ntf-clickable {% if ntf.is_read %}is-read{% endif %}" 
+     id="ntf-row-{{ ntf.id }}"
+     onclick="viewDocument(this, '{{ ntf.id }}', '{{ ntf.title }}', '{{ ntf.file.url }}', '{{ ntf.status }}')">
+    <div class="media">
+        <div class="align-self-start mr-3">
+            {% if ntf.status == 'RECEIVED' %}
+                <em class="fas fa-check-circle fa-2x text-info"></em>
+            {% elif ntf.is_read %}
+                <em class="fas fa-envelope-open fa-2x text-muted"></em>
+            {% else %}
+                <em class="fas fa-envelope fa-2x text-warning"></em>
+            {% endif %}
+        </div>
+        <div class="media-body pr-3">
+            <p class="m-0 font-weight-bold" style="font-size: 13px;">
+                {% if ntf.status == 'RECEIVED' %}
+                    <span class="text-info">Document Received</span>
+                {% else %}
+                    New Document
+                {% endif %}
+            </p>
+            <p class="m-0 text-muted" style="font-size: 12px;">
+                <strong>{{ ntf.uploaded_by.username }}</strong> 
+                {% if ntf.status == 'RECEIVED' %}
+                    confirmed receipt of "{{ ntf.title|truncatechars:20 }}"
+                {% else %}
+                    sent you "{{ ntf.title|truncatechars:20 }}"
+                {% endif %}
+            </p>
+            <small class="text-muted" style="font-size: 10px;">{{ ntf.uploaded_at|timesince }} ago</small>
+        </div>
+        
+        {% if not ntf.is_read %}
+        <div class="unread-dot"></div>
+        {% endif %}
+    </div>
+</div>
+{% empty %}
+<div class="list-group-item text-center border-0 py-4" id="ntf-empty">
+    <p class="m-0 text-muted text-sm">No new documents</p>
+</div>
+{% endfor %}
                             </div>
 
                             <a href="{% url 'received_documents' %}" class="list-group-item list-group-item-action text-center border-top p-2 bg-light">
@@ -286,17 +304,22 @@
             </nav>
         </header>
 
-        <aside class="aside-container">
-            {% block sidebar %}
-                {% if user.is_superuser %}
-                    {% include 'includes/admin_sidebar.html' %}
-                {% elif user.userprofile.role == 'HEAD' %}
-                    {% include 'includes/head_sidebar.html' %}
-                {% else %}
-                    {% include 'includes/employee_sidebar.html' %}
-                {% endif %}
-            {% endblock sidebar %}
-        </aside>
+       <aside class="aside-container">
+    {% block sidebar %}
+        {% if user.is_superuser %}
+            {% include 'includes/admin_sidebar.html' %}
+        {% elif user.userprofile %}
+            {# Ginagamitan ng filter para malinis ang comparison #}
+            {% if user.userprofile.role|upper == 'HEAD' %}
+                {% include 'includes/head_sidebar.html' %}
+            {% else %}
+                {% include 'includes/employee_sidebar.html' %}
+            {% endif %}
+        {% else %}
+            {% include 'includes/employee_sidebar.html' %}
+        {% endif %}
+    {% endblock sidebar %}
+</aside>
 
         <section class="section-container">
             <div class="content-wrapper">
@@ -325,22 +348,24 @@
             </div>
 
             <div class="modal-footer d-flex justify-content-between">
-                <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">
-                    Close
-                </button>
+    <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">
+        Close
+    </button>
 
-                <div>
-                    <button type="button" class="btn btn-danger mr-2"
-                            onclick="rejectDocument(currentDocId)">
-                        Reject
-                    </button>
+    <div>
+    <button type="button" class="btn btn-primary mr-2" id="btn-receive-doc" onclick="receiveDocument(currentDocId)">
+        <i class="fas fa-check-double mr-1"></i> Receive
+    </button>
 
-                    <button type="button" class="btn btn-success"
-                            onclick="approveDocument(currentDocId)">
-                        Approve
-                    </button>
-                </div>
-            </div>
+    <button type="button" class="btn btn-danger mr-2" id="btn-reject-doc" onclick="rejectDocument(currentDocId)">
+        Reject
+    </button>
+
+    <button type="button" class="btn btn-success" id="btn-approve-doc" onclick="approveDocument(currentDocId)">
+        Approve
+    </button>
+</div>
+</div>
         </div>
     </div>
 </div>
@@ -371,49 +396,70 @@ let currentDocId = null;
 // =======================
 // VIEW DOCUMENT FUNCTION
 // =======================
-function viewDocument(element, id, title, fileUrl) {
+function viewDocument(element, id, title, fileUrl, currentStatus) {
     currentDocId = id;
 
-    // UI updates
-    $(element).find('.unread-dot').fadeOut();
-    $(element).addClass('is-read');
-
+    // 1. I-setup ang Modal Title
     $('#modalDocTitle').text(title);
-    $('#ntfViewModal').modal('show');
 
-    $('#doc-preview-frame').hide();
-    $('#preview-loader').show();
+    // 2. Role Check: Kunin ang role mula sa Django template (HEAD or STAFF)
+    const userRole = "{{ request.user.userprofile.role }}"; 
 
-    let previewUrl = fileUrl;
+    // 3. Button Control Logic
+    if (currentStatus === 'APPROVED' || currentStatus === 'REJECTED') {
+        // Kapag tapos na ang proseso (Approved/Rejected), disable lahat ng action buttons
+        $('#btn-receive-doc, #btn-approve-doc, #btn-reject-doc')
+            .prop('disabled', true)
+            .addClass('opacity-50');
+        
+        $('#btn-receive-doc').html('<i class="fas fa-check-double mr-1"></i> Processed');
+    } 
+    else if (currentStatus === 'RECEIVED') {
+        // Kung na-receive na, disable ang 'Receive' button pero ENABLE ang Approve/Reject para sa HEAD
+        $('#btn-receive-doc')
+            .prop('disabled', true)
+            .addClass('opacity-50')
+            .html('<i class="fas fa-check-double mr-1"></i> Received');
 
-    // Check if file is Office Doc for Google Viewer
-    if (fileUrl.toLowerCase().match(/\.(docx|xlsx|pptx)$/)) {
-        previewUrl = "https://docs.google.com/gview?url=" 
-            + window.location.origin + fileUrl + "&embedded=true";
+        if (userRole === 'HEAD') {
+            $('#btn-approve-doc, #btn-reject-doc').prop('disabled', false).removeClass('opacity-50').show();
+        } else {
+            $('#btn-approve-doc, #btn-reject-doc').hide(); // Itago sa staff
+        }
+    } 
+    else {
+        // Status: PENDING / NEW
+        // Enable ang Receive button, pero disable muna ang Approve/Reject hangga't hindi naki-click ang Receive
+        $('#btn-receive-doc')
+            .prop('disabled', false)
+            .removeClass('opacity-50')
+            .html('<i class="fas fa-check-double mr-1"></i> Receive');
+
+        $('#btn-approve-doc, #btn-reject-doc')
+            .prop('disabled', true)
+            .addClass('opacity-50');
+            
+        // Siguraduhing nakatago ang Admin buttons kung hindi naman HEAD
+        if (userRole !== 'HEAD') {
+            $('#btn-approve-doc, #btn-reject-doc').hide();
+        } else {
+            $('#btn-approve-doc, #btn-reject-doc').show();
+        }
     }
 
-    $('#doc-preview-frame')
-        .attr('src', previewUrl)
-        .off('load')
-        .on('load', function () {
-            $('#preview-loader').hide();
-            $(this).show();
-        });
-
-    // MARK AS READ via AJAX
-    $.ajax({
-        url: "/api/notifications/mark-read/" + id + "/",
-        type: "POST",
-        headers: { "X-CSRFToken": "{{ csrf_token }}" },
-        success: function () {
-            console.log("Marked as read.");
-        },
-        error: function (xhr) {
-            console.log("Read error: " + xhr.status);
-        }
+    // 4. Preview Loader Logic
+    $('#doc-preview-frame').hide();
+    $('#preview-loader').show();
+    
+    // I-set ang source ng iframe
+    $('#doc-preview-frame').attr('src', fileUrl).off('load').on('load', function () {
+        $('#preview-loader').hide();
+        $(this).show();
     });
-}
 
+    // 5. Buksan ang Modal
+    $('#ntfViewModal').modal('show');
+}
 // =======================
 // APPROVE FUNCTION (WITH REMARKS)
 // =======================
@@ -536,6 +582,41 @@ $(document).ready(function () {
     });
 
 });
+// =======================
+// RECEIVE FUNCTION (Status: RECEIVED)
+// =======================
+function receiveDocument(id) {
+    if (!id) return;
+
+    $.ajax({
+        url: "/api/documents/receive/" + id + "/",
+        type: "POST",
+        headers: { "X-CSRFToken": "{{ csrf_token }}" },
+        success: function (response) {
+            Swal.fire("Success", "Document marked as Received", "success");
+
+            // 1. I-disable ang button sa Modal para hindi na mapindot ulit
+            $('#btn-receive-doc').prop('disabled', true)
+                                .addClass('opacity-50')
+                                .html('<i class="fas fa-check-double mr-1"></i> Document Processed');
+
+            // 2. I-UPDATE ANG TABLE STATUS (Ito ang importante)
+            // Hahanapin nito ang <td> na may id="status-col-[ID]"
+            let statusBadge = `<span class="badge" style="background-color: #e7f3ff; color: #0066cc; border: 1px solid #0066cc; border-radius: 20px; padding: 5px 15px;">RECEIVED</span>`;
+            
+            $(`#status-col-${id}`).fadeOut(300, function() {
+                $(this).html(statusBadge).fadeIn(300);
+            });
+
+            // 3. I-update ang notification row sa dropdown (kung nandoon pa)
+            $(`#ntf-row-${id}`).addClass('is-read');
+            $(`#ntf-row-${id} .unread-dot`).remove();
+        },
+        error: function () {
+            Swal.fire("Error", "Could not update status. Check if API exists.", "error");
+        }
+    });
+}
 </script>
 </body> 
 </html>

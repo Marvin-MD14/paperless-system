@@ -47,8 +47,6 @@ urlpatterns = [
     # ==========================================
     # 3. DASHBOARDS
     # ==========================================
-    # Siguraduhin na ang 'user_dashboard' view ay nagpapasa ng context 
-    # (word_count, recent_logs, etc.) para gumana ang charts.
     path('dashboard/', user_dashboard, name='user_dashboard'),
     path('admin_dashboard/', admin_dashboard, name='admin_dashboard'),
     path('headdashboard/', head_dashboard, name='head_dashboard'),
@@ -88,6 +86,10 @@ urlpatterns = [
     path('delete-user/<int:user_id>/', delete_user, name='delete_user'),
     path('edit-user/<int:user_id>/', edit_user, name='edit_user'),
     path('user-details/<int:user_id>/', user_details, name='user_details'),
+    path('access-requests/', access_requests, name='access_requests'),
+    path('approve-user/<int:profile_id>/', approve_user, name='approve_user'),
+    path('reject-user/<int:profile_id>/', reject_user, name='reject_user'),
+    path('bulk-approve-users/', bulk_approve_users, name='bulk_approve_users'),
 
     # ==========================================
     # 6. DOCUMENT MANAGEMENT LOGIC
@@ -107,34 +109,27 @@ urlpatterns = [
     # Tracking status ng pinadalang docs
     path('sent-status/', documentview.sent_documents_status, name='sent_status'),
     
-    # Received Documents List (View All link from Dashboard)
+    # Received Documents List
+    # Ginagamit ang name na 'received_documents' para mag-match sa base.html at sidebar
     path('received/', documentview.received_docs_view, name='received_documents'),
+    
     path('mark-as-read/<int:doc_id>/', documentview.mark_as_read, name='mark_as_read'),
+    path('my-uploads/', documentview.my_uploads_view, name='my_uploads'),
+    path('sent-documents/', documentview.view_sent_documents, name='view_sent_documents'),
 
-    path('access-requests/', access_requests, name='access_requests'),
-    path('approve-user/<int:profile_id>/', approve_user, name='approve_user'),
-    path('reject-user/<int:profile_id>/', reject_user, name='reject_user'),
-    path('bulk-approve-users/', bulk_approve_users, name='bulk_approve_users'),
-
-    # path('upload-document/', user_dashboard, name='upload_document'), 
-    # path('document-list/', user_dashboard, name='document_list'),
-
-   # Notification API
+    # ==========================================
+    # 7. NOTIFICATION & ACTION APIs
+    # ==========================================
     path('api/notifications/', documentview.get_notifications_api, name='notifications_api'),
     path('api/notifications/mark-read/<int:ntf_id>/', documentview.mark_as_read_api, name='mark_as_read_api'),
 
-    # Approved / Reject
-   path("api/documents/approve/<int:doc_id>/", documentview.approve_document_api, name="approve_document_api"),
-   path("api/documents/reject/<int:doc_id>/", documentview.reject_document_api, name="reject_document_api"),
-
-   path('my-uploads/', documentview.my_uploads_view, name='my_uploads'),
-   path('sent-documents/', documentview.view_sent_documents, name='view_sent_documents'),
-
+    # Document Review Actions (Head/Recipient)
+    path("api/documents/approve/<int:doc_id>/", documentview.approve_document_api, name="approve_document_api"),
+    path("api/documents/reject/<int:doc_id>/", documentview.reject_document_api, name="reject_document_api"),
+    path("api/documents/receive/<int:doc_id>/", documentview.receive_document_api, name="receive_document_api"),
 
 ]
 
 # Media files serving (Importante para ma-view/download ang uploaded files)
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-    # Access Requests
-    

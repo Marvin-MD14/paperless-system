@@ -12,83 +12,81 @@
     
     /* TABLE STYLING */
     .card-custom { border-radius: 15px; border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.05); background: white; padding: 1.5rem; }
-    #myUploadsTable { border-collapse: separate !important; border-spacing: 0 8px !important; }
-    #myUploadsTable thead th { background: transparent; color: #94a3b8; text-transform: uppercase; font-size: .75rem; border: none; padding: 10px; }
+    
+    #myUploadsTable { border-collapse: separate !important; border-spacing: 0 12px !important; width: 100% !important; }
+    #myUploadsTable thead th { 
+        background: transparent; 
+        color: #94a3b8; 
+        text-transform: uppercase; 
+        font-size: .75rem; 
+        border: none; 
+        padding: 0 15px; 
+        font-weight: 600;
+    }
+    
     #myUploadsTable tbody tr { background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,.02); transition: all 0.2s; }
     #myUploadsTable tbody tr:hover { background: #fdfdfd; transform: translateY(-1px); }
-    #myUploadsTable tbody td { padding: 15px; border: none; vertical-align: middle; }
+    
+    #myUploadsTable tbody td { 
+        padding: 12px 15px; 
+        border: none; 
+        vertical-align: middle !important; 
+    }
 
-    /* STATUS BADGES */
+    /* STATUS STYLING */
     .status-approved { background: rgba(16, 185, 129, 0.1) !important; color: #10b981 !important; border: 1px solid rgba(16, 185, 129, 0.2); }
     .status-rejected { background: rgba(239, 68, 68, 0.1) !important; color: #ef4444 !important; border: 1px solid rgba(239, 68, 68, 0.2); }
     .status-pending { background: rgba(59, 113, 202, 0.1) !important; color: #3b71ca !important; border: 1px solid rgba(59, 113, 202, 0.2); }
+    .status-received { background: rgba(100, 116, 139, 0.1) !important; color: #64748b !important; border: 1px solid rgba(100, 116, 139, 0.2); }
+    .status-clickable { cursor: pointer; transition: 0.2s; }
+    .status-clickable:hover { filter: brightness(0.9); transform: scale(1.05); }
 
-    /* Interactive Status Styling */
-    .status-clickable { cursor: pointer; transition: all 0.2s ease; }
-    .status-clickable:hover { filter: brightness(0.9); transform: scale(1.02); }
+    /* NEW TIME COLUMN STYLING */
+    .time-pill { 
+        font-size: 0.72rem; 
+        color: #64748b; 
+        font-weight: 600; 
+        background: #f1f5f9; 
+        padding: 4px 10px; 
+        border-radius: 6px; 
+        display: inline-flex; 
+        align-items: center;
+    }
 
     /* ACTION BUTTONS */
-    .btn-action { width: 35px; height: 35px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; border: none; cursor: pointer; transition: 0.2s; }
+    .btn-action { width: 35px; height: 35px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; border: none; cursor: pointer; transition: 0.2s; text-decoration: none; }
     .btn-view { background: #eef2ff; color: #4361ee; }
     .btn-download { background: #ecfdf5; color: #10b981; }
     .btn-delete { background: #fef2f2; color: #ef4444; }
-    .btn-action:hover { transform: scale(1.05); opacity: 0.9; }
+    .btn-action:hover { transform: scale(1.1); opacity: 0.9; }
 
-    /* SEARCH & FILTER UI */
-    .dataTables_wrapper .dataTables_filter { 
-        float: none !important; 
-        text-align: left !important;
-        display: flex;
-        align-items: center;
-        justify-content: space-between; 
-        width: 100%;
-        margin-bottom: 20px;
-    }
+    /* IMPROVED FILTER & SEARCH UI */
+    .dataTables_wrapper .dataTables_filter { display: flex; align-items: center; justify-content: space-between; width: 100%; margin-bottom: 25px; gap: 15px; }
     
     .dataTables_wrapper .dataTables_filter input {
         border: 1px solid #e2e8f0 !important;
-        border-radius: 10px !important;
-        padding: 8px 15px 8px 35px !important;
-        width: 280px !important;
-        height: 40px !important;
-        background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%2394a3b8' viewBox='0 0 16 16'%3E%3Cpath d='M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z'/%3E%3C/svg%3E") no-repeat 12px center !important;
-        outline: none !important;
-        transition: all 0.3s ease;
-        margin-left: 0 !important;
+        border-radius: 12px !important;
+        padding: 10px 15px 10px 40px !important;
+        width: 300px !important;
+        height: 45px !important;
+        background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%2394a3b8' viewBox='0 0 16 16'%3E%3Cpath d='M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z'/%3E%3C/svg%3E") no-repeat 15px center !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
     }
-    
+
     #statusFilter {
-        height: 40px !important;
-        border-radius: 10px !important;
+        height: 45px !important;
+        border-radius: 12px !important;
         border: 1px solid #e2e8f0 !important;
         padding: 0 15px !important;
-        width: 180px;
+        width: 200px !important;
+        font-weight: 600;
+        color: #475569;
         background-color: #fff;
+        cursor: pointer;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        transition: all 0.2s;
     }
-
-    /* MODAL & PREVIEW */
-    .modal-header-custom { background-color: #3b71ca; color: white; padding: 12px 20px; }
-    #doc-preview-frame { width: 100%; height: 70vh; min-height: 450px; border: none; border-radius: 4px; }
-    .modal-backdrop { display: none !important; } 
-    .modal { background: rgba(0,0,0,0.5); overflow-y: auto !important; }
-
-    /* PROFESSIONAL CALLOUTS */
-    .remarks-callout {
-        border-left: 5px solid;
-        padding: 12px 15px;
-        margin-bottom: 10px;
-        border-radius: 6px;
-        display: flex;
-        align-items: flex-start;
-    }
-    .remarks-icon { font-size: 1.1rem; margin-right: 12px; margin-top: 2px; }
-    .remarks-title { font-weight: 700; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
-    .remarks-body { font-size: 0.9rem; line-height: 1.4; color: #334155; }
-    
-    .theme-sender { background-color: #f8fafc; border-color: #94a3b8; color: #475569; }
-    .theme-rejected { background-color: #fef2f2; border-color: #ef4444; color: #991b1b; }
-    .theme-approved { background-color: #f0fdf4; border-color: #10b981; color: #065f46; }
-    .theme-default { background-color: #eff6ff; border-color: #3b82f6; color: #1e40af; }
+    #statusFilter:hover { border-color: #cbd5e1; background-color: #f8fafc; }
 </style>
 
 <div class="container-fluid">
@@ -101,6 +99,7 @@
                 <option value="Approved">Approved</option>
                 <option value="Rejected">Rejected</option>
                 <option value="Pending">Pending</option>
+                <option value="Received">Received</option>
                 <option value="For Review">For Review</option>
             </select>
         </div>
@@ -109,11 +108,12 @@
             <table class="table w-100" id="myUploadsTable">
                 <thead>
                     <tr>
-                        <th>Document Name</th>
-                        <th>Category</th>
-                        <th>Date Uploaded</th>
-                        <th>Status</th>
-                        <th class="text-center">Actions</th>
+                        <th style="width: 30%;">Document Name</th>
+                        <th style="width: 12%;">Category</th>
+                        <th style="width: 15%;">Date Uploaded</th>
+                        <th style="width: 13%;">Status</th>
+                        <th style="width: 15%;">Time Updated</th>
+                        <th style="width: 15%;" class="text-center">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -122,39 +122,44 @@
                         <td>
                             <div class="d-flex align-items-center">
                                 <i class="fas {% if doc.category == 'word' %}fa-file-word text-primary{% elif doc.category == 'excel' %}fa-file-excel text-success{% elif doc.category == 'ppt' %}fa-file-powerpoint text-warning{% else %}fa-file-pdf text-danger{% endif %} fs-4 me-3"></i>
-                                <div>
-                                    <div class="fw-bold small text-dark">{{ doc.title }}</div>
-                                    <div class="text-muted" style="font-size:.7rem">{{ doc.file.name|truncatechars:35 }}</div>
+                                <div style="overflow: hidden;">
+                                    <div class="fw-bold small text-dark text-truncate" style="max-width: 220px;">{{ doc.title }}</div>
+                                    <div class="text-muted" style="font-size:.65rem">{{ doc.file.name|truncatechars:25 }}</div>
                                 </div>
                             </div>
                         </td>
-                        <td><span class="badge bg-light text-dark border px-3 py-2 rounded-pill">{{ doc.category|upper }}</span></td>
-                        <td class="small text-muted">{{ doc.uploaded_at|date:"M d, Y" }}</td>
+                        <td><span class="badge bg-light text-dark border px-3 py-2 rounded-pill small">{{ doc.category|upper }}</span></td>
+                        <td class="small text-muted fw-500">{{ doc.uploaded_at|date:"M d, Y" }}</td>
                         <td>
                             {% with s=doc.status|upper %}
                             <span class="badge rounded-pill px-3 py-2 
                                 {% if s == 'APPROVED' %}status-approved status-clickable
                                 {% elif s == 'REJECTED' %}status-rejected status-clickable
+                                {% elif s == 'RECEIVED' %}status-received
                                 {% else %}status-pending{% endif %}"
                                 {% if s == 'APPROVED' or s == 'REJECTED' %}
-                                onclick="viewDoc('{{ doc.id }}', '{{ doc.title|escapejs }}', '{{ doc.file.url }}', '{{ doc.status|escapejs }}', '{{ doc.remarks|escapejs }}', '{{ doc.description|escapejs }}')"
-                                title="Click to view remarks"
+                                onclick="viewDoc('{{ doc.id }}', '{{ doc.title|escapejs }}', '{{ doc.file.url }}', '{{ doc.status|escapejs }}', '{{ doc.remarks|escapejs }}', '{{ doc.description|escapejs }}', '{{ doc.updated_at|date:'M d, Y | h:i A' }}')"
+                                title="Click to view feedback"
                                 {% endif %}>
                                 {{ doc.status }}
                                 {% if s == 'APPROVED' or s == 'REJECTED' %}
-                                <i class="fas fa-comment-alt ms-1" style="font-size: 0.65rem;"></i>
+                                <i class="fas fa-comment-alt ms-1" style="font-size: 0.6rem;"></i>
                                 {% endif %}
                             </span>
                             {% endwith %}
                         </td>
                         <td>
+                            <div class="time-pill">
+                                <i class="far fa-clock me-2 text-primary"></i>
+                                {{ doc.updated_at|date:"h:i A" }}
+                            </div>
+                        </td>
+                        <td>
                             <div class="d-flex justify-content-center gap-2">
-                                <!-- <button class="btn-action btn-view" 
-                                    onclick="viewDoc('{{ doc.id }}', '{{ doc.title|escapejs }}', '{{ doc.file.url }}', '{{ doc.status|escapejs }}', '{{ doc.remarks|escapejs }}', '{{ doc.description|escapejs }}')" 
-                                    title="View Preview">
+                                <button class="btn-action btn-view" onclick="viewDoc('{{ doc.id }}', '{{ doc.title|escapejs }}', '{{ doc.file.url }}', '{{ doc.status|escapejs }}', '{{ doc.remarks|escapejs }}', '{{ doc.description|escapejs }}', '{{ doc.updated_at|date:'M d, Y | h:i A' }}')" title="View Details">
                                     <i class="fa fa-eye"></i>
-                                </button> -->
-                                <a href="{{ doc.file.url }}" class="btn-action btn-download" download title="Download File">
+                                </button>
+                                <a href="{{ doc.file.url }}" class="btn-action btn-download" download title="Download">
                                     <i class="fa fa-download"></i>
                                 </a>
                                 <button class="btn-action btn-delete" onclick="deleteDoc('{{ doc.id }}','{{ doc.title|escapejs }}')" title="Delete">
@@ -170,51 +175,11 @@
     </div>
 </div>
 
-<div class="modal fade" id="previewModal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
-        <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header modal-header-custom">
-                <h5 class="modal-title fw-bold" id="modalDocTitle">Document Details</h5>
-                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="opacity: 1; outline: none; border: none; background: none; font-size: 1.5rem;">&times;</button>
-            </div>
-            <div class="modal-body p-3 bg-light">
-                
-                <div id="sender-comment-container" style="display: none;">
-                    <div class="remarks-callout theme-sender">
-                        <div class="remarks-icon text-secondary"><i class="fas fa-comment-dots"></i></div>
-                        <div>
-                            <div class="remarks-title">My Comment / Description</div>
-                            <div id="sender-comment-text" class="remarks-body"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="remarks-container" style="display: none;">
-                    <div id="remarks-box" class="remarks-callout">
-                        <div class="remarks-icon"><i id="remarks-icon-fa" class="fas"></i></div>
-                        <div>
-                            <div id="remarks-label" class="remarks-title"></div>
-                            <div id="remarks-text" class="remarks-body"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="loader" class="text-center py-5">
-                    <div class="spinner-border text-primary" role="status"></div>
-                    <p class="mt-2 text-muted small">Preparing document preview...</p>
-                </div>
-                <iframe id="doc-preview-frame" src="" frameborder="0" style="display:none;"></iframe>
-            </div>
-        </div>
-    </div>
-</div>
-
 {% endblock content %}
 
 {% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-    var globalDocId = null;
-
     $(document).ready(function() {
         var table = $('#myUploadsTable').DataTable({
             "pageLength": 10,
@@ -228,90 +193,56 @@
             }
         });
 
+        // Paglipat ng filter sa loob ng search container
         var filterHtml = $('#statusFilter').detach();
         $('.dataTables_filter').append(filterHtml);
 
         $('#statusFilter').on('change', function () {
-            var value = $(this).val();
-            table.column(3).search(value).draw();
-        });
-
-        $('#previewModal').on('hidden.bs.modal', function () {
-            $('#doc-preview-frame').attr('src', '');
-            $('#remarks-container, #sender-comment-container').hide();
-            $('.modal-backdrop').remove();
-            $('body').removeClass('modal-open').css('padding-right', '0');
+            table.column(3).search($(this).val()).draw();
         });
     });
 
-    function viewDoc(id, title, url, status, remarks, description) {
-        globalDocId = id;
-        $('#modalDocTitle').text(title);
-
-        // 1. SHOW SENDER'S COMMENT
-        if (description && description !== "None" && description !== "" && description !== "undefined") {
-            $('#sender-comment-container').show();
-            $('#sender-comment-text').text(description);
-        } else {
-            $('#sender-comment-container').hide();
-        }
-
-        // 2. ADMIN REMARKS LOGIC
+    function viewDoc(id, title, url, status, remarks, description, processedDate) {
         const statusUpper = status.toUpperCase();
-        const $remarksContainer = $('#remarks-container');
-        const $remarksBox = $('#remarks-box');
-        const $remarksLabel = $('#remarks-label');
-        const $remarksText = $('#remarks-text');
-        const $remarksIcon = $('#remarks-icon-fa');
+        let themeColor = statusUpper === "APPROVED" ? "#10b981" : (statusUpper === "REJECTED" ? "#ef4444" : "#3b71ca");
+        let icon = statusUpper === "APPROVED" ? "fa-check-circle" : (statusUpper === "REJECTED" ? "fa-times-circle" : "fa-clock");
 
-        if (remarks && remarks !== "None" && remarks !== "" && remarks !== "undefined") {
-            $remarksContainer.show();
-            $remarksText.text(remarks);
-            
-            $remarksBox.removeClass('theme-approved theme-rejected theme-default');
-            $remarksIcon.removeClass('fa-check-circle fa-times-circle fa-info-circle');
-
-            if (statusUpper === 'REJECTED') {
-                $remarksBox.addClass('theme-rejected');
-                $remarksIcon.addClass('fa-times-circle');
-                $remarksLabel.text("Rejection Reason");
-            } else if (statusUpper === 'APPROVED') {
-                $remarksBox.addClass('theme-approved');
-                $remarksIcon.addClass('fa-check-circle');
-                $remarksLabel.text("Admin Feedback");
-            } else {
-                $remarksBox.addClass('theme-default');
-                $remarksIcon.addClass('fa-info-circle');
-                $remarksLabel.text("Status Note");
-            }
-        } else {
-            $remarksContainer.hide();
-        }
-
-        $('#previewModal').modal('show');
-        $('#doc-preview-frame').hide();
-        $('#loader').show();
-
-        let finalUrl = url;
-        if (url.toLowerCase().match(/\.(docx|xlsx|pptx)$/)) {
-            finalUrl = "https://docs.google.com/gview?url=" + window.location.origin + url + "&embedded=true";
-        }
-
-        $('#doc-preview-frame').attr('src', finalUrl).off('load').on('load', function() {
-            $('#loader').hide();
-            $(this).show();
+        Swal.fire({
+            html: `
+                <div style="text-align: center; font-family: 'Inter', sans-serif;">
+                    <div style="color: ${themeColor}; font-size: 4rem; margin-bottom: 15px;"><i class="fas ${icon}"></i></div>
+                    <h4 class="fw-bold mb-3">${title}</h4>
+                    <div style="background: #f8fafc; padding: 12px; border-radius: 10px; border-left: 4px solid ${themeColor}; text-align: left; margin-bottom: 20px;">
+                        <small class="text-muted text-uppercase fw-bold" style="font-size: 10px;">Status Update Time</small>
+                        <div class="fw-bold" style="color: #1e293b;">${processedDate}</div>
+                    </div>
+                    <div style="text-align: left; margin-bottom: 20px;">
+                        <label class="small fw-bold text-muted mb-2"><i class="fas fa-comment-dots me-1"></i> ADMIN FEEDBACK</label>
+                        <div style="background: white; border: 1px solid #e2e8f0; padding: 15px; border-radius: 10px; font-style: italic; color: #475569;">
+                            ${remarks ? `"${remarks}"` : 'No feedback provided yet.'}
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                         <a href="${url}" target="_blank" class="btn flex-grow-1" style="background: #0066cc; color: white; font-weight: 600; border-radius: 8px; padding: 10px;">VIEW FILE</a>
+                         <button onclick="Swal.close()" class="btn btn-light border fw-bold" style="border-radius: 8px;">CLOSE</button>
+                    </div>
+                </div>
+            `,
+            showConfirmButton: false,
+            width: '420px',
+            customClass: { popup: 'rounded-5' }
         });
     }
 
     function deleteDoc(id, title) {
         Swal.fire({
-            title: 'Delete "' + title + '"?',
-            text: "This action cannot be undone!",
+            title: 'Delete Document?',
+            text: `Are you sure you want to delete "${title}"?`,
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#ef4444',
             confirmButtonText: 'Yes, delete it',
-            cancelButtonText: 'Cancel'
+            customClass: { popup: 'rounded-4' }
         }).then((result) => {
             if (result.isConfirmed) {
                 window.location.href = "/delete-document/" + id + "/";

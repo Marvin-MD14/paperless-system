@@ -1,3 +1,4 @@
+# --- OFFICE CHOICES ---
 OFFICE_CHOICES = (
     ('GO', 'Governors Office'),
     ('IU', 'Governors Office - Information Unit'),
@@ -35,29 +36,35 @@ OFFICE_CHOICES = (
     ('SP-SUPPORT', 'Sangguniang Panlalawigan - Support Services'),
 )
 
+# --- STATUS CHOICES ---
+# Note: Dinagdag ang 'RECEIVED' para mag-sync sa documentviews.py mo
 STATUS_CHOICES = (
     ('PENDING', 'Pending'),
+    ('FOR_REVIEW', 'For Review'),
+    ('RECEIVED', 'Received'),
     ('APPROVED', 'Approved'),
     ('REJECTED', 'Rejected'),
-    ('FOR_REVIEW', 'For Review'),
     ('COMPLETED', 'Completed'),
     ('IN_PROGRESS', 'In Progress'),
     ('CANCELLED', 'Cancelled'),
 )
 
+# --- ROLE CHOICES ---
 ROLE_CHOICES = (
     ('HEAD', 'Office Head'),
     ('STAFF', 'Staff'),
     ('GOVERNOR', 'Governor'),
     ('EXECUTIVE', 'Executive'),
-    ('ADMIN', 'Administrator')
+    ('ADMIN', 'Administrator'),
 )
 
-OFFICE_DICT = dict(OFFICE_CHOICES)
-STATUS_DICT = dict(STATUS_CHOICES)
-ROLE_DICT = dict(ROLE_CHOICES)
-
+# --- REGISTRATION TYPES ---
 REGISTRATION_TYPES = (
     ('ADMIN', 'Created by Admin'),
     ('SELF', 'Self-Registered'),    
 )
+
+# --- DICTIONARY MAPPING ---
+OFFICE_DICT = dict(OFFICE_CHOICES)
+STATUS_DICT = dict(STATUS_CHOICES)
+ROLE_DICT = dict(ROLE_CHOICES)

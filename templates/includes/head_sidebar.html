@@ -4,12 +4,12 @@
    <nav class="sidebar" data-sidebar-anyclick-close="">
       <ul class="sidebar-nav">
          <li class="has-user-block">
-            <div class="collapse" id="user-block">
+            <div class="collapse show" id="user-block">
                <div class="item user-block">
                   <div class="user-block-picture">
                      <div class="user-block-status">
-                        {% if request.user.userprofile.profilepicture %}
-                        <img class="img-thumbnail rounded-circle" src="{{ request.user.userprofile.profilepicture.url }}" alt="Avatar" width="60" height="60">
+                        {% if request.user.userprofile.profile_picture %}
+                        <img class="img-thumbnail rounded-circle" src="{{ request.user.userprofile.profile_picture.url }}" alt="Avatar" width="60" height="60">
                         {% else %}
                         <img class="img-thumbnail rounded-circle" src="{% static 'img/user/02.jpg' %}" alt="Avatar" width="60" height="60">
                         {% endif %}
@@ -18,12 +18,11 @@
                   </div>
                   <div class="user-block-info">
                      <span class="user-block-name">Hello, {{ request.user.first_name|default:request.user.username }}</span>
-                     <span class="user-block-role">Department Head</span>
+                     <span class="user-block-role">{{ request.user.userprofile.get_role_display }}</span>
                   </div>
                </div>
             </div>
          </li>
-         
          <li class="nav-heading"><span>Main Navigation</span></li>
          
          <li class="{% if request.resolver_match.url_name == 'head_dashboard' %}active{% endif %}">
@@ -32,26 +31,26 @@
                <span>Dashboard</span>
             </a>
          </li>
-         <!-- END Dashboard Link -->
-         
-         <!-- You can add more head-specific menu items here later -->
-         <!-- Example:
-         <li>
-            <a href="#" title="My Staff">
-               <em class="icon-people"></em>
-               <span>My Staff</span>
+
+         <li class="{% if request.resolver_match.url_name == 'received_documents' %}active{% endif %}">
+            <a href="{% url 'received_documents' %}" title="Pending Documents">
+               <em class="icon-envelope-open"></em>
+               {% if unread_received_count > 0 %}
+               <div class="badge badge-danger float-right">{{ unread_received_count }}</div>
+               {% endif %}
+               <span>Inbox (For Review)</span>
             </a>
          </li>
-         <li>
-            <a href="#" title="Leave Requests">
-               <em class="icon-envelope-letter"></em>
-               <span>Leave Requests</span>
+
+         <li class="{% if request.resolver_match.url_name == 'all_documents' %}active{% endif %}">
+            <a href="{% url 'all_documents' %}" title="Document History">
+               <em class="icon-folder-alt"></em>
+               <span>Document History</span>
             </a>
          </li>
-         -->
          
-         <!-- Logout Link -->
          <li class="nav-heading"><span>Account</span></li>
+         
          <li>
             <a href="{% url 'logout' %}" title="Logout">
                <em class="icon-logout"></em>

@@ -3,7 +3,10 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from .choices import OFFICE_CHOICES, OFFICE_DICT, STATUS_CHOICES, ROLE_CHOICES, REGISTRATION_TYPES
+from .choices import (
+    OFFICE_CHOICES, OFFICE_DICT, STATUS_CHOICES, 
+    ROLE_CHOICES, REGISTRATION_TYPES
+)
 
 # --- OFFICE MODEL ---
 class Office(models.Model):
@@ -21,6 +24,10 @@ class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='userprofile')
     office = models.ForeignKey(Office, on_delete=models.SET_NULL, null=True, blank=True)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='STAFF')
+    
+    # Field para sa profile picture sa sidebar
+    profile_picture = models.ImageField(upload_to='profiles/', null=True, blank=True)
+    
     is_approved = models.BooleanField(default=False)
     approved_at = models.DateTimeField(null=True, blank=True)
     approved_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='approved_users')
@@ -39,14 +46,7 @@ class UserProfile(models.Model):
 
 # --- DOCUMENT MODEL ---
 class Document(models.Model):
-    STATUS_CHOICES = (
-        ('PENDING', 'Pending'),
-        ('APPROVED', 'Approved'),
-        ('REJECTED', 'Rejected'),
-        ('FOR_REVIEW', 'For Review'),
-        ('COMPLETED', 'Completed'),
-    )
-    
+    # Dito natin gagamitin ang global STATUS_CHOICES para kasama ang 'RECEIVED'
     CATEGORY_CHOICES = [
         ('word', 'Microsoft Word'),
         ('excel', 'Microsoft Excel'),
@@ -72,10 +72,11 @@ class Document(models.Model):
     
     uploaded_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    
+    # Ginagamit na ang STATUS_CHOICES mula sa choices.py
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
     category = models.CharField(max_length=10, choices=CATEGORY_CHOICES, default='pdf')
     
-    # NEW FIELD: Ito ang mag-iimbak ng feedback/comment mula sa Receiver (Approved/Rejected note)
     remarks = models.TextField(blank=True, null=True, help_text="Feedback or reason from the receiver")
 
     def save(self, *args, **kwargs):
@@ -105,7 +106,7 @@ class Routing(models.Model):
     to_office = models.ForeignKey(Office, on_delete=models.SET_NULL, null=True, related_name='routings_to')
     routed_at = models.DateTimeField(auto_now_add=True)
     notes = models.TextField(blank=True)
-    status = models.CharField(max_length=20, choices=Document.STATUS_CHOICES, default='PENDING')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
 
     def __str__(self):
         return f"Route for {self.document.title}"
@@ -139,4 +140,5 @@ def manage_user_profile(sender, instance, created, **kwargs):
     if created:
         UserProfile.objects.create(user=instance)
     else:
+        # Tinitiyak na may profile kahit ang mga dating users (tulad ng ADMIN)
         UserProfile.objects.get_or_create(user=instance)
