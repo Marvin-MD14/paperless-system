@@ -156,6 +156,7 @@
         justify-content: center;
         width: 100%;
         color: white;
+        cursor: pointer;
     }
 
     .btn-signin:hover {
@@ -212,20 +213,21 @@
 
             {% if messages %}
                 {% for message in messages %}
-                    <div class="alert alert-danger py-2 small text-center">{{ message }}</div>
+                    <div class="alert {% if message.tags == 'success' %}alert-success{% else %}alert-danger{% endif %} py-2 small text-center">
+                        {{ message }}
+                    </div>
                 {% endfor %}
             {% endif %}
 
-            <form method="POST" id="loginForm">
+            <form method="POST" id="loginForm" action="{% url 'login' %}">
                 {% csrf_token %}
                 
                 <div class="mb-3 text-start">
-    <label class="form-label">Email Address</label>
-    <input type="email" name="email" class="form-control" 
-           placeholder="Enter your email address" required>
-</div>
+                    <label class="form-label">Email Address</label>
+                    <input type="email" name="username" class="form-control" 
+                           placeholder="Enter your email address" required>
+                </div>
 
-                
                 <div class="mb-3 text-start">
                     <label class="form-label">Password</label>
                     <div class="input-group">
@@ -293,25 +295,24 @@
         });
     });
 
-    
     function handleForgotPassword() {
-    Swal.fire({
-        title: 'Password Recovery',
-        text: "A secure reset link will be sent to your registered Gmail account to verify your identity. Would you like to proceed?",
-        icon: 'info',
-        showCancelButton: true,
-        confirmButtonColor: '#348fe2',
-        cancelButtonColor: '#6c757d',
-        confirmButtonText: 'Yes, Send Reset Link',
-        cancelButtonText: 'Cancel',
-        customClass: {
-            popup: 'swal2-professional-popup'
-        }
-    }).then((result) => {
-        if (result.isConfirmed) {
-            window.location.href = "{% url 'password_reset' %}";
-        }
-    });
-}
+        Swal.fire({
+            title: 'Password Recovery',
+            text: "A secure reset link will be sent to your registered Gmail account to verify your identity. Would you like to proceed?",
+            icon: 'info',
+            showCancelButton: true,
+            confirmButtonColor: '#348fe2',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Yes, Send Reset Link',
+            cancelButtonText: 'Cancel',
+            customClass: {
+                popup: 'swal2-professional-popup'
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = "{% url 'password_reset' %}";
+            }
+        });
+    }
 </script>
 {% endblock %}

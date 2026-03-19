@@ -1,20 +1,21 @@
+import os
+import json
+
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.models import User
-from .models import Office, UserProfile, Document
 from django.contrib import messages
-from django.core.paginator import Paginator
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required, user_passes_test
-from .choices import REGISTRATION_TYPES
-from django.views.decorators.cache import never_cache
-from django.utils import timezone
-from django.db.models import Q
+from django.db import transaction
+from django.db.models import Q, Sum
 from django.http import HttpResponse, JsonResponse
-import json
-from .choices import OFFICE_CHOICES
-from django.db.models import Sum
-import os
+from django.utils import timezone
+from django.views.decorators.cache import never_cache
+from django.core.paginator import Paginator
+
+from .models import Office, UserProfile, Document
+from .choices import OFFICE_CHOICES, REGISTRATION_TYPES
+
 
 def authenticate_by_email(email, password):
     """Authenticate user using email instead of username."""
@@ -31,26 +32,38 @@ def login(request):
         return redirect_by_role(request.user)
 
     if request.method == "POST":
-        email = request.POST.get('email')
-        password = request.POST.get('password')
-        remember_me = request.POST.get('remember_me')  
-
-        user = authenticate_by_email(email, password)
+        login_input = request.POST.get('username', '').strip() 
+        password = request.POST.get('password', '').strip()
+        remember_me = request.POST.get('remember_me')
+        user = None
+        
+        if '@' in login_input:
+            try:
+                user_obj = User.objects.get(email=login_input)
+                user = authenticate(request, username=user_obj.username, password=password)
+            except User.DoesNotExist:
+                user = None
+        
+        if user is None:
+            user = authenticate(request, username=login_input, password=password)
 
         if user is not None:
-            auth_login(request, user)
+            if user.is_active:
+                auth_login(request, user)
 
-            if remember_me:
-                request.session.set_expiry(1209600)  
+                if remember_me:
+                    request.session.set_expiry(1209600) 
+                else:
+                    request.session.set_expiry(0) 
+
+                messages.success(request, f"Welcome back, {user.first_name if user.first_name else user.username}!")
+                return redirect_by_role(user)
             else:
-                request.session.set_expiry(0)        
-
-            return redirect_by_role(user)
+                messages.error(request, "Your account is inactive. Please contact the administrator.")
         else:
-            messages.error(request, "Invalid email or password. Please try again.")
+            messages.error(request, "Invalid credentials. Please check your email/username and password.")
 
     return render(request, 'login.html')
-
 
 def redirect_by_role(user):
    
@@ -135,54 +148,40 @@ def head_login(request):
 
     return render(request, 'head_login.html')
 
-
 @login_required
 @never_cache
 def admin_dashboard(request):
     if not request.user.is_superuser:
         return redirect('login')
 
-    offices = Office.objects.all()
-    
     profiles = UserProfile.objects.filter(
         is_approved=True, 
         user__is_active=True  
     ).select_related('user', 'office').order_by('-user__date_joined')
 
     if request.method == "POST":
-        email = request.POST.get('email')
-        password = request.POST.get('password')
-        full_name = request.POST.get('full_name', '')
+        username = request.POST.get('username')
+        first_name = request.POST.get('first_name', '')
+        last_name = request.POST.get('last_name', '')
         role = request.POST.get('role')
-        office_id = request.POST.get('office')
+        office_id = request.POST.get('office_id') 
+        password = request.POST.get('password', 'DefaultPassword123!') 
 
-        if User.objects.filter(username=email).exists():
-            messages.error(request, f"Error: The email {email} is already registered.")
+        if User.objects.filter(username=username).exists():
+            messages.error(request, f"Error: The username {username} is already taken.")
             return redirect('admin_dashboard')
 
         try:
-            parts = full_name.strip().split()
-            first_name = parts[0] if parts else ""
-            last_name = ' '.join(parts[1:]) if len(parts) > 1 else ""
-
             new_user = User.objects.create_user(
-                username=email,
-                email=email,
+                username=username,
                 password=password,
                 first_name=first_name,
                 last_name=last_name,
                 is_active=True  
             )
 
-        
-            office_obj = None
-            if office_id:
-                try:
-                    office_obj = Office.objects.get(id=office_id)
-                except Office.DoesNotExist:
-                    office_obj = None
+            office_obj = Office.objects.filter(id=office_id).first()
 
-          
             UserProfile.objects.update_or_create(
                 user=new_user,
                 defaults={
@@ -195,16 +194,19 @@ def admin_dashboard(request):
                 }
             )
 
-            messages.success(request, f"Successfully created {role} account for {full_name}!")
+            messages.success(request, f"Successfully created account for {first_name} {last_name}!")
             return redirect('admin_dashboard')
 
         except Exception as e:
             messages.error(request, f"System Error: {str(e)}")
             return redirect('admin_dashboard')
 
+    
+    from .models import OFFICE_CHOICES 
+    offices = Office.objects.all() 
+
     context = {
-        'offices': offices,
-        'offices_list': OFFICE_CHOICES,
+        'offices': offices, 
         'profiles': profiles,
         'governor_count': UserProfile.objects.filter(role='GOVERNOR', is_approved=True, user__is_active=True).count(),
         'heads_count': UserProfile.objects.filter(role='HEAD', is_approved=True, user__is_active=True).count(),
@@ -213,53 +215,169 @@ def admin_dashboard(request):
     }
 
     return render(request, 'admin_dashboard.html', context)
-
 @login_required
 @never_cache
 def head_dashboard(request):
     if request.user.userprofile.role != 'HEAD':
-        messages.error(request, "Unauthorized access.")
+        messages.error(request, "Unauthorized access. This page is for Department Heads only.")
         return redirect('login')
 
+    # 1. Get Head Profile and Office
     profile = request.user.userprofile
-    my_staff = UserProfile.objects.filter(
-        office=profile.office
-    ).exclude(user=request.user)
+    current_office = profile.office
+    office_name = current_office.office_name if current_office else "No Office Assigned"
 
+    # 2. Staff Management
+    my_staff = UserProfile.objects.filter(
+        office=current_office,
+        role='STAFF',
+        is_approved=True,
+        user__is_active=True
+    ).select_related('user').order_by('user__first_name')
+
+    pending_staff_count = UserProfile.objects.filter(
+        office=current_office,
+        role='STAFF',
+        is_approved=False
+    ).count()
+
+    # 3. Document Logic (Base sa Routings ng Office)
+    # Kinukuha ang lahat ng docs na dumaan sa office na ito
     office_docs = Document.objects.filter(
-        routings__to_office=profile.office
+        routings__to_office=current_office
     ).distinct()
 
+    # 4. Actionable Logic for Head
+    # Ang "Pending Review" ay ang mga docs na status ay 'RECEIVED' (naka-confirm na ng staff)
+    pending_review = office_docs.filter(status='RECEIVED')
+
+    # 5. Prepare Context for Dashboard
     context = {
         'profile': profile,
+        'office_name': office_name, 
         'my_staff': my_staff,
         'office_docs': office_docs,
+        
+        # Stats for Cards
+        'total_staff': my_staff.count(),
+        'pending_staff_count': pending_staff_count,
+        'unread_received_count': pending_review.count(), # Docs waiting for Head's action
+        'total_approved': office_docs.filter(status='APPROVED').count(),
+        'returned_rejected': office_docs.filter(Q(status='RETURNED') | Q(status='REJECTED')).count(),
+        
+        # File Type Distribution (Morris Charts)
+        'word_count': office_docs.filter(category__iexact='word').count(),
+        'excel_count': office_docs.filter(category__iexact='excel').count(),
+        'ppt_count': office_docs.filter(category__iexact='ppt').count(),
+        'pdf_count': office_docs.filter(category__iexact='pdf').count(),
+        
+        # Recent Activities
+        'recent_docs': office_docs.order_by('-uploaded_at')[:5],
+        'pending_review_list': pending_review.order_by('-uploaded_at')[:5],
     }
 
     return render(request, 'head_dashboard.html', context)
+@login_required
+def my_department_staff(request):
+    """Pinapakita ang lahat ng active/approved staff ng office na ito"""
+    if request.user.userprofile.role != 'HEAD':
+        return redirect('login')
 
+    staff_members = UserProfile.objects.filter(
+        office=request.user.userprofile.office,
+        role='STAFF',
+        is_approved=True
+    ).select_related('user').order_by('user__first_name')
+
+    return render(request, 'my_department_staff.html', {'staff_members': staff_members})
+@login_required
+def pending_staff_approvals(request):
+    """View para sa Head para makita ang mga staff na nag-register sa office nila"""
+    if request.user.userprofile.role != 'HEAD':
+        messages.error(request, "Unauthorized access.")
+        return redirect('login')
+
+    # Kunin ang mga staff sa kaparehong office na hindi pa approved
+    pending_staff = UserProfile.objects.filter(
+        office=request.user.userprofile.office,
+        role='STAFF',
+        is_approved=False
+    ).select_related('user').order_by('-user__date_joined')
+
+    return render(request, 'pending_staff.html', {'pending_staff': pending_staff})
+
+@login_required
+def approve_staff(request, user_profile_id):
+    """Function para i-approve ang staff registration"""
+    if request.user.userprofile.role != 'HEAD':
+        messages.error(request, "Unauthorized action.")
+        return redirect('head_dashboard')
+
+    staff_profile = get_object_or_404(UserProfile, id=user_profile_id, office=request.user.userprofile.office)
+    
+    staff_profile.is_approved = True
+    staff_profile.save()
+    
+    # I-activate ang login access
+    staff_profile.user.is_active = True
+    staff_profile.user.save()
+
+    messages.success(request, f"Staff {staff_profile.user.get_full_name()} has been approved.")
+    return redirect('pending_staff_approvals')
+
+@login_required
+def reject_staff(request, user_profile_id):
+    """Function para i-reject at i-delete ang maling registration"""
+    if request.user.userprofile.role != 'HEAD':
+        messages.error(request, "Unauthorized action.")
+        return redirect('head_dashboard')
+
+    staff_profile = get_object_or_404(UserProfile, id=user_profile_id, office=request.user.userprofile.office)
+    user = staff_profile.user
+    
+    # Burahin ang profile at ang user account
+    user.delete() 
+
+    messages.warning(request, "Registration has been rejected and the account was deleted.")
+    return redirect('pending_staff_approvals')
+@login_required
+def approve_staff(request, user_profile_id):
+    # Siguraduhin na Head ang nag-aaksyon
+    if request.user.userprofile.role != 'HEAD':
+        messages.error(request, "Unauthorized action.")
+        return redirect('head_dashboard')
+
+    # Hanapin ang profile ng staff na i-aapprove sa kaparehong office
+    staff_profile = get_object_or_404(
+        UserProfile, 
+        id=user_profile_id, 
+        office=request.user.userprofile.office
+    )
+    
+    staff_profile.is_approved = True
+    staff_profile.save()
+    
+    # Siguraduhin na pwede na siyang mag-login
+    staff_profile.user.is_active = True
+    staff_profile.user.save()
+
+    messages.success(request, f"User {staff_profile.user.get_full_name()} has been approved successfully.")
+    return redirect('pending_staff_approvals') # I-redirect sa listahan ng approvals
 @login_required
 @never_cache
 def user_dashboard(request):
-    # 1. Siguraduhing may profile ang user
     profile, created = UserProfile.objects.get_or_create(
         user=request.user,
         defaults={'role': 'STAFF'} 
     )
 
-    # 2. Role Redirection
+   
     if profile.role == 'HEAD':
         return redirect('head_dashboard')
     elif profile.role in ['GOVERNOR', 'EXECUTIVE']:
         return redirect('executive_dashboard')
-
-    # 3. DATA FETCHING (Base Querysets)
-    # Ang uploads ay ang mga dokumentong pag-aari ng user
     all_uploads = Document.objects.filter(uploaded_by=request.user)
-    # Ang received ay ang mga dokumentong ipinadala sa kanya
     received_all = Document.objects.filter(recipient=request.user)
-
-    # 4. STORAGE CALCULATION
     total_bytes = 0
     for doc in all_uploads:
         try:
@@ -269,109 +387,100 @@ def user_dashboard(request):
             continue
             
     total_size_mb = round(total_bytes / (1024 * 1024), 2)
-
-    # Dynamic Storage Logic (Incremental 100MB)
     storage_limit = 100
     while total_size_mb >= storage_limit:
         storage_limit += 100
     
     storage_percentage = (total_size_mb / storage_limit) * 100
 
-    # 5. CONTEXT BUILDING
+  
     context = {
         'profile': profile,
-        
-        # --- METRIC CARDS ---
         'total_uploads': all_uploads.count(),
-        
-        # Binabago natin ang filter base sa common status strings ('APPROVED' at 'REJECTED')
-        # Siguraduhin na 'APPROVED' at 'REJECTED' ang nilalagay ng iyong approve/reject functions
         'processed_count': all_uploads.filter(status__iexact='APPROVED').count(),
         'returned_count': all_uploads.filter(status__iexact='REJECTED').count(),
-        
         'unread_received_count': received_all.filter(is_read=False).count(),
         'total_size_mb': total_size_mb, 
         'storage_limit': storage_limit,
         'storage_percentage': storage_percentage,
-        
-        # --- MORRIS CHARTS ---
-        # Ginagamit ang __iexact para hindi maging case-sensitive
         'word_count': all_uploads.filter(category__iexact='word').count(),
         'excel_count': all_uploads.filter(category__iexact='excel').count(),
         'ppt_count': all_uploads.filter(category__iexact='ppt').count(),
         'pdf_count': all_uploads.filter(category__iexact='pdf').count(),
-        
-        # --- UNREAD DOCUMENTS LIST (INBOX) ---
         'unread_docs': received_all.filter(is_read=False).order_by('-uploaded_at')[:5],
     }
 
     return render(request, 'employee_dashboard.html', context)
 def register(request):
+   
+    if request.user.is_authenticated:
+        return redirect('dashboard') 
 
-    
-    if request.method == "POST":
-        email = request.POST.get('username')
+    if request.method == 'POST':
+        full_name = request.POST.get('full_name', '').strip()
+        email = request.POST.get('username', '').strip()
         password = request.POST.get('pwd')
-        full_name = request.POST.get('full_name', '')
-        office_code = request.POST.get('office')
-        role = 'STAFF'  
+        confirm_password = request.POST.get('cpwd')
+        office_code = request.POST.get('office') 
+
+        if not all([full_name, email, password, office_code]):
+            messages.error(request, "Please fill in all required fields.")
+            return redirect('register')
+
+        if password != confirm_password:
+            messages.error(request, "Passwords do not match.")
+            return redirect('register')
 
         if User.objects.filter(username=email).exists():
-            messages.error(request, "Email already registered.")
+            messages.error(request, "This email is already registered. Please use another or login.")
             return redirect('register')
 
         try:
-            
-            parts = full_name.strip().split()
-            first_name = parts[0] if parts else ""
-            last_name = " ".join(parts[1:]) if len(parts) > 1 else ""
-            
+            with transaction.atomic():
+                name_parts = full_name.split(' ', 1)
+                first_name = name_parts[0]
+                last_name = name_parts[1] if len(name_parts) > 1 else ""
+
            
-            new_user = User.objects.create_user(
-                username=email, 
-                email=email, 
-                password=password,
-                first_name=first_name, 
-                last_name=last_name,
-                is_active=False  
-            )
+                office_name_display = dict(OFFICE_CHOICES).get(office_code, office_code)
+                office, created = Office.objects.get_or_create(
+                    office_code=office_code,
+                    defaults={'office_name': office_name_display}
+                )
 
-       
-            office_display = dict(OFFICE_CHOICES).get(office_code, office_code)
-            office_instance, created = Office.objects.get_or_create(
-                office_code=office_code,
-                defaults={'office_name': office_display}
-            )
+                user = User.objects.create_user(
+                    username=email,
+                    email=email,
+                    password=password,
+                    first_name=first_name,
+                    last_name=last_name,
+                    is_active=False  
+                )
+                
+                UserProfile.objects.update_or_create(
+                    user=user,
+                    defaults={
+                        'office': office,
+                        'role': 'STAFF',
+                        'registration_type': 'SELF',
+                        'is_approved': False
+                    }
+                )
 
-        
-            UserProfile.objects.create(
-                user=new_user,
-                office=office_instance,
-                role=role,
-                is_approved=False,
-                registration_type='SELF'
-            )
-
-            messages.success(request, (
-                "Your registration request has been submitted successfully! "
-                "An administrator will review and approve your account within 24-48 hours. "
-                "You will receive an email notification once your account is activated."
-            ))
-            
-            return redirect('login') 
+            messages.success(request, "Registration successful! Please wait for administrative approval.")
+            return redirect('login')
 
         except Exception as e:
-            messages.error(request, f"Registration failed: {str(e)}")
+            messages.error(request, f"An error occurred: {str(e)}")
             return redirect('register')
+            
 
     context = {
         'offices': OFFICE_CHOICES
     }
     return render(request, 'register.html', context)
-
 def logout(request):
     auth_logout(request)
-
     storage = messages.get_messages(request)
     for _ in storage:
         pass  
@@ -384,186 +493,154 @@ def logout(request):
 
 @login_required
 @user_passes_test(lambda u: u.is_superuser)
+@never_cache
 def user_management(request):
-    role_filter = request.GET.get('role', '')
     search_query = request.GET.get('search', '')
-    
-    userprofiles = UserProfile.objects.filter(
-        is_approved=True  
-    ).select_related('user', 'office').order_by('-user__date_joined')
-    
+    role_filter = request.GET.get('role', '')
 
-    if role_filter:
-        userprofiles = userprofiles.filter(role=role_filter)
-    
+    profiles = UserProfile.objects.all().select_related('user', 'office').order_by('-user__date_joined')
+
     if search_query:
-        userprofiles = userprofiles.filter(
-            Q(user__username__icontains=search_query) |
+        profiles = profiles.filter(
             Q(user__first_name__icontains=search_query) |
             Q(user__last_name__icontains=search_query) |
-            Q(user__email__icontains=search_query) |
-            Q(office__office_name__icontains=search_query) |
-            Q(office__office_code__icontains=search_query)
+            Q(user__username__icontains=search_query) |
+            Q(office__office_name__icontains=search_query)
         )
-    
-    governor_count = UserProfile.objects.filter(role='GOVERNOR', is_approved=True).count()
-    heads_count = UserProfile.objects.filter(role='HEAD', is_approved=True).count()
-    executive_count = UserProfile.objects.filter(role='EXECUTIVE', is_approved=True).count()
-    staff_count = UserProfile.objects.filter(role='STAFF', is_approved=True).count()
-    
-    paginator = Paginator(userprofiles, 10)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-    
-    # Get all offices for dropdown
-    offices = Office.objects.all().order_by('office_name')
-    
-    # You can remove this part or fix it by importing REGISTRATION_TYPES
-    # If you want to display registration type, import it from choices
-    # from .choices import REGISTRATION_TYPES
-    
+
+    if role_filter:
+        profiles = profiles.filter(role=role_filter)
+
+    if request.method == "POST":
+        try:
+            with transaction.atomic():
+                username = request.POST.get('username')
+                first_name = request.POST.get('first_name')
+                last_name = request.POST.get('last_name')
+                password = request.POST.get('password')
+                role = request.POST.get('role')
+                office_code = request.POST.get('office_id')
+
+             
+                user = User.objects.create_user(
+                    username=username,
+                    first_name=first_name,
+                    last_name=last_name,
+                    password=password,
+                    is_active=True
+                )
+
+           
+                office = None
+                if office_code:
+                    office_name_display = dict(OFFICE_CHOICES).get(office_code, office_code)
+                    
+                    office, created = Office.objects.get_or_create(
+                        office_code=office_code,
+                        defaults={'office_name': office_name_display}
+                    )
+
+                UserProfile.objects.create(
+                    user=user,
+                    office=office,
+                    role=role,
+                    is_approved=True,
+                    registration_type='ADMIN'
+                )
+
+                messages.success(request, f"Account for {username} created successfully!")
+                return redirect('user_management')
+                
+        except Exception as e:
+            messages.error(request, f"Registration Failed: {str(e)}")
+
     context = {
-        'userprofiles': page_obj,
-        'governor_count': governor_count,
-        'heads_count': heads_count,
-        'executive_count': executive_count,
-        'staff_count': staff_count,
-        'offices': offices,
-        'role_filter': role_filter,
+        'profiles': profiles,
+        'offices': OFFICE_CHOICES, 
         'search_query': search_query,
+        'role_filter': role_filter,
     }
-    
     return render(request, 'user_management.html', context)
 
 @login_required
 @user_passes_test(lambda u: u.is_superuser)
-def register_user(request):
-    if request.method == 'POST':
-        # Get form data
-        username = request.POST.get('username')
-        password = request.POST.get('password')
-        email = request.POST.get('email', '')
-        first_name = request.POST.get('first_name', '')
-        last_name = request.POST.get('last_name', '')
-        office_id = request.POST.get('office')
-        role = request.POST.get('role')
-        is_active = request.POST.get('is_active') == 'on'
-        
-        if not username or not password:
-            messages.error(request, 'Username and password are required.')
-            return redirect('user_management')
-        
-        if User.objects.filter(username=username).exists():
-            messages.error(request, f'Username "{username}" is already taken.')
-            return redirect('user_management')
-        
-        try:
-            user = User.objects.create_user(
-                username=username,
-                password=password,
-                email=email,
-                first_name=first_name,
-                last_name=last_name,
-                is_active=is_active
-            )
-            
-            office = None
-            if office_id:
-                office = get_object_or_404(Office, id=office_id)
-            
-            UserProfile.objects.create(
-                user=user,
-                office=office,
-                role=role,
-                is_approved=True,  
-                registration_type='ADMIN', 
-                approved_by=request.user,
-                approved_at=timezone.now()
-            )
-            
-            messages.success(request, f'User {username} created successfully!')
-            
-        except Exception as e:
-            messages.error(request, f'Error creating user: {str(e)}')
-    
-    return redirect('user_management')
-
-@login_required
-@user_passes_test(lambda u: u.is_superuser)
 def delete_user(request, user_id):
-    if request.method == 'POST':
-        try:
-            user_profile = get_object_or_404(UserProfile, id=user_id)
-            user = user_profile.user
-            
-            if request.user.id == user.id:
-                return JsonResponse({'success': False, 'error': 'You cannot delete your own account!'}, status=400)
-            
-            username = user.username
-            user.delete()  
-            return JsonResponse({'success': True, 'message': f'User {username} deleted successfully'})
-            
-        except Exception as e:
-            return JsonResponse({'success': False, 'error': str(e)}, status=400)
-    
-    return JsonResponse({'error': 'Method not allowed'}, status=405)
-
+    user_to_delete = get_object_or_404(User, id=user_id)
+    if user_to_delete.is_superuser:
+        messages.error(request, "Cannot delete a superuser.")
+    else:
+        username = user_to_delete.username
+        user_to_delete.delete()
+        messages.success(request, f"User {username} has been deleted.")
+    return redirect('user_management')
 @login_required
 @user_passes_test(lambda u: u.is_superuser)
 def user_details(request, user_id):
     userprofile = get_object_or_404(UserProfile.objects.select_related('user', 'office'), id=user_id)
     
-    documents_created = userprofile.user.uploaded_documents.count() if hasattr(userprofile.user, 'uploaded_documents') else 0
+    documents_created = 0
+    if hasattr(userprofile.user, 'uploaded_documents'):
+        documents_created = userprofile.user.uploaded_documents.count()
     
     context = {
         'profile': userprofile,
         'documents_count': documents_created,
     }
-    
     return render(request, 'user_details_partial.html', context)
 
 @login_required
 @user_passes_test(lambda u: u.is_superuser)
 def edit_user(request, user_id):
     userprofile = get_object_or_404(UserProfile.objects.select_related('user'), id=user_id)
+    user = userprofile.user
     
     if request.method == 'POST':
-        # Update user data
-        user = userprofile.user
-        user.username = request.POST.get('username', user.username)
-        user.email = request.POST.get('email', user.email)
-        user.first_name = request.POST.get('first_name', user.first_name)
-        user.last_name = request.POST.get('last_name', user.last_name)
-        user.is_active = request.POST.get('is_active') == 'on'
-        
-        # Update password if provided
-        new_password = request.POST.get('new_password')
-        if new_password:
-            user.set_password(new_password)
-        
-        user.save()
-        
-        office_id = request.POST.get('office')
-        if office_id:
-            userprofile.office = get_object_or_404(Office, id=office_id)
-        else:
-            userprofile.office = None
-        
-        userprofile.role = request.POST.get('role', userprofile.role)
-        userprofile.save()
-        
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return JsonResponse({
-                'success': True, 
-                'message': f'User {user.username} updated successfully!'
-            })
-        
-        messages.success(request, f'User {user.username} updated successfully!')
-        return redirect('user_management')
+        try:
+            with transaction.atomic():
+                user.username = request.POST.get('username', user.username)
+                user.email = request.POST.get('email', user.email)
+                user.first_name = request.POST.get('first_name', user.first_name)
+                user.last_name = request.POST.get('last_name', user.last_name)
+                user.is_active = request.POST.get('is_active') == 'on'
+                
+                new_password = request.POST.get('new_password')
+                if new_password:
+                    user.set_password(new_password)
+                
+                user.save()
+                
+             
+                office_id = request.POST.get('office')
+                if office_id:
+                    userprofile.office = get_object_or_404(Office, id=office_id)
+                else:
+                    userprofile.office = None
+                
+                userprofile.role = request.POST.get('role', userprofile.role)
+                userprofile.save()
+                
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({
+                        'success': True, 
+                        'message': f'User {user.username} updated successfully!'
+                    })
+                
+                messages.success(request, f'User {user.username} updated successfully!')
+                return redirect('user_management')
+        except Exception as e:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'message': str(e)}, status=400)
+            messages.error(request, f"Error updating user: {str(e)}")
     
+  
     offices = Office.objects.all()
     
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        office_options = "".join([
+            f'<option value="{o.id}" {"selected" if userprofile.office and userprofile.office.id == o.id else ""}>{o.office_name} ({o.office_code})</option>' 
+            for o in offices
+        ])
+        
         html = f'''
         <form method="POST" action="/edit-user/{user_id}/" id="editUserForm">
             <input type="hidden" name="csrfmiddlewaretoken" value="{request.COOKIES.get('csrftoken', '')}">
@@ -571,82 +648,53 @@ def edit_user(request, user_id):
                 <div class="row">
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label for="username" class="fw-bold">Username <span class="text-danger">*</span></label>
-                            <div class="input-group">
-                                <div class="input-group-prepend">
-                                    <span class="input-group-text"><i class="fas fa-user"></i></span>
-                                </div>
-                                <input type="text" class="form-control" id="username" name="username" value="{userprofile.user.username}" required>
-                            </div>
+                            <label class="fw-bold">Username <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="username" value="{user.username}" required>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label for="email" class="fw-bold">Email Address</label>
-                            <div class="input-group">
-                                <div class="input-group-prepend">
-                                    <span class="input-group-text"><i class="fas fa-envelope"></i></span>
-                                </div>
-                                <input type="email" class="form-control" id="email" name="email" value="{userprofile.user.email or ''}">
-                            </div>
+                            <label class="fw-bold">Email</label>
+                            <input type="email" class="form-control" name="email" value="{user.email or ''}">
                         </div>
                     </div>
                 </div>
-                
-                <div class="row">
+                <div class="row mt-2">
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label for="first_name" class="fw-bold">First Name</label>
-                            <input type="text" class="form-control" id="first_name" name="first_name" value="{userprofile.user.first_name or ''}">
+                            <label class="fw-bold">First Name</label>
+                            <input type="text" class="form-control" name="first_name" value="{user.first_name or ''}">
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label for="last_name" class="fw-bold">Last Name</label>
-                            <input type="text" class="form-control" id="last_name" name="last_name" value="{userprofile.user.last_name or ''}">
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="new_password" class="fw-bold">New Password</label>
-                            <div class="input-group">
-                                <div class="input-group-prepend">
-                                    <span class="input-group-text"><i class="fas fa-lock"></i></span>
-                                </div>
-                                <input type="password" class="form-control" id="new_password" name="new_password" placeholder="Leave blank to keep current">
-                                <div class="input-group-append">
-                                    <span class="input-group-text" style="cursor: pointer;" id="editToggleIcon">
-                                        <i class="fas fa-eye"></i>
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="confirm_password" class="fw-bold">Confirm Password</label>
-                            <input type="password" class="form-control" id="confirm_password" name="confirm_password" placeholder="Confirm new password">
+                            <label class="fw-bold">Last Name</label>
+                            <input type="text" class="form-control" name="last_name" value="{user.last_name or ''}">
                         </div>
                     </div>
                 </div>
-                
-                <div class="row">
+                <div class="row mt-2">
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label for="office" class="fw-bold">Office</label>
-                            <select class="form-control" id="office" name="office">
-                                <option value="">Select Office (Optional)</option>
-                                {''.join([f'<option value="{office.id}" {"selected" if userprofile.office and userprofile.office.id == office.id else ""}>{office.office_name} ({office.office_code})</option>' for office in offices])}
+                            <label class="fw-bold">New Password</label>
+                            <input type="password" class="form-control" name="new_password" placeholder="Leave blank to keep">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="fw-bold">Office</label>
+                            <select class="form-control" name="office">
+                                <option value="">Select Office</option>
+                                {office_options}
                             </select>
                         </div>
                     </div>
+                </div>
+                <div class="row mt-2">
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label for="role" class="fw-bold">Role <span class="text-danger">*</span></label>
-                            <select class="form-control" id="role" name="role" required>
+                            <label class="fw-bold">Role</label>
+                            <select class="form-control" name="role" required>
                                 <option value="STAFF" {"selected" if userprofile.role == 'STAFF' else ""}>Staff</option>
                                 <option value="HEAD" {"selected" if userprofile.role == 'HEAD' else ""}>Office Head</option>
                                 <option value="EXECUTIVE" {"selected" if userprofile.role == 'EXECUTIVE' else ""}>Executive</option>
@@ -654,30 +702,17 @@ def edit_user(request, user_id):
                             </select>
                         </div>
                     </div>
-                </div>
-                
-                <div class="form-group">
-                    <div class="custom-control custom-switch">
-                        <input type="checkbox" class="custom-control-input" id="is_active" name="is_active" {"checked" if userprofile.user.is_active else ""}>
-                        <label class="custom-control-label" for="is_active">Active Account</label>
-                    </div>
-                    <small class="text-muted">If unchecked, user won't be able to log in</small>
-                </div>
-                
-                <div class="alert alert-info mt-3" id="editPasswordStrength" style="display: none;">
-                    <strong>Password Strength:</strong> <span id="editStrengthText">Weak</span>
-                    <div class="progress mt-2" style="height: 5px;">
-                        <div class="progress-bar" id="editStrengthBar" role="progressbar" style="width: 0%;"></div>
+                    <div class="col-md-6 d-flex align-items-center mt-4">
+                        <div class="custom-control custom-switch">
+                            <input type="checkbox" class="custom-control-input" id="is_active" name="is_active" {"checked" if user.is_active else ""}>
+                            <label class="custom-control-label" for="is_active">Active Account</label>
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="modal-footer bg-light">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                    <i class="fas fa-times me-2"></i>Cancel
-                </button>
-                <button type="submit" class="btn btn-primary" id="editSubmitBtn">
-                    <i class="fas fa-save me-2"></i>Save Changes
-                </button>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
             </div>
         </form>
         '''
@@ -703,9 +738,7 @@ def access_requests(request):
         registration_type='SELF',  
         is_approved=False,
         user__is_active=False
-    ).exclude(
-        user__date_joined=timezone.now()
-    )[:10]
+    ).exclude(user__date_joined=timezone.now())[:10]
     
     context = {
         'pending_requests': pending_requests,
@@ -713,7 +746,6 @@ def access_requests(request):
         'rejected_users': rejected_users,
         'pending_count': pending_requests.count(),
     }
-    
     return render(request, 'access_requests.html', context)
 
 @login_required
@@ -724,7 +756,6 @@ def approve_user(request, profile_id):
             profile = get_object_or_404(UserProfile, id=profile_id)
             user = profile.user
             
-            # Approve the user
             user.is_active = True
             user.save()
             
@@ -733,16 +764,10 @@ def approve_user(request, profile_id):
             profile.approved_by = request.user
             profile.save()
             
-            return JsonResponse({
-                'success': True, 
-                'message': f'User {user.username} has been approved successfully!'
-            })
-            
+            return JsonResponse({'success': True, 'message': f'User {user.username} approved!'})
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)}, status=400)
-    
     return JsonResponse({'error': 'Method not allowed'}, status=405)
-
 
 @login_required
 @user_passes_test(lambda u: u.is_superuser)
@@ -751,20 +776,11 @@ def reject_user(request, profile_id):
         try:
             profile = get_object_or_404(UserProfile, id=profile_id)
             username = profile.user.username
-            
-            profile.user.delete()
-            
-            return JsonResponse({
-                'success': True, 
-                'message': f'User {username} has been rejected and removed.'
-            })
-            
+            profile.user.delete() # Burahin ang user object (cascade delete sa profile)
+            return JsonResponse({'success': True, 'message': f'User {username} rejected.'})
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)}, status=400)
-    
     return JsonResponse({'error': 'Method not allowed'}, status=405)
-
-
 @login_required
 @user_passes_test(lambda u: u.is_superuser)
 def bulk_approve_users(request):
@@ -777,25 +793,18 @@ def bulk_approve_users(request):
                 return JsonResponse({'success': False, 'error': 'No users selected'}, status=400)
             
             profiles = UserProfile.objects.filter(id__in=profile_ids, is_approved=False)
-            approved_count = 0
-            
+            count = 0
             for profile in profiles:
                 user = profile.user
                 user.is_active = True
                 user.save()
-                
                 profile.is_approved = True
                 profile.approved_at = timezone.now()
                 profile.approved_by = request.user
                 profile.save()
-                approved_count += 1
+                count += 1
             
-            return JsonResponse({
-                'success': True, 
-                'message': f'{approved_count} user(s) have been approved successfully!'
-            })
-            
+            return JsonResponse({'success': True, 'message': f'{count} users approved!'})
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)}, status=400)
-    
     return JsonResponse({'error': 'Method not allowed'}, status=405)

@@ -1,58 +1,105 @@
-import os
 from django.contrib import admin
 from django.urls import path
 from django.contrib.auth import views as auth_views
 from django.conf import settings
 from django.conf.urls.static import static
 
-# Import lahat ng kailangan mula sa tracking app views
 from tracking.views import (
     login, 
     admin_login, 
-    register, 
-    admin_dashboard, 
+    register,          
+    admin_dashboard,   
     logout, 
-    user_dashboard, 
+    user_dashboard,     
     head_login, 
-    head_dashboard,
-    user_management, 
-    register_user, 
+    head_dashboard,    
+    user_management,   
     delete_user, 
     edit_user, 
     user_details,
-    access_requests,
+    access_requests,    
     approve_user,
     reject_user,
     bulk_approve_users,
+    # MGA BAGONG IMPORT
+    pending_staff_approvals,
+    approve_staff,
+    reject_staff,
+    my_department_staff, # Idinagdag ito
 )
 
-# Dito nanggagaling ang lahat ng logic para sa documents
 from tracking import documentview
 
 urlpatterns = [
     # ==========================================
-    # 1. ADMIN PANEL
-    # ==========================================
-    path('admin/', admin.site.urls), 
-    
-    # ==========================================
-    # 2. AUTHENTICATION & ACCOUNTS
+    # AUTHENTICATION & CORE ENTRY
     # ==========================================
     path('', login, name='login'), 
+    path('register/', register, name='register'), 
+    path('logout/', logout, name='logout'),
     path('adminlogin/', admin_login, name='admin_login'), 
     path('headlogin/', head_login, name='head_login'),
-    path('register/', register, name='register'),
-    path('logout/', logout, name='logout'),
-    
-    # ==========================================
-    # 3. DASHBOARDS
-    # ==========================================
-    path('dashboard/', user_dashboard, name='user_dashboard'),
-    path('admin_dashboard/', admin_dashboard, name='admin_dashboard'),
-    path('headdashboard/', head_dashboard, name='head_dashboard'),
 
     # ==========================================
-    # 4. PASSWORD RESET SECTION
+    # SYSTEM ADMIN (Django Native & Custom)
+    # ==========================================
+    path('admin/system/', admin.site.urls), 
+    path('admin/', admin_dashboard, name='admin_dashboard'), 
+
+    # ==========================================
+    # DASHBOARDS (Role-Based)
+    # ==========================================
+    path('dashboard/', user_dashboard, name='user_dashboard'),
+    path('admin-dashboard/', admin_dashboard, name='admin_dashboard_alt'),
+    path('head-dashboard/', head_dashboard, name='head_dashboard'),
+
+    # ==========================================
+    # USER MANAGEMENT (Superuser/Admin Only)
+    # ==========================================
+    path('user-management/', user_management, name='user_management'),
+    path('user-details/<int:user_id>/', user_details, name='user_details'),
+    path('edit-user/<int:user_id>/', edit_user, name='edit_user'),
+    path('delete-user/<int:user_id>/', delete_user, name='delete_user'),
+    
+    # Registration Approval System (Admin Level)
+    path('access-requests/', access_requests, name='access_requests'),
+    path('approve-user/<int:profile_id>/', approve_user, name='approve_user'),
+    path('reject-user/<int:profile_id>/', reject_user, name='reject_user'),
+    path('bulk-approve-users/', bulk_approve_users, name='bulk_approve_users'),
+
+    # ==========================================
+    # STAFF APPROVAL SYSTEM (Department Head Level)
+    # ==========================================
+    path('pending-staff-approvals/', pending_staff_approvals, name='pending_staff_approvals'),
+    path('my-department-staff/', my_department_staff, name='my_department_staff'), # Bagong link para sa listahan
+    path('approve-staff/<int:user_profile_id>/', approve_staff, name='approve_staff'),
+    path('reject-staff/<int:user_profile_id>/', reject_staff, name='reject_staff'),
+
+    # ==========================================
+    # DOCUMENT TRACKING & MANAGEMENT
+    # ==========================================
+    path('upload-document/', documentview.upload_document, name='upload_document'), 
+    path('send-document/', documentview.send_document, name='send_document'),
+    path('delete-document/<int:doc_id>/', documentview.delete_document, name='delete_document'),
+    path('mark-as-read/<int:doc_id>/', documentview.mark_as_read, name='mark_as_read'),
+    
+    path('documents/all/', documentview.all_documents, name='all_documents'),
+    path('my-uploads/', documentview.my_uploads_view, name='my_uploads'),
+    path('received/', documentview.received_docs_view, name='received_documents'),
+    path('sent-status/', documentview.sent_documents_status, name='sent_status'),
+    path('sent-documents/', documentview.view_sent_documents, name='view_sent_documents'),
+
+    # ==========================================
+    # API ENDPOINTS (AJAX/Fetch)
+    # ==========================================
+    path('api/notifications/', documentview.get_notifications_api, name='notifications_api'),
+    path('api/notifications/mark-read/<int:ntf_id>/', documentview.mark_as_read_api, name='mark_as_read_api'),
+    path('api/documents/approve/<int:doc_id>/', documentview.approve_document_api, name="approve_document_api"),
+    path('api/documents/reject/<int:doc_id>/', documentview.reject_document_api, name="reject_document_api"),
+    path('api/documents/receive/<int:doc_id>/', documentview.receive_document_api, name="receive_document_api"),
+
+    # ==========================================
+    # PASSWORD RESET
     # ==========================================
     path('password-reset/', 
          auth_views.PasswordResetView.as_view(
@@ -77,59 +124,8 @@ urlpatterns = [
          auth_views.PasswordResetCompleteView.as_view(
              template_name='password_reset_complete.html'     
          ), name='password_reset_complete'),
-
-    # ==========================================
-    # 5. USER MANAGEMENT (Admin Only)
-    # ==========================================
-    path('user-management/', user_management, name='user_management'),
-    path('register-user/', register_user, name='register_user'),
-    path('delete-user/<int:user_id>/', delete_user, name='delete_user'),
-    path('edit-user/<int:user_id>/', edit_user, name='edit_user'),
-    path('user-details/<int:user_id>/', user_details, name='user_details'),
-    path('access-requests/', access_requests, name='access_requests'),
-    path('approve-user/<int:profile_id>/', approve_user, name='approve_user'),
-    path('reject-user/<int:profile_id>/', reject_user, name='reject_user'),
-    path('bulk-approve-users/', bulk_approve_users, name='bulk_approve_users'),
-
-    # ==========================================
-    # 6. DOCUMENT MANAGEMENT LOGIC
-    # ==========================================
-    # Main upload page at listahan ng uploads
-    path('upload-document/', documentview.upload_document, name='upload_document'), 
-    
-    # Forwarding logic
-    path('send-document/', documentview.send_document, name='send_document'),
-    
-    # Delete logic
-    path('delete-document/<int:doc_id>/', documentview.delete_document, name='delete_document'),
-    
-    # All records (Uploads and Received)
-    path('documents/all/', documentview.all_documents, name='all_documents'),
-    
-    # Tracking status ng pinadalang docs
-    path('sent-status/', documentview.sent_documents_status, name='sent_status'),
-    
-    # Received Documents List
-    # Ginagamit ang name na 'received_documents' para mag-match sa base.html at sidebar
-    path('received/', documentview.received_docs_view, name='received_documents'),
-    
-    path('mark-as-read/<int:doc_id>/', documentview.mark_as_read, name='mark_as_read'),
-    path('my-uploads/', documentview.my_uploads_view, name='my_uploads'),
-    path('sent-documents/', documentview.view_sent_documents, name='view_sent_documents'),
-
-    # ==========================================
-    # 7. NOTIFICATION & ACTION APIs
-    # ==========================================
-    path('api/notifications/', documentview.get_notifications_api, name='notifications_api'),
-    path('api/notifications/mark-read/<int:ntf_id>/', documentview.mark_as_read_api, name='mark_as_read_api'),
-
-    # Document Review Actions (Head/Recipient)
-    path("api/documents/approve/<int:doc_id>/", documentview.approve_document_api, name="approve_document_api"),
-    path("api/documents/reject/<int:doc_id>/", documentview.reject_document_api, name="reject_document_api"),
-    path("api/documents/receive/<int:doc_id>/", documentview.receive_document_api, name="receive_document_api"),
-
 ]
 
-# Media files serving (Importante para ma-view/download ang uploaded files)
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

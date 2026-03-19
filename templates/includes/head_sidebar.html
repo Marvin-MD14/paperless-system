@@ -23,6 +23,7 @@
                </div>
             </div>
          </li>
+         
          <li class="nav-heading"><span>Main Navigation</span></li>
          
          <li class="{% if request.resolver_match.url_name == 'head_dashboard' %}active{% endif %}">
@@ -39,6 +40,33 @@
                <div class="badge badge-danger float-right">{{ unread_received_count }}</div>
                {% endif %}
                <span>Inbox (For Review)</span>
+            </a>
+         </li>
+
+         <li class="{% if request.resolver_match.url_name == 'inbound_external_documents' %}active{% endif %}">
+            <a href="{% url 'inbound_external_documents' %}" title="Inbound from Other Depts">
+               <em class="icon-action-redo"></em>
+               {% if inbound_external_count > 0 %}
+               <div class="badge badge-info float-right">{{ inbound_external_count }}</div>
+               {% endif %}
+               <span>Inbound (From Depts)</span>
+            </a>
+         </li>
+
+         <li class="{% if request.resolver_match.url_name == 'pending_staff_approvals' %}active{% endif %}">
+            <a href="{% url 'pending_staff_approvals' %}" title="Staff Approvals">
+               <em class="icon-user-follow"></em>
+               {% if pending_staff_count > 0 %}
+               <div class="badge badge-warning float-right">{{ pending_staff_count }}</div>
+               {% endif %}
+               <span>Staff Approvals</span>
+            </a>
+         </li>
+
+         <li class="{% if request.resolver_match.url_name == 'my_department_staff' %}active{% endif %}">
+            <a href="{% url 'my_department_staff' %}" title="My Staff List">
+               <em class="icon-people"></em>
+               <span>My Staff List</span>
             </a>
          </li>
 

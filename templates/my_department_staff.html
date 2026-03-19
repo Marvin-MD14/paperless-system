@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %} My Department Staff | ERDMS {% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="content-heading d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="font-weight-bold text-dark mb-1">My Department Staff</h2>
+            <small class="text-muted">List of all active and approved employees in <strong>{{ request.user.userprofile.office.office_name }}</strong></small>
+        </div>
+        <div class="btn-group">
+            <a href="{% url 'pending_staff_approvals' %}" class="btn btn-warning btn-sm mr-2">
+                <i class="fa fa-user-plus mr-1"></i> 
+                Pending Approvals 
+                {% if pending_staff_count > 0 %}
+                <span class="badge badge-light ml-1">{{ pending_staff_count }}</span>
+                {% endif %}
+            </a>
+            <a href="{% url 'head_dashboard' %}" class="btn btn-secondary btn-sm">
+                <i class="fa fa-arrow-left mr-1"></i> Back
+            </a>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <em class="icon-people fa-2x mr-3"></em>
+                        <div>
+                            <div class="text-uppercase small">Total Department Staff</div>
+                            <div class="h4 mb-0">{{ staff_members.count }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 text-primary"><i class="icon-notebook mr-2"></i>Personnel Directory</h5>
+                    <div class="card-tools">
+                        <button class="btn btn-xs btn-outline-secondary" onclick="window.print()">
+                            <i class="fa fa-print mr-1"></i> Print List
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th class="border-0 px-4">Employee</th>
+                                    <th class="border-0">Position/Role</th>
+                                    <th class="border-0">Email Address</th>
+                                    <th class="border-0">Status</th>
+                                    <th class="border-0 text-right px-4">Date Approved</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for staff in staff_members %}
+                                <tr>
+                                    <td class="px-4">
+                                        <div class="d-flex align-items-center">
+                                            {% if staff.profile_picture %}
+                                                <img src="{{ staff.profile_picture.url }}" class="rounded-circle shadow-sm mr-3" width="40" height="40" style="object-fit: cover;">
+                                            {% else %}
+                                                <div class="avatar-circle bg-soft-primary mr-3">
+                                                    {{ staff.user.first_name|slice:":1"|upper }}{{ staff.user.last_name|slice:":1"|upper }}
+                                                </div>
+                                            {% endif %}
+                                            <div>
+                                                <span class="font-weight-bold text-dark d-block">{{ staff.user.get_full_name }}</span>
+                                                <small class="text-muted">ID: #{{ staff.user.id|stringformat:"04d" }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="text-muted">{{ staff.get_role_display }}</span>
+                                    </td>
+                                    <td>
+                                        <a href="mailto:{{ staff.user.email }}" class="text-info">{{ staff.user.email }}</a>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-pill badge-success">Active</span>
+                                    </td>
+                                    <td class="text-right px-4">
+                                        <span class="text-muted">{{ staff.user.date_joined|date:"M d, Y" }}</span>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center py-5">
+                                        <div class="text-muted">
+                                            <em class="icon-ghost fa-3x mb-3 d-block"></em>
+                                            <p>No active staff members found in this department.</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Custom Styles para sa Table */
+    .avatar-circle {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #5d9cec;
+        background-color: #f0f4f9;
+        font-weight: bold;
+        font-size: 14px;
+        border: 1px solid #e1e8ee;
+    }
+
+    .bg-soft-primary {
+        background-color: #e8eff9 !important;
+        color: #2f80ed !important;
+    }
+
+    .table td {
+        padding-top: 15px;
+        padding-bottom: 15px;
+        vertical-align: middle !important;
+    }
+
+    .card {
+        border-radius: 8px;
+    }
+
+    @media print {
+        .btn-group, .card-tools, .sidebar, .header-container {
+            display: none !important;
+        }
+    }
+</style>
+{% endblock %}
