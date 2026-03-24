@@ -257,83 +257,108 @@
     </div>
 </div>
 
-<div class="modal fade" id="docPreviewModal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="previewTitle">Document Review</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body p-0">
-                <iframe id="previewFrame" src="" width="100%" height="700px" frameborder="0"></iframe>
-            </div>
-        </div>
-    </div>
+<div class="modal fade" id="docPreviewModal" tabindex="-1" role="dialog" aria-labelledby="previewTitle" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+        <div class="modal-content shadow-lg border-0">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="previewTitle">Document Preview</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body p-0" style="background: #525659;">
+                <iframe id="previewFrame" src="" width="100%" height="750px" frameborder="0"></iframe>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}
-
 {% block extra_js %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/raphael/2.3.0/raphael.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/morris.js/0.5.1/morris.min.js"></script>
 
 <script>
 $(document).ready(function() {
-    var wordCount = {{ word_count|default:0 }};
-    var excelCount = {{ excel_count|default:0 }};
-    var pptCount = {{ ppt_count|default:0 }};
-    var pdfCount = {{ pdf_count|default:0 }};
+    // 1. DATA PREPARATION
+    // Kunin ang data mula sa Django context. Gumamit ng default 0 kung walang data.
+    var wordCount = parseInt("{{ word_count|default:0 }}") || 0;
+    var excelCount = parseInt("{{ excel_count|default:0 }}") || 0;
+    var pptCount = parseInt("{{ ppt_count|default:0 }}") || 0;
+    var pdfCount = parseInt("{{ pdf_count|default:0 }}") || 0;
 
-    new Morris.Bar({
-        element: 'morris-bar-chart',
-        data: [
-            { y: 'Word', a: wordCount },
-            { y: 'Excel', a: excelCount },
-            { y: 'PPT', a: pptCount },
-            { y: 'PDF', a: pdfCount }
-        ],
-        xkey: 'y', ykeys: ['a'], labels: ['Files'],
-        barColors: function (row, series, type) {
-            if (row.label == "Word") return "#23b7e5";
-            else if (row.label == "Excel") return "#27c24c";
-            else if (row.label == "PPT") return "#fad732";
-            else if (row.label == "PDF") return "#f05050";
-            return "#23b7e5";
-        },
-        hideHover: 'auto', resize: true
-    });
+    // 2. MORRIS BAR CHART
+    // I-check muna kung exist ang element bago i-initialize
+    var barElem = document.getElementById('morris-bar-chart');
+    if (barElem) {
+        new Morris.Bar({
+            element: 'morris-bar-chart',
+            data: [
+                { y: 'Word', a: wordCount },
+                { y: 'Excel', a: excelCount },
+                { y: 'PPT', a: pptCount },
+                { y: 'PDF', a: pdfCount }
+            ],
+            xkey: 'y',
+            ykeys: ['a'],
+            labels: ['Files'],
+            barColors: function (row, series, type) {
+                if (row.label == "Word") return "#23b7e5";
+                else if (row.label == "Excel") return "#27c24c";
+                else if (row.label == "PPT") return "#fad732";
+                else if (row.label == "PDF") return "#f05050";
+                return "#23b7e5";
+            },
+            hideHover: 'auto',
+            resize: true
+        });
+    }
 
-    new Morris.Donut({
-        element: 'morris-donut-chart',
-        data: [
-            { label: "Word", value: wordCount },
-            { label: "Excel", value: excelCount },
-            { label: "PPT", value: pptCount },
-            { label: "PDF", value: pdfCount }
-        ],
-        colors: ['#23b7e5', '#27c24c', '#fad732', '#f05050'],
-        resize: true
-    });
+    // 3. MORRIS DONUT CHART
+    var donutElem = document.getElementById('morris-donut-chart');
+    if (donutElem) {
+        new Morris.Donut({
+            element: 'morris-donut-chart',
+            data: [
+                { label: "Word", value: wordCount },
+                { label: "Excel", value: excelCount },
+                { label: "PPT", value: pptCount },
+                { label: "PDF", value: pdfCount }
+            ],
+            colors: ['#23b7e5', '#27c24c', '#fad732', '#f05050'],
+            resize: true
+        });
+    }
 
-    $('.btn-preview').on('click', function() {
+    // 4. DOCUMENT PREVIEW LOGIC (MODAL)
+    $('.btn-preview').on('click', function(e) {
+        e.preventDefault();
+        
         var fileUrl = $(this).data('url');
         var fullUrl = $(this).data('full-url');
         var title = $(this).data('title');
         var extension = fileUrl.split('.').pop().toLowerCase();
         
+        // Gamitin ang Microsoft Office Online Viewer para sa docx/xlsx/pptx
         var viewerUrl = (['docx', 'doc', 'xlsx', 'xls', 'pptx', 'ppt'].includes(extension)) 
             ? "https://view.officeapps.live.com/op/view.aspx?src=" + encodeURIComponent(fullUrl)
             : fileUrl;
 
+        // Update Modal Content
         $('#previewTitle').text(title);
         $('#previewFrame').attr('src', viewerUrl);
-        $('#docPreviewModal').modal('show');
+        
+        // FIX: I-append sa body bago i-show para lumitaw sa harap ng dashboard layers
+        $('#docPreviewModal').appendTo("body").modal('show');
     });
 
+    // Reset iframe kapag sinara ang modal para makatipid sa RAM at memory
     $('#docPreviewModal').on('hidden.bs.modal', function () {
         $('#previewFrame').attr('src', '');
     });
 });
 </script>
+
 {% endblock %}

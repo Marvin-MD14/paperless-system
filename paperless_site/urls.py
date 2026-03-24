@@ -4,6 +4,7 @@ from django.contrib.auth import views as auth_views
 from django.conf import settings
 from django.conf.urls.static import static
 
+# Import lahat ng function galing sa tracking/views.py
 from tracking.views import (
     login, 
     admin_login, 
@@ -21,13 +22,14 @@ from tracking.views import (
     approve_user,
     reject_user,
     bulk_approve_users,
-    # MGA BAGONG IMPORT
     pending_staff_approvals,
     approve_staff,
     reject_staff,
-    my_department_staff, # Idinagdag ito
+    my_department_staff,
+    inbound_external_documents,
 )
 
+# Import lahat ng function galing sa tracking/documentview.py
 from tracking import documentview
 
 urlpatterns = [
@@ -71,9 +73,15 @@ urlpatterns = [
     # STAFF APPROVAL SYSTEM (Department Head Level)
     # ==========================================
     path('pending-staff-approvals/', pending_staff_approvals, name='pending_staff_approvals'),
-    path('my-department-staff/', my_department_staff, name='my_department_staff'), # Bagong link para sa listahan
+    path('my-department-staff/', my_department_staff, name='my_department_staff'),
     path('approve-staff/<int:user_profile_id>/', approve_staff, name='approve_staff'),
     path('reject-staff/<int:user_profile_id>/', reject_staff, name='reject_staff'),
+
+    # ==========================================
+    # INBOUND DOCUMENTS & DECISIONS (For Head)
+    # ==========================================
+    path('head/inbound-external/', inbound_external_documents, name='inbound_external_documents'),
+    path('decisions/', documentview.document_decision_history, name='document_decision_history'),
 
     # ==========================================
     # DOCUMENT TRACKING & MANAGEMENT
@@ -92,6 +100,7 @@ urlpatterns = [
     # ==========================================
     # API ENDPOINTS (AJAX/Fetch)
     # ==========================================
+    # Note: Siguraduhing may trailing slash (/) para iwas 404/301 errors
     path('api/notifications/', documentview.get_notifications_api, name='notifications_api'),
     path('api/notifications/mark-read/<int:ntf_id>/', documentview.mark_as_read_api, name='mark_as_read_api'),
     path('api/documents/approve/<int:doc_id>/', documentview.approve_document_api, name="approve_document_api"),
@@ -126,6 +135,7 @@ urlpatterns = [
          ), name='password_reset_complete'),
 ]
 
+# Static & Media Files
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

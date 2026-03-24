@@ -209,38 +209,31 @@
 
 {% block extra_js %}
 <script>
-    /**
-     * Pinagsamang View at AJAX Status Update
-     */
+
     function viewAndMarkReceived(element, id, title, url, currentStatus) {
-        // 1. Tawagin ang Preview Modal mula sa base.html
         if (typeof viewDocument === "function") {
             viewDocument(element, id, title, url, currentStatus);
         } else {
             window.open(url, '_blank');
         }
         
-        // 2. AJAX para i-update ang status sa database (kung hindi pa received/approved/rejected)
         if (currentStatus !== 'RECEIVED' && currentStatus !== 'APPROVED' && currentStatus !== 'REJECTED') {
             $.ajax({
                 url: "/api/documents/receive/" + id + "/",
                 type: "POST",
                 headers: { "X-CSRFToken": "{{ csrf_token }}" },
                 success: function(response) {
-                    // Update UI: Palitan ang badge sa table
                     let row = $(element).closest('tr');
                     let statusCell = row.find('.status-cell');
                     let newBadge = '<span class="badge badge-received p-2 px-3 rounded-pill">RECEIVED</span>';
                     
                     statusCell.html(newBadge);
                     
-                    // I-update ang DataTable internal data para sa filtering/sorting
                     if ($.fn.DataTable.isDataTable('#receivedDataTable')) {
                         let table = $('#receivedDataTable').DataTable();
                         table.cell(statusCell).invalidate().draw(false);
                     }
 
-                    // I-update ang onclick para 'RECEIVED' na ang status sa susunod
                     $(element).attr('onclick', `viewAndMarkReceived(this, '${id}', '${title}', '${url}', 'RECEIVED')`);
                 },
                 error: function() {
@@ -268,23 +261,18 @@
                 }
             });
 
-            // Inject Custom Filter
             $(".custom-filter-placeholder").html($("#filterWrapper").html());
 
-            // Initialize Tooltips
             var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
             tooltipTriggerList.map(function (el) {
                 return new bootstrap.Tooltip(el)
             });
 
-            // Custom Status Filter Logic
             $(document).on('change', '#statusFilter', function() {
                 let val = $(this).val();
-                // Column 3 is the Status column
                 table.column(3).search(val).draw();
             });
 
-            // Adjust table columns on sidebar toggle or resize
             $(window).on('resize', function () {
                 table.columns.adjust();
             });

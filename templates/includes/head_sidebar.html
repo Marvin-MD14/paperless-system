@@ -33,48 +33,69 @@
             </a>
          </li>
 
-         <li class="{% if request.resolver_match.url_name == 'received_documents' %}active{% endif %}">
-            <a href="{% url 'received_documents' %}" title="Pending Documents">
-               <em class="icon-envelope-open"></em>
-               {% if unread_received_count > 0 %}
-               <div class="badge badge-danger float-right">{{ unread_received_count }}</div>
-               {% endif %}
-               <span>Inbox (For Review)</span>
-            </a>
-         </li>
-
-         <li class="{% if request.resolver_match.url_name == 'inbound_external_documents' %}active{% endif %}">
-            <a href="{% url 'inbound_external_documents' %}" title="Inbound from Other Depts">
-               <em class="icon-action-redo"></em>
-               {% if inbound_external_count > 0 %}
-               <div class="badge badge-info float-right">{{ inbound_external_count }}</div>
-               {% endif %}
-               <span>Inbound (From Depts)</span>
-            </a>
-         </li>
-
-         <li class="{% if request.resolver_match.url_name == 'pending_staff_approvals' %}active{% endif %}">
-            <a href="{% url 'pending_staff_approvals' %}" title="Staff Approvals">
-               <em class="icon-user-follow"></em>
-               {% if pending_staff_count > 0 %}
-               <div class="badge badge-warning float-right">{{ pending_staff_count }}</div>
-               {% endif %}
-               <span>Staff Approvals</span>
-            </a>
-         </li>
-
-         <li class="{% if request.resolver_match.url_name == 'my_department_staff' %}active{% endif %}">
-            <a href="{% url 'my_department_staff' %}" title="My Staff List">
+         <li class="">
+            <a href="#staff_menu" title="Staff Management" data-toggle="collapse">
                <em class="icon-people"></em>
-               <span>My Staff List</span>
+               <span>Staff Management</span>
             </a>
+            <ul class="sidebar-nav sidebar-subnav collapse {% if 'staff' in request.resolver_match.url_name %}show{% endif %}" id="staff_menu">
+               <li class="sidebar-subnav-header">Staff Management</li>
+               
+               <li class="{% if request.resolver_match.url_name == 'my_department_staff' %}active{% endif %}">
+                  <a href="{% url 'my_department_staff' %}" title="Staff List">
+                     <span>Staff List</span>
+                  </a>
+               </li>
+               
+               <li class="{% if request.resolver_match.url_name == 'pending_staff_approvals' %}active{% endif %}">
+                  <a href="{% url 'pending_staff_approvals' %}" title="Staff Approvals">
+                     {% if pending_staff_count > 0 %}
+                     <div class="badge badge-warning float-right">{{ pending_staff_count }}</div>
+                     {% endif %}
+                     <span>Staff Approvals</span>
+                  </a>
+               </li>
+            </ul>
          </li>
 
-         <li class="{% if request.resolver_match.url_name == 'all_documents' %}active{% endif %}">
-            <a href="{% url 'all_documents' %}" title="Document History">
+         <li class="">
+            <a href="#doc_menu" title="Documents" data-toggle="collapse">
                <em class="icon-folder-alt"></em>
-               <span>Document History</span>
+               <span>Document Center</span>
             </a>
+            <ul class="sidebar-nav sidebar-subnav collapse {% if 'document' in request.resolver_match.url_name or 'inbound' in request.resolver_match.url_name %}show{% endif %}" id="doc_menu">
+               <li class="sidebar-subnav-header">Document Center</li>
+               
+               <li class="{% if request.resolver_match.url_name == 'received_documents' %}active{% endif %}">
+                  <a href="{% url 'received_documents' %}" title="Inbox">
+                     {% if unread_received_count > 0 %}
+                     <div class="badge badge-danger float-right">{{ unread_received_count }}</div>
+                     {% endif %}
+                     <span>Inbox (For Review)</span>
+                  </a>
+               </li>
+
+               <li class="{% if request.resolver_match.url_name == 'inbound_external_documents' %}active{% endif %}">
+                  <a href="{% url 'inbound_external_documents' %}" title="Inbound">
+                     {% if inbound_external_count > 0 %}
+                     <div class="badge badge-info float-right">{{ inbound_external_count }}</div>
+                     {% endif %}
+                     <span>Inbound Documents</span>
+                  </a>
+               </li>
+
+               <li class="{% if request.resolver_match.url_name == 'document_decision_history' %}active{% endif %}">
+                  <a href="{% url 'document_decision_history' %}" title="Decisions">
+                     <span>Decision History</span>
+                  </a>
+               </li>
+
+               <li class="{% if request.resolver_match.url_name == 'all_documents' %}active{% endif %}">
+                  <a href="{% url 'all_documents' %}" title="All History">
+                     <span>Master Logs</span>
+                  </a>
+               </li>
+            </ul>
          </li>
          
          <li class="nav-heading"><span>Account</span></li>
@@ -85,7 +106,6 @@
                <span>Logout</span>
             </a>
          </li>
-         
       </ul>
    </nav>
 </div>

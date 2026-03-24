@@ -9,8 +9,7 @@ from django.contrib.auth.models import User
 from django.http import JsonResponse
 from django.utils.timesince import timesince 
 from django.views.decorators.http import require_POST
-from .models import Document, Notification
-from .models import Document, UserProfile, Routing 
+from .models import Document, Notification, UserProfile, Routing 
 from .choices import OFFICE_CHOICES
 
 # ==========================================
@@ -22,18 +21,14 @@ def get_notifications_api(request):
     """
     API for Notification Bell: Shows Received Docs AND Status Updates (Approved/Rejected)
     """
-    # 1. Docs na pinadala sa kanya (Inbox)
     inbox = Document.objects.filter(recipient=request.user)
-    # 2. Sarili niyang uploads na may update na (Approved/Rejected)
     status_updates = Document.objects.filter(uploaded_by=request.user).filter(Q(status='APPROVED') | Q(status='REJECTED'))
     
-    # Combine and Sort
     all_notifs = (inbox | status_updates).distinct().order_by('-uploaded_at')
     unread_count = all_notifs.filter(is_read=False).count()
     
     notifications_data = []
     for ntf in all_notifs[:5]:
-        # Determine Label/Icon base sa kung siya ang uploader o recipient
         if ntf.uploaded_by == request.user:
             icon = "✅" if ntf.status == "APPROVED" else "❌"
             msg = f"{icon} Your doc '{ntf.title}' was {ntf.status.lower()}"
@@ -57,15 +52,9 @@ def get_notifications_api(request):
 @require_POST
 def mark_as_read_api(request, ntf_id):
     document = get_object_or_404(Document, Q(id=ntf_id) & (Q(recipient=request.user) | Q(uploaded_by=request.user)))
-    
-    # ALISIN O I-COMMENT ITO:
-    # if document.recipient == request.user and document.status in ['PENDING', 'FOR_REVIEW']:
-    #     document.status = 'RECEIVED'
-        
     if not document.is_read:
         document.is_read = True
-        document.save() # Siguraduhing naka-save
-        
+        document.save() 
     return JsonResponse({'status': 'success', 'new_status': document.status})
 
 # ==========================================
@@ -74,29 +63,22 @@ def mark_as_read_api(request, ntf_id):
 
 @login_required
 def employee_dashboard(request):
-    """
-    Dashboard View: Naglalaman ng counters para sa Approved at Returned.
-    """
     my_uploads = Document.objects.filter(uploaded_by=request.user)
     received_all = Document.objects.filter(recipient=request.user)
     
-    # Counters base sa status ng sariling uploads
     approved_count = my_uploads.filter(status='APPROVED').count()
     returned_count = my_uploads.filter(status='REJECTED').count()
     
     context = {
         'recent_logs': my_uploads.order_by('-uploaded_at'),
         'total_uploads': my_uploads.count(),
-        'processed_count': approved_count,  # Mapping para sa Green Card
-        'returned_count': returned_count,    # Mapping para sa Red Card
+        'processed_count': approved_count,
+        'returned_count': returned_count,
         'unread_received_count': received_all.filter(is_read=False).count(),
-        
-        # Data para sa Morris Charts
         'word_count': my_uploads.filter(category='word').count(),
         'excel_count': my_uploads.filter(category='excel').count(),
         'ppt_count': my_uploads.filter(category='ppt').count(),
         'pdf_count': my_uploads.filter(category='pdf').count(),
-        
         'unread_docs': received_all.filter(is_read=False).order_by('-uploaded_at')[:5],
     }
     return render(request, 'employee_dashboard.html', context)
@@ -104,20 +86,30 @@ def employee_dashboard(request):
 # ==========================================
 # 3. APPROVE & REJECT (WITH GMAIL NOTIF)
 # ==========================================
+
 @login_required
 @require_POST
 def approve_document_api(request, doc_id):
-    document = get_object_or_404(Document, id=doc_id, recipient=request.user)
-    
-    # Kunin ang remarks mula sa POST (galing sa SweetAlert modal)
+    """
+    In-update: Tinanggal ang recipient=request.user restriction para payagan ang Head
+    na mag-approve ng docs na taga-ibang office basta para sa office nila.
+    """
+    document = get_object_or_404(Document, id=doc_id)
     remarks = request.POST.get('remarks', 'Document approved and is now on process.')
 
-    # 1. Update Document
     document.status = 'APPROVED'
-    document.remarks = remarks  # Dito na ise-save ang message
+    document.remarks = remarks
     document.save()
 
-    # 2. In-App Notification
+    # Log the action in Routing
+    Routing.objects.create(
+        document=document,
+        from_office=getattr(request.user.userprofile, 'office', None),
+        notes=f"Approved: {remarks}",
+        status='APPROVED'
+    )
+
+    # In-app Notification para sa uploader
     Notification.objects.create(
         user=document.uploaded_by,
         sender=request.user,
@@ -126,7 +118,7 @@ def approve_document_api(request, doc_id):
         notification_type='APPROVE'
     )
 
-    # 3. Gmail Notification para sa Approval
+    # Gmail Notification
     uploader = document.uploaded_by
     if uploader.email:
         try:
@@ -135,31 +127,37 @@ def approve_document_api(request, doc_id):
                 f"Hi {uploader.get_full_name() or uploader.username},\n\n"
                 f"Your document '{document.title}' has been APPROVED by {request.user.username}.\n\n"
                 f"FEEDBACK/REMARKS: {remarks}\n\n"
-                f"You can view this in your dashboard: {request.build_absolute_uri('/')}\n\n"
                 f"Regards,\nERDMS System"
             )
             send_mail(subject, body, settings.DEFAULT_FROM_EMAIL, [uploader.email], fail_silently=True)
         except Exception as e:
             print(f"Gmail Error: {e}")
 
-    return JsonResponse({"status": "success"})
-
+    return JsonResponse({"status": "success", "message": "Document approved successfully."})
 
 @login_required
 @require_POST
 def reject_document_api(request, doc_id):
-    document = get_object_or_404(Document, id=doc_id, recipient=request.user)
-    
-    # Kunin ang reason (reason ang key name sa JS mo kadalasan sa rejection)
-    rejection_reason = request.POST.get('reason', 'No reason provided.')
+    """
+    In-update: Tinanggal ang recipient=request.user restriction para iwas 404 error.
+    """
+    document = get_object_or_404(Document, id=doc_id)
+    rejection_reason = request.POST.get('remarks', 'No reason provided.')
 
-    # 1. Update Document
     document.status = 'REJECTED'
-    document.remarks = rejection_reason # I-save ang reason sa remarks field
+    document.remarks = rejection_reason
     document.is_read = False 
     document.save()
 
-    # 2. In-App Notification
+    # Log the action in Routing
+    Routing.objects.create(
+        document=document,
+        from_office=getattr(request.user.userprofile, 'office', None),
+        notes=f"Rejected: {rejection_reason}",
+        status='REJECTED'
+    )
+
+    # In-app Notification
     Notification.objects.create(
         user=document.uploaded_by,
         sender=request.user,
@@ -168,7 +166,7 @@ def reject_document_api(request, doc_id):
         notification_type='REJECT'
     )
 
-    # 3. Gmail Notification para sa Rejection
+    # Gmail Notification
     uploader = document.uploaded_by
     if uploader.email:
         try:
@@ -177,14 +175,14 @@ def reject_document_api(request, doc_id):
                 f"Hi {uploader.get_full_name() or uploader.username},\n\n"
                 f"Your document '{document.title}' was REJECTED by {request.user.username}.\n\n"
                 f"REASON: {rejection_reason}\n\n"
-                f"Please check the document and re-upload if necessary.\n\n"
                 f"Regards,\nERDMS System"
             )
             send_mail(subject, body, settings.DEFAULT_FROM_EMAIL, [uploader.email], fail_silently=True)
         except Exception as e:
             print(f"Gmail Error: {e}")
 
-    return JsonResponse({"status": "success"})
+    return JsonResponse({"status": "success", "message": "Document rejected successfully."})
+
 # ==========================================
 # 4. DOCUMENT OPERATIONS (UPLOAD, SEND, DELETE)
 # ==========================================
@@ -237,7 +235,6 @@ def upload_document(request):
         else:
             messages.error(request, "Please select a file.")
 
-    # Data para sa GET request
     my_uploads = Document.objects.filter(uploaded_by=request.user)
     received_all = Document.objects.filter(recipient=request.user)
     staff_users = UserProfile.objects.filter(role='STAFF').select_related('user', 'office').exclude(user=request.user)
@@ -281,7 +278,6 @@ def send_document(request):
                 status='FOR_REVIEW'
             )
 
-            # Gmail Notification for Forwarding
             if recipient_user.email:
                 send_mail(
                     f"🔔 Document Forwarded: {document.title}",
@@ -341,55 +337,67 @@ def mark_as_read(request, doc_id):
         document.is_read = True
         document.save()
     return redirect(document.file.url)
+
 @login_required
 def view_sent_documents(request):
     sent_docs = Document.objects.filter(
         uploaded_by=request.user
     ).exclude(recipient__isnull=True).order_by('-uploaded_at')
-
-    context = {
-        'sent_docs': sent_docs,
-    }
-    # ALISIN ANG "documents/" DITO:
-    return render(request, 'sent_documents.html', context)
+    return render(request, 'sent_documents.html', {'sent_docs': sent_docs})
 
 @login_required
 @require_POST
 def receive_document_api(request, doc_id):
-    """
-    API endpoint para i-mark ang document as RECEIVED.
-    Ito ay indicator na nakita na ng recipient ang file pero hindi pa Final Decision.
-    """
-    document = get_object_or_404(Document, id=doc_id, recipient=request.user)
-    
-    # 1. Update Status to RECEIVED
-    # Siguraduhin na 'RECEIVED' ay valid choice sa models.py mo
+    document = get_object_or_404(Document, id=doc_id)
     document.status = 'RECEIVED'
-    document.is_read = True # Matic na read na rin ito
+    document.is_read = True 
     document.save()
 
-    # 2. In-App Notification para sa uploader
     Notification.objects.create(
         user=document.uploaded_by,
         sender=request.user,
         document=document,
         message=f"RECEIVED: '{document.title}' is now being reviewed by {request.user.username}.",
-        notification_type='INFO' # Or any type you use for status updates
+        notification_type='INFO'
     )
 
-    # 3. (Optional) Gmail Notification
     uploader = document.uploaded_by
     if uploader.email:
         try:
             subject = f"📥 Document Received: {document.title}"
-            body = (
-                f"Hi {uploader.username},\n\n"
-                f"Your document '{document.title}' has been RECEIVED by {request.user.username}.\n"
-                f"Status: Under Review.\n\n"
-                f"ERDMS System"
-            )
+            body = f"Hi {uploader.username},\n\nYour document '{document.title}' has been RECEIVED by {request.user.username}.\nStatus: Under Review."
             send_mail(subject, body, settings.DEFAULT_FROM_EMAIL, [uploader.email], fail_silently=True)
         except Exception as e:
             print(f"Gmail Error: {e}")
 
     return JsonResponse({"status": "success", "message": "Document marked as received."})
+
+# ==========================================
+# 6. DOCUMENT DECISION HISTORY (HEAD)
+# ==========================================
+
+@login_required
+def document_decision_history(request):
+    """
+    In-update: Ngayon, ipapakita nito ang lahat ng documents kung saan ang Head ang 
+    nag-upload O siya ang naka-assign sa Routing history para makita ang approved/rejected history.
+    """
+    # Documents kung saan ang Head ang huling nag-aksyon (naging approved/rejected)
+    # Maaari nating i-filter base sa kung sino ang 'recipient' (Head) na nakakita nito.
+    
+    approved_docs = Document.objects.filter(
+        status='APPROVED'
+    ).filter(Q(recipient=request.user) | Q(uploaded_by=request.user)).order_by('-uploaded_at')
+
+    rejected_docs = Document.objects.filter(
+        status='REJECTED'
+    ).filter(Q(recipient=request.user) | Q(uploaded_by=request.user)).order_by('-uploaded_at')
+
+    context = {
+        'approved_docs': approved_docs,
+        'rejected_docs': rejected_docs,
+        'title': 'Decision History',
+        'unread_received_count': Document.objects.filter(recipient=request.user, is_read=False).count()
+    }
+    
+    return render(request, 'document_decision_history.html', context)

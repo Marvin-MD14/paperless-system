@@ -1,0 +1,318 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="content-wrapper">
+    <div class="content-heading">
+        <div>
+            Inbound Documents (From Other Departments)
+            <small>List of all documents received from other departments</small>
+        </div>
+    </div>
+
+    <div class="container-fluid">
+        <div class="card card-default shadow-sm border-0">
+            <div class="card-header d-flex align-items-center bg-white">
+                <div class="d-flex align-items-center">
+                    <em class="icon-action-redo mr-2 text-info"></em>
+                    <h4 class="m-0 text-dark">External Documents Received</h4>
+                </div>
+                <div class="ml-auto">
+                    <span class="badge badge-info px-3 py-2">{{ inbound_docs.count }} Total Records</span>
+                </div>
+            </div>
+            
+            <div class="card-body">
+                <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+                    <div id="searchContainer" style="width: 100%; max-width: 340px;"></div>
+                    <div class="d-flex align-items-center">
+                        <span class="text-muted mr-2 font-weight-bold" style="font-size: 0.8rem; white-space: nowrap;">SHOW:</span>
+                        <select id="statusFilter" class="form-control custom-select-pill" style="width: 180px;">
+                            <option value="">All Status</option>
+                            <option value="Received by Staff">Received by Staff</option>
+                            <option value="Pending">Pending</option>
+                            <option value="FOR_REVIEW">For Review</option>
+                            <option value="APPROVED">Approved</option>
+                            <option value="REJECTED">Rejected</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle" id="inboundTable" style="width:100%">
+                        <thead>
+                            <tr class="text-muted">
+                                <th class="border-top-0">Document Title</th>
+                                <th class="border-top-0">Origin Office</th>
+                                <th class="border-top-0">Sender Name</th>
+                                <th class="border-top-0">Date Received</th>
+                                <th class="border-top-0">Status</th>
+                                <th class="border-top-0 text-center">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for doc in inbound_docs %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <em class="far fa-file-pdf mr-2 text-danger fa-lg"></em> 
+                                        <span class="font-weight-600 text-primary">{{ doc.title }}</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge badge-pill badge-dark px-2">
+                                        {{ doc.uploaded_by.userprofile.office.office_code|default:doc.uploaded_by.userprofile.office.office_name }}
+                                    </span>
+                                </td>
+                                <td class="text-muted">{{ doc.uploaded_by.get_full_name|default:doc.uploaded_by.username }}</td>
+                                <td class="text-muted">{{ doc.uploaded_at|date:"M d, Y | h:i A" }}</td>
+                                <td>
+                                    {% if doc.status == 'RECEIVED' or doc.status == 'Received by Staff' %}
+                                        <span class="badge badge-pill badge-success">Received by Staff</span>
+                                    {% elif doc.status == 'PENDING' %}
+                                        <span class="badge badge-pill badge-warning text-white">Pending</span>
+                                    {% elif doc.status == 'FOR_REVIEW' %}
+                                        <span class="badge badge-pill badge-info">For Review</span>
+                                    {% elif doc.status == 'APPROVED' %}
+                                        <span class="badge badge-pill badge-success">Approved</span>
+                                    {% elif doc.status == 'REJECTED' %}
+                                        <span class="badge badge-pill badge-danger">Rejected</span>
+                                    {% else %}
+                                        <span class="badge badge-pill badge-secondary">{{ doc.status }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    <div class="btn-group">
+                                        <button type="button" 
+                                                class="btn btn-sm btn-outline-primary btn-preview action-btn" 
+                                                title="View Document"
+                                                data-id="{{ doc.id }}"
+                                                data-url="{{ doc.file.url }}"
+                                                data-full-url="{{ request.scheme }}://{{ request.get_host }}{{ doc.file.url }}"
+                                                data-title="{{ doc.title }}"
+                                                data-status="{{ doc.status }}"> <em class="fa fa-eye"></em>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-info action-btn" title="Tracking History">
+                                            <em class="fa fa-history"></em>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center py-5 text-muted">No inbound documents found.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="docPreviewModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+        <div class="modal-content shadow-lg border-0">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="previewTitle">Document Preview</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body p-0" style="background: #525659;">
+                <iframe id="previewFrame" src="" width="100%" height="750px" frameborder="0"></iframe>
+            </div>
+            <div class="modal-footer bg-light d-flex justify-content-between">
+                <button type="button" class="btn btn-secondary px-4 shadow-sm" data-dismiss="modal">Cancel</button>
+                <div>
+                    <span id="disabledNotice" class="text-muted mr-2 d-none"><i>Action no longer available</i></span>
+                    
+                    <button type="button" id="btnReject" class="btn btn-danger px-4 mr-1 shadow-sm">
+                        <em class="fa fa-times-circle mr-1"></em> Reject
+                    </button>
+                    <button type="button" id="btnApprove" class="btn btn-success px-4 shadow-sm">
+                        <em class="fa fa-check-circle mr-1"></em> Approve
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.datatables.net/1.10.24/css/dataTables.bootstrap4.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+<style>
+    .card { border-radius: 10px; }
+    .table th { text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.8px; font-weight: 700; color: #95aac9; }
+    .font-weight-600 { font-weight: 600; }
+    .action-btn { border-radius: 5px; margin: 0 2px; }
+    .search-wrapper { position: relative; display: flex; align-items: center; }
+    .search-wrapper em { position: absolute; left: 15px; color: #aab2bd; z-index: 10; }
+    .custom-search-pill { padding-left: 40px !important; border-radius: 12px !important; border: 1px solid #eef0f3 !important; background-color: #f8f9fb !important; height: 38px !important; font-size: 0.85rem; width: 100%; transition: all 0.2s ease; }
+    .custom-search-pill:focus { background-color: #fff !important; border-color: #3a97e5 !important; box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important; outline: none; }
+    .custom-select-pill { border-radius: 12px !important; border: 1px solid #eef0f3 !important; height: 38px !important; font-size: 0.85rem; background-color: #fff !important; font-weight: 600; }
+    .pagination .page-item.active .page-link { background-color: #3a97e5; border-color: #3a97e5; }
+    .dataTables_info { color: #95aac9 !important; font-size: 0.85rem; margin-top: 15px; }
+    .dataTables_paginate { margin-top: 15px; }
+    .dataTables_filter { display: none; }
+    button:disabled { cursor: not-allowed !important; opacity: 0.65; }
+    @media (max-width: 768px) { #searchContainer { max-width: 100% !important; margin-bottom: 15px; } }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.datatables.net/1.10.24/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.10.24/js/dataTables.bootstrap4.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+$(document).ready(function() {
+    var selectedDocId = null;
+
+    // 1. Initialize DataTable with Latest to Oldest Sorting
+    var table = $('#inboundTable').DataTable({
+        "paging": true,
+        "lengthChange": false, 
+        "searching": true,
+        "ordering": true,
+        "info": true,
+        "autoWidth": false,
+        "pageLength": 10,
+        "order": [[3, "desc"]], // Column 3 is "Date Received", desc = latest first
+        "language": {
+            "paginate": { "next": "Next", "previous": "Prev" },
+            "info": "Showing _START_ to _END_ of _TOTAL_ entries"
+        }
+    });
+
+    // 2. Custom Search Setup
+    $('#searchContainer').html(`
+        <div class="search-wrapper">
+            <em class="fa fa-search"></em>
+            <input type="text" id="customSearch" class="form-control custom-search-pill" placeholder="Search by title or sender...">
+        </div>
+    `);
+    $('#customSearch').on('keyup', function() { table.search(this.value).draw(); });
+    $('#statusFilter').on('change', function() { table.column(4).search(this.value).draw(); });
+
+    // 3. Modal Preview logic
+    $('.btn-preview').on('click', function(e) {
+        e.preventDefault();
+        selectedDocId = $(this).data('id');
+        var fileUrl = $(this).data('url');
+        var fullUrl = $(this).data('full-url');
+        var title = $(this).data('title');
+        var status = $(this).data('status');
+        var extension = fileUrl.split('.').pop().toLowerCase();
+        
+        var viewerUrl = fileUrl;
+        if (['docx', 'doc', 'xlsx', 'xls', 'pptx', 'ppt'].includes(extension)) {
+            viewerUrl = "https://view.officeapps.live.com/op/view.aspx?src=" + encodeURIComponent(fullUrl);
+        }
+
+        if (status === 'APPROVED' || status === 'REJECTED') {
+            $('#btnApprove, #btnReject').prop('disabled', true);
+            $('#disabledNotice').removeClass('d-none');
+        } else {
+            $('#btnApprove, #btnReject').prop('disabled', false);
+            $('#disabledNotice').addClass('d-none');
+        }
+
+        $('#previewTitle').text(title);
+        $('#previewFrame').attr('src', viewerUrl);
+        $('#docPreviewModal').appendTo("body").modal('show');
+    });
+
+    // 4. APPROVE LOGIC
+    $('#btnApprove').on('click', function() {
+        if(!selectedDocId || $(this).prop('disabled')) return;
+
+        Swal.fire({
+            title: 'Approve Document?',
+            text: "Are you sure you want to approve this document?",
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#28a745',
+            confirmButtonText: 'Yes, Approve',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({ 
+                    title: 'Processing...', 
+                    allowOutsideClick: false, 
+                    didOpen: () => { Swal.showLoading(); } 
+                });
+                
+                $.ajax({
+                    url: "/api/documents/approve/" + selectedDocId + "/", 
+                    type: "POST",
+                    data: { 'csrfmiddlewaretoken': '{{ csrf_token }}' },
+                    success: function(response) {
+                        Swal.fire('Approved!', 'Document approved successfully.', 'success').then(() => { 
+                            location.reload(); 
+                        });
+                    },
+                    error: function(xhr) {
+                        Swal.fire('Error!', 'Something went wrong: ' + xhr.status, 'error');
+                    }
+                });
+            }
+        });
+    });
+
+    // 5. REJECT LOGIC
+    $('#btnReject').on('click', function() {
+        if(!selectedDocId || $(this).prop('disabled')) return;
+
+        Swal.fire({
+            title: 'Reject Document',
+            text: 'Provide a reason for rejection:',
+            input: 'textarea',
+            inputPlaceholder: 'Enter remarks here...',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            confirmButtonText: 'Confirm Reject',
+            cancelButtonText: 'Cancel',
+            inputValidator: (value) => { if (!value) return 'Reason is required!' }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({ 
+                    title: 'Processing...', 
+                    allowOutsideClick: false, 
+                    didOpen: () => { Swal.showLoading(); } 
+                });
+
+                $.ajax({
+                    url: "/api/documents/reject/" + selectedDocId + "/", 
+                    type: "POST",
+                    data: {
+                        'remarks': result.value,
+                        'csrfmiddlewaretoken': '{{ csrf_token }}'
+                    },
+                    success: function(response) {
+                        Swal.fire('Rejected!', 'Document has been rejected.', 'success').then(() => { 
+                            location.reload(); 
+                        });
+                    },
+                    error: function(xhr) {
+                        Swal.fire('Error!', 'Failed to reject document.', 'error');
+                    }
+                });
+            }
+        });
+    });
+
+    // Reset modal on close
+    $('#docPreviewModal').on('hidden.bs.modal', function () {
+        $('#previewFrame').attr('src', '');
+        selectedDocId = null; 
+        $('#btnApprove, #btnReject').prop('disabled', false);
+        $('#disabledNotice').addClass('d-none');
+    });
+});
+</script>
+{% endblock %}

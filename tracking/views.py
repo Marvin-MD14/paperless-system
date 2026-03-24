@@ -13,6 +13,7 @@ from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.core.paginator import Paginator
 
+# Siguraduhin na kasama ang DocumentRouting sa imports kung ito ay ginagamit sa office_docs filter
 from .models import Office, UserProfile, Document
 from .choices import OFFICE_CHOICES, REGISTRATION_TYPES
 
@@ -242,16 +243,23 @@ def head_dashboard(request):
     ).count()
 
     # 3. Document Logic (Base sa Routings ng Office)
-    # Kinukuha ang lahat ng docs na dumaan sa office na ito
+    # Lahat ng docs na dumaan sa office na ito
     office_docs = Document.objects.filter(
         routings__to_office=current_office
     ).distinct()
 
     # 4. Actionable Logic for Head
-    # Ang "Pending Review" ay ang mga docs na status ay 'RECEIVED' (naka-confirm na ng staff)
+    # Docs na 'RECEIVED' na ng staff at naghihintay ng aksyon ng Head
     pending_review = office_docs.filter(status='RECEIVED')
 
-    # 5. Prepare Context for Dashboard
+    # 5. BAGONG LOGIC: Inbound External Documents
+    # Kinukuha ang mga docs kung saan ang 'to_office' ay ang office ni Head,
+    # PERO ang 'uploaded_by' ay HINDI taga-office ni Head.
+    inbound_external_docs = office_docs.exclude(
+        uploaded_by__userprofile__office=current_office
+    ).order_by('-uploaded_at')
+
+    # 6. Prepare Context for Dashboard
     context = {
         'profile': profile,
         'office_name': office_name, 
@@ -261,9 +269,12 @@ def head_dashboard(request):
         # Stats for Cards
         'total_staff': my_staff.count(),
         'pending_staff_count': pending_staff_count,
-        'unread_received_count': pending_review.count(), # Docs waiting for Head's action
+        'unread_received_count': pending_review.count(), 
         'total_approved': office_docs.filter(status='APPROVED').count(),
         'returned_rejected': office_docs.filter(Q(status='RETURNED') | Q(status='REJECTED')).count(),
+        
+        # BAGONG STAT: Bilang ng docs mula sa ibang department (para sa sidebar badge)
+        'inbound_external_count': inbound_external_docs.count(),
         
         # File Type Distribution (Morris Charts)
         'word_count': office_docs.filter(category__iexact='word').count(),
@@ -271,12 +282,34 @@ def head_dashboard(request):
         'ppt_count': office_docs.filter(category__iexact='ppt').count(),
         'pdf_count': office_docs.filter(category__iexact='pdf').count(),
         
-        # Recent Activities
+        # Lists
         'recent_docs': office_docs.order_by('-uploaded_at')[:5],
         'pending_review_list': pending_review.order_by('-uploaded_at')[:5],
+        
+        # Ipapasa ito para sa "Inbound Documents to Staff" table sa dashboard
+        'inbound_staff_docs': inbound_external_docs[:10], 
     }
 
     return render(request, 'head_dashboard.html', context)
+
+@login_required
+def inbound_external_documents(request):
+    profile = request.user.userprofile
+    current_office = profile.office
+
+    # IT to IT flow: recipient is my office, sender is not from my office
+    inbound_docs = Document.objects.filter(
+        routings__to_office=current_office
+    ).exclude(
+        uploaded_by__userprofile__office=current_office
+    ).distinct().order_by('-uploaded_at')
+
+    context = {
+        'profile': profile,
+        'inbound_docs': inbound_docs,
+        'inbound_external_count': inbound_docs.count(), # Para manatili ang badge sa sidebar
+    }
+    return render(request, 'inbound_external.html', context)
 @login_required
 def my_department_staff(request):
     """Pinapakita ang lahat ng active/approved staff ng office na ito"""
