@@ -45,6 +45,13 @@
         height: 48px !important;
     }
 
+    /* Solusyon para sa floating dropdown list sa image_625001.png */
+    select.form-control-modern {
+        appearance: auto; 
+        cursor: pointer;
+        position: relative;
+    }
+
     .label-custom {
         font-size: 0.65rem;
         font-weight: 700;
@@ -83,6 +90,10 @@
         color: #94a3b8;
         z-index: 10;
     }
+
+    /* Siguraduhin na hindi lumalabas ang dropdown sa modal container */
+    .modal-content { overflow: visible !important; }
+    .modal-body { position: relative; }
 </style>
 
 <div class="dashboard-wrapper">
@@ -99,7 +110,7 @@
     </div>
 
     <div class="card card-modern mb-3 p-3">
-        <form method="GET" action="{% url 'admin_dashboard' %}" class="row g-2 align-items-center">
+        <form method="GET" action="{% url 'user_management' %}" class="row g-2 align-items-center">
             <div class="col-md-5">
                 <div class="input-group input-group-sm">
                     <span class="input-group-text bg-white border-end-0 rounded-start-pill ps-3"><i class="fas fa-search text-muted"></i></span>
@@ -113,14 +124,13 @@
                     <option value="HEAD" {% if role_filter == 'HEAD' %}selected{% endif %}>Head</option>
                     <option value="EXECUTIVE" {% if role_filter == 'EXECUTIVE' %}selected{% endif %}>Executive</option>
                     <option value="GOVERNOR" {% if role_filter == 'GOVERNOR' %}selected{% endif %}>Governor</option>
-                    <option value="ADMIN" {% if role_filter == 'ADMIN' %}selected{% endif %}>Administrator</option>
                 </select>
             </div>
             <div class="col-md-2">
                 <button type="submit" class="btn btn-dark btn-sm rounded-pill w-100 py-2">Filter</button>
             </div>
             <div class="col-md-2">
-                <a href="{% url 'admin_dashboard' %}" class="btn btn-light btn-sm rounded-pill w-100 py-2 border text-muted">Reset</a>
+                <a href="{% url 'user_management' %}" class="btn btn-light btn-sm rounded-pill w-100 py-2 border text-muted">Reset</a>
             </div>
         </form>
     </div>
@@ -195,22 +205,6 @@
                     </tbody>
                 </table>
             </div>
-            
-            {% if profiles.has_other_pages %}
-            <div class="p-4 d-flex justify-content-center">
-                <nav>
-                    <ul class="pagination pagination-sm mb-0">
-                        {% if profiles.has_previous %}
-                            <li class="page-item"><a class="page-link rounded-circle me-1" href="?page={{ profiles.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}"><i class="fas fa-chevron-left"></i></a></li>
-                        {% endif %}
-                        <li class="page-item active"><span class="page-link rounded-circle mx-1">{{ profiles.number }}</span></li>
-                        {% if profiles.has_next %}
-                            <li class="page-item"><a class="page-link rounded-circle ms-1" href="?page={{ profiles.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}"><i class="fas fa-chevron-right"></i></a></li>
-                        {% endif %}
-                    </ul>
-                </nav>
-            </div>
-            {% endif %}
         </div>
     </div>
 </div>
@@ -226,13 +220,13 @@
                 <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button>
             </div>
             
-            <form id="registerUserForm" method="POST" action="{% url 'admin_dashboard' %}">
+            <form id="registerUserForm" method="POST" action="{% url 'user_management' %}">
                 {% csrf_token %}
                 <div class="modal-body p-4">
                     <div class="row g-3">
                         <div class="col-12">
                             <label class="label-custom">Username</label>
-                            <input type="text" name="username" class="form-control form-control-modern" placeholder="e.g. juan_delacruz" required>
+                            <input type="text" name="username" class="form-control form-control-modern" placeholder="e.g. juan_delacruz" autocomplete="username" required>
                         </div>
                         <div class="col-6">
                             <label class="label-custom">First Name</label>
@@ -244,28 +238,27 @@
                         </div>
                         <div class="col-12 password-field-container">
                             <label class="label-custom">Password</label>
-                            <input type="password" name="password" id="regPassword" class="form-control form-control-modern" placeholder="Minimum 8 characters" required minlength="8">
+                            <input type="password" name="password" id="regPassword" class="form-control form-control-modern" placeholder="Minimum 8 characters" autocomplete="new-password" required minlength="8">
                             <i class="fas fa-eye password-toggle" onclick="togglePassword('regPassword', this)"></i>
                         </div>
                         <div class="col-12">
                             <label class="label-custom">Role / Designation</label>
                             <select name="role" class="form-select form-control-modern" required>
-                                <option value="" disabled selected>Select Role</option>
-                                <option value="STAFF">Staff</option>
-                                <option value="HEAD">Department Head</option>
-                                <option value="EXECUTIVE">Executive</option>
-                                <option value="GOVERNOR">Governor</option>
-                                <option value="ADMIN">Administrator</option>
-                            </select>
+    <option value="" disabled selected>Select Role</option>
+    <option value="STAFF">Staff</option>
+    <option value="HEAD">Department Head</option>
+    <option value="EXECUTIVE">Executive</option>
+    <option value="GOVERNOR">Governor</option>
+</select>
                         </div>
                         <div class="col-12">
                             <label class="label-custom">Assigned Office</label>
                             <select name="office_id" class="form-select form-control-modern" required>
-                                <option value="" disabled selected>Select Office</option>
-                                {% for office in offices %}
-                                <option value="{{ office.id }}">{{ office.office_name }}</option>
-                                {% endfor %}
-                            </select>
+    <option value="" disabled selected>Select Office</option>
+    {% for code, name in offices %}
+        <option value="{{ code }}">{{ name }}</option>
+    {% endfor %}
+</select>
                         </div>
                     </div>
                 </div>
@@ -279,21 +272,26 @@
 </div>
 
 <div class="modal fade" id="editUserModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" style="max-width: 450px;">
-        <div class="modal-content border-0 shadow-lg rounded-4" id="editModalContent">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 500px;">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-0 pt-4 px-4 pb-0 d-flex justify-content-between align-items-center">
+                <h6 class="fw-bold mb-0">Edit User Details</h6>
+                <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button>
             </div>
+            <div id="editModalContent">
+                </div>
+        </div>
     </div>
 </div>
-
 {% endblock %}
 
 {% block extra_js %}
 <script>
 $(document).ready(function() {
-    // Backdrop fix
-    $('#registerModal, #editUserModal').appendTo('body');
+    // Append modals to body para maiwasan ang layering issues (z-index)
+    $('#registerModal').appendTo('body');
+    $('#editUserModal').appendTo('body');
 
-    // Button loading state on submit
     $('#registerUserForm').on('submit', function () {
         $('#btnSaveUser').prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span> Saving...');
     });
@@ -311,20 +309,41 @@ function togglePassword(inputId, icon) {
 }
 
 function openRegisterModal() {
-    var myModal = new bootstrap.Modal(document.getElementById('registerModal'));
-    myModal.show();
+    $('#registerUserForm')[0].reset(); // Laging i-clear ang form
+    const regModal = new bootstrap.Modal(document.getElementById('registerModal'));
+    regModal.show();
 }
 
 function handleEditUser(profileId) {
-    $('#editModalContent').html('<div class="p-5 text-center"><div class="spinner-border text-primary"></div></div>');
-    var editModal = new bootstrap.Modal(document.getElementById('editUserModal'));
+    $('#editModalContent').html('<div class="p-5 text-center"><div class="spinner-border text-primary"></div><p class="mt-2 text-muted">Loading user data...</p></div>');
+    const editModal = new bootstrap.Modal(document.getElementById('editUserModal'));
     editModal.show();
 
     $.ajax({
         url: `/edit-user/${profileId}/`,
         type: 'GET',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
         success: function(data) { 
-            $('#editModalContent').html(data); 
+            $('#editModalContent').html(data);
+            
+            // Re-bind form submission para sa AJAX edit
+            $('#editUserForm').on('submit', function(e) {
+                e.preventDefault();
+                const form = $(this);
+                $.ajax({
+                    url: form.attr('action'),
+                    type: 'POST',
+                    data: form.serialize(),
+                    success: function(response) {
+                        if(response.success) {
+                            location.reload();
+                        }
+                    },
+                    error: function(err) {
+                        Swal.fire('Error', 'Update failed: ' + (err.responseJSON ? err.responseJSON.message : 'Unknown error'), 'error');
+                    }
+                });
+            });
         },
         error: function() { 
             Swal.fire('Error', 'Could not load data.', 'error'); 

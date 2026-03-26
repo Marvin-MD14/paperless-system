@@ -32,6 +32,8 @@
                             <option value="Received by Staff">Received by Staff</option>
                             <option value="Pending">Pending</option>
                             <option value="FOR_REVIEW">For Review</option>
+                            <option value="APPROVED">Approved</option>
+                            <option value="REJECTED">Rejected</option>
                         </select>
                     </div>
                 </div>
@@ -71,6 +73,10 @@
                                         <span class="badge badge-pill badge-warning text-white">Pending</span>
                                     {% elif doc.status == 'FOR_REVIEW' %}
                                         <span class="badge badge-pill badge-info">For Review</span>
+                                    {% elif doc.status == 'APPROVED' %}
+                                        <span class="badge badge-pill badge-success"><em class="fa fa-check-circle mr-1"></em>Signed & Approved</span>
+                                    {% elif doc.status == 'REJECTED' %}
+                                        <span class="badge badge-pill badge-danger">Rejected</span>
                                     {% else %}
                                         <span class="badge badge-pill badge-secondary">{{ doc.status }}</span>
                                     {% endif %}
@@ -79,12 +85,15 @@
                                     <div class="btn-group">
                                         <button type="button" 
                                                 class="btn btn-sm btn-outline-primary btn-preview action-btn" 
-                                                title="View & Decide"
+                                                title="View Document"
                                                 data-id="{{ doc.id }}"
                                                 data-url="{{ doc.file.url }}"
                                                 data-full-url="{{ request.scheme }}://{{ request.get_host }}{{ doc.file.url }}"
-                                                data-title="{{ doc.title }}">
-                                            <em class="fa fa-eye"></em> Preview
+                                                data-title="{{ doc.title }}"
+                                                data-status="{{ doc.status }}"> <em class="fa fa-eye"></em>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-info action-btn" title="Tracking History">
+                                            <em class="fa fa-history"></em>
                                         </button>
                                     </div>
                                 </td>
@@ -112,16 +121,20 @@
                 </button>
             </div>
             <div class="modal-body p-0" style="background: #525659;">
-                <iframe id="previewFrame" src="" width="100%" height="700px" frameborder="0"></iframe>
+                <iframe id="previewFrame" src="" width="100%" height="750px" frameborder="0"></iframe>
             </div>
             <div class="modal-footer bg-light d-flex justify-content-between">
                 <button type="button" class="btn btn-secondary px-4 shadow-sm" data-dismiss="modal">Close</button>
-                <div>
-                    <button type="button" id="btnReject" class="btn btn-danger px-4 mr-2 shadow-sm">
+                <div id="actionButtons">
+                    <span id="disabledNotice" class="text-muted mr-3 d-none">
+                        <em class="fa fa-info-circle mr-1"></em><i>Document already processed</i>
+                    </span>
+                    
+                    <button type="button" id="btnReject" class="btn btn-danger px-4 mr-1 shadow-sm">
                         <em class="fa fa-times-circle mr-1"></em> Reject
                     </button>
                     <button type="button" id="btnApprove" class="btn btn-success px-4 shadow-sm">
-                        <em class="fa fa-check-circle mr-1"></em> Approve
+                        <em class="fa fa-pen-nib mr-1"></em> Approve & E-Sign
                     </button>
                 </div>
             </div>
@@ -140,9 +153,10 @@
     .action-btn { border-radius: 5px; margin: 0 2px; }
     .search-wrapper { position: relative; display: flex; align-items: center; }
     .search-wrapper em { position: absolute; left: 15px; color: #aab2bd; z-index: 10; }
-    .custom-search-pill { padding-left: 40px !important; border-radius: 12px !important; border: 1px solid #eef0f3 !important; background-color: #f8f9fb !important; height: 38px !important; }
-    .custom-select-pill { border-radius: 12px !important; border: 1px solid #eef0f3 !important; height: 38px !important; background-color: #fff !important; }
+    .custom-search-pill { padding-left: 40px !important; border-radius: 12px !important; border: 1px solid #eef0f3 !important; background-color: #f8f9fb !important; height: 38px !important; font-size: 0.85rem; width: 100%; transition: all 0.2s ease; }
+    .custom-select-pill { border-radius: 12px !important; border: 1px solid #eef0f3 !important; height: 38px !important; font-size: 0.85rem; background-color: #fff !important; font-weight: 600; }
     .dataTables_filter { display: none; }
+    #previewFrame { background-color: #525659; }
 </style>
 {% endblock %}
 
@@ -155,127 +169,121 @@
 $(document).ready(function() {
     var selectedDocId = null;
 
-    // 1. Initialize DataTable
+    // Initialize DataTable
     var table = $('#inboundTable').DataTable({
         "paging": true,
-        "lengthChange": false, 
-        "searching": true,
         "ordering": true,
         "info": true,
         "autoWidth": false,
-        "pageLength": 10
+        "pageLength": 10,
+        "order": [[3, "desc"]],
+        "language": { "paginate": { "next": "Next", "previous": "Prev" } }
     });
 
-    // 2. Search & Filter Logic
+    // Custom Search & Filter
     $('#searchContainer').html('<div class="search-wrapper"><em class="fa fa-search"></em><input type="text" id="customSearch" class="form-control custom-search-pill" placeholder="Search title or sender..."></div>');
     $('#customSearch').on('keyup', function() { table.search(this.value).draw(); });
     $('#statusFilter').on('change', function() { table.column(4).search(this.value).draw(); });
 
-    // 3. Preview Button Logic
+    // Preview Logic with Cache Busting
     $('.btn-preview').on('click', function() {
         selectedDocId = $(this).data('id');
         var fileUrl = $(this).data('url');
         var fullUrl = $(this).data('full-url');
-        var title = $(this).data('title');
+        var status = $(this).data('status');
         var extension = fileUrl.split('.').pop().toLowerCase();
         
-        var viewerUrl = fileUrl;
-        // Office Viewer for DOCX/XLSX
+        // Cache Buster para siguradong makikita ang bagong pirma
+        var cacheBuster = "?t=" + new Date().getTime();
+        var viewerUrl = fileUrl + cacheBuster;
+
         if (['docx', 'doc', 'xlsx', 'xls', 'pptx', 'ppt'].includes(extension)) {
-            viewerUrl = "https://view.officeapps.live.com/op/view.aspx?src=" + encodeURIComponent(fullUrl);
+            viewerUrl = "https://view.officeapps.live.com/op/view.aspx?src=" + encodeURIComponent(fullUrl + cacheBuster);
         }
 
-        $('#previewTitle').text(title);
+        // Setup Buttons Visibility
+        if (status === 'APPROVED' || status === 'REJECTED') {
+            $('#btnApprove, #btnReject').addClass('d-none');
+            $('#disabledNotice').removeClass('d-none');
+        } else {
+            $('#btnApprove, #btnReject').removeClass('d-none');
+            $('#disabledNotice').addClass('d-none');
+        }
+
+        $('#previewTitle').text($(this).data('title'));
         $('#previewFrame').attr('src', viewerUrl);
         $('#docPreviewModal').modal('show');
     });
 
-    // 4. APPROVE ACTION
+    // APPROVE & SIGN LOGIC
     $('#btnApprove').on('click', function() {
         if(!selectedDocId) return;
 
         Swal.fire({
-            title: 'Confirm Approval',
-            text: "Do you want to approve this document?",
+            title: 'Approve & Sign Document?',
+            text: "Ilalagay ang iyong e-signature sa huling pahina ng PDF na ito.",
             icon: 'question',
             showCancelButton: true,
             confirmButtonColor: '#28a745',
-            cancelButtonColor: '#6c757d',
-            confirmButtonText: 'Yes, Approve'
+            confirmButtonText: 'Yes, Sign & Approve',
+            cancelButtonText: 'Cancel'
         }).then((result) => {
             if (result.isConfirmed) {
-                // Loading State
                 Swal.fire({ 
-                    title: 'Approving...', 
+                    title: 'Signing Document...', 
+                    text: 'Inilalapat ang pirma, mangyaring maghintay...',
                     allowOutsideClick: false, 
                     didOpen: () => { Swal.showLoading(); } 
                 });
                 
                 $.ajax({
-                    // Fixed URL to match your urls.py
                     url: "/api/documents/approve/" + selectedDocId + "/", 
                     type: "POST",
                     data: { 'csrfmiddlewaretoken': '{{ csrf_token }}' },
                     success: function(response) {
-                        Swal.fire('Success!', 'Document has been approved.', 'success')
-                            .then(() => { location.reload(); });
+                        Swal.fire('Success!', 'Document signed and approved.', 'success')
+                        .then(() => { location.reload(); });
                     },
                     error: function(xhr) {
-                        Swal.fire('Error!', 'Request failed: ' + xhr.status, 'error');
+                        Swal.fire('Error!', 'Re-check server permissions or signature file: ' + xhr.responseText, 'error');
                     }
                 });
             }
         });
     });
 
-    // 5. REJECT ACTION
+    // REJECT LOGIC
     $('#btnReject').on('click', function() {
         if(!selectedDocId) return;
 
         Swal.fire({
             title: 'Reject Document',
-            text: 'Provide a reason for rejection:',
+            text: 'Bakit ire-reject ang dokumentong ito?',
             input: 'textarea',
-            inputPlaceholder: 'Enter remarks...',
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#dc3545',
             confirmButtonText: 'Confirm Reject',
-            inputValidator: (value) => {
-                if (!value) return 'You must provide a reason!'
-            }
+            inputValidator: (value) => { if (!value) return 'Reason is required!' }
         }).then((result) => {
             if (result.isConfirmed) {
-                Swal.fire({ 
-                    title: 'Processing...', 
-                    allowOutsideClick: false, 
-                    didOpen: () => { Swal.showLoading(); } 
-                });
-
                 $.ajax({
-                    // Fixed URL to match your urls.py
                     url: "/api/documents/reject/" + selectedDocId + "/", 
                     type: "POST",
-                    data: {
-                        'remarks': result.value,
-                        'csrfmiddlewaretoken': '{{ csrf_token }}'
-                    },
-                    success: function(response) {
-                        Swal.fire('Rejected', 'Document has been sent back.', 'success')
-                            .then(() => { location.reload(); });
-                    },
-                    error: function(xhr) {
-                        Swal.fire('Error!', 'Failed to reject document.', 'error');
+                    data: { 'remarks': result.value, 'csrfmiddlewaretoken': '{{ csrf_token }}' },
+                    success: function() {
+                        Swal.fire('Rejected', 'Document was returned to sender.', 'success')
+                        .then(() => { location.reload(); });
                     }
                 });
             }
         });
     });
 
-    // Reset iframe on close to stop loading/audio
+    // Clean modal on close
     $('#docPreviewModal').on('hidden.bs.modal', function () {
         $('#previewFrame').attr('src', '');
-        selectedDocId = null; 
+        selectedDocId = null;
     });
 });
 </script>

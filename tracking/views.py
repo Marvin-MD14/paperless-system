@@ -531,8 +531,10 @@ def user_management(request):
     search_query = request.GET.get('search', '')
     role_filter = request.GET.get('role', '')
 
+    # Kunin ang lahat ng profiles para sa table
     profiles = UserProfile.objects.all().select_related('user', 'office').order_by('-user__date_joined')
 
+    # Filter Logic
     if search_query:
         profiles = profiles.filter(
             Q(user__first_name__icontains=search_query) |
@@ -544,57 +546,65 @@ def user_management(request):
     if role_filter:
         profiles = profiles.filter(role=role_filter)
 
+    # Registration Logic (POST)
     if request.method == "POST":
+        username = request.POST.get('username', '').strip()
+        first_name = request.POST.get('first_name', '').strip()
+        last_name = request.POST.get('last_name', '').strip()
+        password = request.POST.get('password', '').strip()
+        role = request.POST.get('role', '').strip()
+        office_code = request.POST.get('office_id', '').strip()
+
+        # Validation: Check if username exists
+        if User.objects.filter(username=username).exists():
+            messages.error(request, f"Error: The username '{username}' is already taken.")
+            return redirect('user_management')
+
         try:
             with transaction.atomic():
-                username = request.POST.get('username')
-                first_name = request.POST.get('first_name')
-                last_name = request.POST.get('last_name')
-                password = request.POST.get('password')
-                role = request.POST.get('role')
-                office_code = request.POST.get('office_id')
-
-             
-                user = User.objects.create_user(
+                # 1. Create the User Account 
+                # TANDAAN: Pagka-create nito, tatakbo ang Signal at gagawa ng blankong Profile.
+                new_user = User.objects.create_user(
                     username=username,
+                    password=password,
                     first_name=first_name,
                     last_name=last_name,
-                    password=password,
                     is_active=True
                 )
 
-           
-                office = None
-                if office_code:
-                    office_name_display = dict(OFFICE_CHOICES).get(office_code, office_code)
-                    
-                    office, created = Office.objects.get_or_create(
-                        office_code=office_code,
-                        defaults={'office_name': office_name_display}
-                    )
-
-                UserProfile.objects.create(
-                    user=user,
-                    office=office,
-                    role=role,
-                    is_approved=True,
-                    registration_type='ADMIN'
+                # 2. Find or Create the Office Object
+                office_name_display = dict(OFFICE_CHOICES).get(office_code, office_code)
+                office_obj, created = Office.objects.get_or_create(
+                    office_code=office_code,
+                    defaults={'office_name': office_name_display}
                 )
 
-                messages.success(request, f"Account for {username} created successfully!")
-                return redirect('user_management')
-                
-        except Exception as e:
-            messages.error(request, f"Registration Failed: {str(e)}")
+                # 3. UPDATE the existing UserProfile (Fix for IntegrityError)
+                # Dito natin sinisiguro na papasok ang piniling Role at Office mula sa Modal
+                UserProfile.objects.filter(user=new_user).update(
+                    office=office_obj,
+                    role=role,
+                    is_approved=True,
+                    registration_type='ADMIN',
+                    approved_by=request.user,
+                    approved_at=timezone.now()
+                )
 
+                messages.success(request, f"Success! Account for {first_name} {last_name} has been created.")
+                return redirect('user_management')
+
+        except Exception as e:
+            messages.error(request, f"System Error: {str(e)}")
+            return redirect('user_management')
+
+    # Context para sa Template
     context = {
         'profiles': profiles,
-        'offices': OFFICE_CHOICES, 
+        'offices': OFFICE_CHOICES,
         'search_query': search_query,
         'role_filter': role_filter,
     }
     return render(request, 'user_management.html', context)
-
 @login_required
 @user_passes_test(lambda u: u.is_superuser)
 def delete_user(request, user_id):

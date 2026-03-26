@@ -1,4 +1,5 @@
 import os
+import io
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
@@ -9,6 +10,12 @@ from django.contrib.auth.models import User
 from django.http import JsonResponse
 from django.utils.timesince import timesince 
 from django.views.decorators.http import require_POST
+
+# For Electronic Signature
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
+from pypdf import PdfReader, PdfWriter
+
 from .models import Document, Notification, UserProfile, Routing 
 from .choices import OFFICE_CHOICES
 
@@ -84,32 +91,66 @@ def employee_dashboard(request):
     return render(request, 'employee_dashboard.html', context)
 
 # ==========================================
-# 3. APPROVE & REJECT (WITH GMAIL NOTIF)
+# 3. APPROVE & REJECT (WITH E-SIGNATURE & GMAIL)
 # ==========================================
 
 @login_required
 @require_POST
 def approve_document_api(request, doc_id):
     """
-    In-update: Tinanggal ang recipient=request.user restriction para payagan ang Head
-    na mag-approve ng docs na taga-ibang office basta para sa office nila.
+    API: Naglalagay ng E-Signature sa huling pahina ng PDF bago i-save ang status.
     """
     document = get_object_or_404(Document, id=doc_id)
     remarks = request.POST.get('remarks', 'Document approved and is now on process.')
+
+    # Electronic Signature Logic (PDF ONLY)
+    if document.file.name.lower().endswith('.pdf'):
+        try:
+            existing_pdf_path = document.file.path
+            
+            # UPDATED PATH base sa project structure mo:
+            signature_path = os.path.join(settings.BASE_DIR, 'static/assets/image/head_signature.png')
+            
+            if os.path.exists(signature_path):
+                packet = io.BytesIO()
+                can = canvas.Canvas(packet, pagesize=letter)
+                # Position: x=400, y=50. I-adjust para sa alignment.
+                can.drawImage(signature_path, 400, 50, width=120, height=60, mask='auto')
+                can.save()
+                packet.seek(0)
+
+                new_pdf_overlay = PdfReader(packet)
+                existing_pdf = PdfReader(open(existing_pdf_path, "rb"))
+                output = PdfWriter()
+
+                page_count = len(existing_pdf.pages)
+                for i in range(page_count):
+                    page = existing_pdf.pages[i]
+                    if i == page_count - 1: # Stamp sa huling page lang
+                        page.merge_page(new_pdf_overlay.pages[0])
+                    output.add_page(page)
+
+                # Overwrite the original file with the signed version
+                with open(existing_pdf_path, "wb") as outputStream:
+                    output.write(outputStream)
+            else:
+                print(f"DEBUG: Signature not found at {signature_path}")
+        except Exception as e:
+            print(f"Signing Error: {e}")
 
     document.status = 'APPROVED'
     document.remarks = remarks
     document.save()
 
-    # Log the action in Routing
+    # Log action
     Routing.objects.create(
         document=document,
         from_office=getattr(request.user.userprofile, 'office', None),
-        notes=f"Approved: {remarks}",
+        notes=f"Approved & Signed: {remarks}",
         status='APPROVED'
     )
 
-    # In-app Notification para sa uploader
+    # App Notif
     Notification.objects.create(
         user=document.uploaded_by,
         sender=request.user,
@@ -118,29 +159,26 @@ def approve_document_api(request, doc_id):
         notification_type='APPROVE'
     )
 
-    # Gmail Notification
+    # Gmail Notif
     uploader = document.uploaded_by
     if uploader.email:
         try:
             subject = f"✅ Document Approved: {document.title}"
             body = (
                 f"Hi {uploader.get_full_name() or uploader.username},\n\n"
-                f"Your document '{document.title}' has been APPROVED by {request.user.username}.\n\n"
-                f"FEEDBACK/REMARKS: {remarks}\n\n"
+                f"Your document '{document.title}' has been APPROVED and SIGNED.\n\n"
+                f"REMARKS: {remarks}\n\n"
                 f"Regards,\nERDMS System"
             )
             send_mail(subject, body, settings.DEFAULT_FROM_EMAIL, [uploader.email], fail_silently=True)
         except Exception as e:
             print(f"Gmail Error: {e}")
 
-    return JsonResponse({"status": "success", "message": "Document approved successfully."})
+    return JsonResponse({"status": "success", "message": "Document approved and signed."})
 
 @login_required
 @require_POST
 def reject_document_api(request, doc_id):
-    """
-    In-update: Tinanggal ang recipient=request.user restriction para iwas 404 error.
-    """
     document = get_object_or_404(Document, id=doc_id)
     rejection_reason = request.POST.get('remarks', 'No reason provided.')
 
@@ -149,7 +187,6 @@ def reject_document_api(request, doc_id):
     document.is_read = False 
     document.save()
 
-    # Log the action in Routing
     Routing.objects.create(
         document=document,
         from_office=getattr(request.user.userprofile, 'office', None),
@@ -157,7 +194,6 @@ def reject_document_api(request, doc_id):
         status='REJECTED'
     )
 
-    # In-app Notification
     Notification.objects.create(
         user=document.uploaded_by,
         sender=request.user,
@@ -166,14 +202,13 @@ def reject_document_api(request, doc_id):
         notification_type='REJECT'
     )
 
-    # Gmail Notification
     uploader = document.uploaded_by
     if uploader.email:
         try:
             subject = f"❌ Document Rejected: {document.title}"
             body = (
                 f"Hi {uploader.get_full_name() or uploader.username},\n\n"
-                f"Your document '{document.title}' was REJECTED by {request.user.username}.\n\n"
+                f"Your document '{document.title}' was REJECTED.\n\n"
                 f"REASON: {rejection_reason}\n\n"
                 f"Regards,\nERDMS System"
             )
@@ -281,7 +316,7 @@ def send_document(request):
             if recipient_user.email:
                 send_mail(
                     f"🔔 Document Forwarded: {document.title}",
-                    f"Hi {recipient_user.username}, a document has been forwarded to you by {request.user.username}.",
+                    f"Hi {recipient_user.username}, a document has been forwarded to you.",
                     settings.DEFAULT_FROM_EMAIL,
                     [recipient_user.email],
                     fail_silently=True
@@ -357,7 +392,7 @@ def receive_document_api(request, doc_id):
         user=document.uploaded_by,
         sender=request.user,
         document=document,
-        message=f"RECEIVED: '{document.title}' is now being reviewed by {request.user.username}.",
+        message=f"RECEIVED: '{document.title}' is now being reviewed.",
         notification_type='INFO'
     )
 
@@ -365,7 +400,7 @@ def receive_document_api(request, doc_id):
     if uploader.email:
         try:
             subject = f"📥 Document Received: {document.title}"
-            body = f"Hi {uploader.username},\n\nYour document '{document.title}' has been RECEIVED by {request.user.username}.\nStatus: Under Review."
+            body = f"Hi {uploader.username},\n\nYour document '{document.title}' has been RECEIVED.\nStatus: Under Review."
             send_mail(subject, body, settings.DEFAULT_FROM_EMAIL, [uploader.email], fail_silently=True)
         except Exception as e:
             print(f"Gmail Error: {e}")
@@ -378,20 +413,8 @@ def receive_document_api(request, doc_id):
 
 @login_required
 def document_decision_history(request):
-    """
-    In-update: Ngayon, ipapakita nito ang lahat ng documents kung saan ang Head ang 
-    nag-upload O siya ang naka-assign sa Routing history para makita ang approved/rejected history.
-    """
-    # Documents kung saan ang Head ang huling nag-aksyon (naging approved/rejected)
-    # Maaari nating i-filter base sa kung sino ang 'recipient' (Head) na nakakita nito.
-    
-    approved_docs = Document.objects.filter(
-        status='APPROVED'
-    ).filter(Q(recipient=request.user) | Q(uploaded_by=request.user)).order_by('-uploaded_at')
-
-    rejected_docs = Document.objects.filter(
-        status='REJECTED'
-    ).filter(Q(recipient=request.user) | Q(uploaded_by=request.user)).order_by('-uploaded_at')
+    approved_docs = Document.objects.filter(status='APPROVED').filter(Q(recipient=request.user) | Q(uploaded_by=request.user)).order_by('-uploaded_at')
+    rejected_docs = Document.objects.filter(status='REJECTED').filter(Q(recipient=request.user) | Q(uploaded_by=request.user)).order_by('-uploaded_at')
 
     context = {
         'approved_docs': approved_docs,

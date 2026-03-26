@@ -4,10 +4,6 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
-
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-i%cnh7g@tejy5$&y1v2#i!r(nj&k$13zs9=w_ed5we491juopc'
 
@@ -15,7 +11,6 @@ SECRET_KEY = 'django-insecure-i%cnh7g@tejy5$&y1v2#i!r(nj&k$13zs9=w_ed5we491juopc
 DEBUG = True
 
 ALLOWED_HOSTS = ['tyrell-choicest-michell.ngrok-free.dev', 'localhost', '127.0.0.1', '*']
-# settings.py
 
 # Payagan ang pag-embed ng iframe (Kailangan para sa Modal Preview)
 X_FRAME_OPTIONS = 'ALLOWALL'
@@ -24,7 +19,6 @@ X_FRAME_OPTIONS = 'ALLOWALL'
 CSRF_TRUSTED_ORIGINS = ['https://tyrell-choicest-michell.ngrok-free.dev']
 
 # Application definition
-
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -67,10 +61,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'paperless_site.wsgi.application'
 
-
-# Database
-# https://docs.djangoproject.com/en/6.0/ref/settings/#databases
-
+# Database configuration
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
@@ -86,56 +77,50 @@ DATABASES = {
 }
 
 # Password validation
-# https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
-
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-
 # Internationalization
-# https://docs.djangoproject.com/en/6.0/topics/i18n/
-
 LANGUAGE_CODE = 'en-us'
-
 TIME_ZONE = 'Asia/Manila'
-
 USE_I18N = True
-
 USE_TZ = True
 
-
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/6.0/howto/static-files/
+# ==========================================
+# STATIC AND MEDIA FILES CONFIGURATION
+# ==========================================
 
 STATIC_URL = 'static/'
+
+# Dito nagkaroon ng conflict base sa screenshot mo.
+# Siguraduhin nating kasama ang 'static' folder sa root ng project.
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),
 ]
 
+# Path para sa in-upload na mga dokumento
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
+# Gagamitin ito kapag nag-python manage.py collectstatic
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
-
+# ==========================================
+# AUTHENTICATION PATHS
+# ==========================================
 
 LOGIN_URL = 'login' 
 LOGIN_REDIRECT_URL = 'user_dashboard'
 LOGOUT_REDIRECT_URL = 'login'
 
-# Email Configuration
+# ==========================================
+# EMAIL CONFIGURATION (GMAIL SMTP)
+# ==========================================
+
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
